@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}
+管理后台 - Tnine
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container admin-home">
+
+    <!-- ==================================================
+         欢迎区域
+         ================================================== -->
+
+    <section class="admin-welcome">
+
+        <h1>
+            欢迎回来，{{ admin_username }} 👋
+        </h1>
+
+        <p>
+            这里是你的博客管理中心。
+        </p>
+
+    </section>
+
+
+    <!-- ==================================================
+         数据统计
+         ================================================== -->
+
+    <section class="admin-stats">
+
+        <div class="admin-stat-card">
+
+            <div class="admin-stat-label">
+                文章数量
+            </div>
+
+            <div class="admin-stat-value">
+                {{ article_count }}
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         新建文章
+         ================================================== -->
+
+    <section class="admin-actions">
+
+        <a
+            href="/admin/new"
+            class="admin-primary-button"
+        >
+            ＋ 写一篇新文章
+        </a>
+
+    </section>
+
+
+    <!-- ==================================================
+         文章管理
+         ================================================== -->
+
+    <section class="admin-articles">
+
+        <div class="admin-section-header">
+
+            <h2>
+                文章管理
+            </h2>
+
+        </div>
+
+
+        {% if articles %}
+
+        <div class="admin-article-list">
+
+            {% for article in articles %}
+
+            <div class="admin-article-item">
+
+                <!-- ==================================================
+                     文章信息
+                     ================================================== -->
+
+                <div class="admin-article-info">
+
+                    <h3>
+
+                        {{ article.title }}
+
+
+                        <!-- ==============================
+                             文章状态
+                             ============================== -->
+
+                        {% if article.status == "draft" %}
+
+                        <span
+                            class="article-status article-status-draft"
+                        >
+                            草稿
+                        </span>
+
+                        {% else %}
+
+                        <span
+                            class="article-status article-status-published"
+                        >
+                            已发布
+                        </span>
+
+                        {% endif %}
+
+                    </h3>
+
+
+                    <p>
+                        {{ article.created_at.strftime(
+                            "%Y-%m-%d %H:%M"
+                        ) }}
+                    </p>
+
+                </div>
+
+
+                <!-- ==================================================
+                     操作按钮
+                     ================================================== -->
+
+                <div class="admin-article-actions">
+
+
+                    {% if article.status == "published" %}
+
+                    <!-- ==============================================
+                         已发布文章
+                         查看 / 编辑 / 删除
+                         ============================================== -->
+
+                    <a
+                        href="/article/{{ article.id }}"
+                        class="admin-view-link"
+                    >
+                        查看
+                    </a>
+
+
+                    <a
+                        href="/admin/edit/{{ article.id }}"
+                        class="admin-edit-link"
+                    >
+                        编辑
+                    </a>
+
+
+                    {% else %}
+
+                    <!-- ==============================================
+                         草稿文章
+                         编辑 / 发布 / 删除
+                         ============================================== -->
+
+                    <a
+                        href="/admin/edit/{{ article.id }}"
+                        class="admin-edit-link"
+                    >
+                        编辑
+                    </a>
+
+
+                    <!-- 发布草稿 -->
+
+                    <form
+                        method="post"
+                        action="/admin/edit/{{ article.id }}"
+                        class="admin-publish-form"
+                    >
+
+                        <!--
+                            发布时把当前文章内容一起提交。
+                            后端 action=publish 会将状态改成 published。
+                        -->
+
+                        <input
+                            type="hidden"
+                            name="title"
+                            value="{{ article.title }}"
+                        >
+
+
+                        <input
+                            type="hidden"
+                            name="summary"
+                            value="{{ article.summary }}"
+                        >
+
+
+                        <input
+                            type="hidden"
+                            name="content"
+                            value="{{ article.content }}"
+                        >
+
+
+                        <input
+                            type="hidden"
+                            name="action"
+                            value="publish"
+                        >
+
+
+                        <button
+                            type="submit"
+                            class="admin-publish-link"
+                            onclick="return confirm('确定要发布这篇草稿吗？');"
+                        >
+                            发布
+                        </button>
+
+                    </form>
+
+                    {% endif %}
+
+
+                    <!-- ==============================================
+                         删除
+                         ============================================== -->
+
+                    <form
+                        method="post"
+                        action="/admin/delete/{{ article.id }}"
+                        class="admin-delete-form"
+                        onsubmit="return confirm('确定要删除这篇文章吗？删除后无法恢复。');"
+                    >
+
+                        <button
+                            type="submit"
+                            class="admin-delete-link"
+                        >
+                            删除
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        {% else %}
+
+        <!-- ==================================================
+             没有文章
+             ================================================== -->
+
+        <div class="admin-empty">
+
+            <p>
+                目前还没有文章。
+            </p>
+
+            <a href="/admin/new">
+                写下第一篇文章
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+</main>
+
+{% endblock %}

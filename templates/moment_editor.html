@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+发布朋友圈
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<main class="container">
+
+
+<h2>
+发布朋友圈
+</h2>
+
+
+
+<form
+method="post"
+action="/admin/moment/create"
+enctype="multipart/form-data"
+>
+
+
+<textarea
+name="content"
+placeholder="这一刻想说什么..."
+rows="8"
+required
+></textarea>
+
+
+
+<br>
+
+
+<input
+type="file"
+name="images"
+multiple
+accept="image/*"
+/>
+
+
+<br><br>
+
+
+<button>
+发布
+</button>
+
+
+</form>
+
+
+</main>
+
+
+{% endblock %}

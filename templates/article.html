@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ article.title }} - Tnine
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container article-page">
+
+    <!-- ==================================================
+         顶部悬浮标题栏
+         ================================================== -->
+
+    <header
+        class="article-sticky-header"
+        id="articleStickyHeader"
+        title="返回顶部"
+    >
+
+        <div class="article-sticky-main">
+
+            <div class="article-sticky-title">
+                {{ article.title }}
+            </div>
+
+
+            {% if article.summary %}
+
+            <div class="article-sticky-summary">
+                {{ article.summary }}
+            </div>
+
+            {% endif %}
+
+
+            <div class="article-sticky-meta">
+
+                <span>
+                    {{ article.created_at.strftime("%Y-%m-%d") }}
+                </span>
+
+
+                {% if article.status == "draft" and is_admin %}
+
+                <span class="article-draft-badge">
+                    草稿
+                </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- 收缩状态 -->
+
+        <div class="article-sticky-compact">
+
+            <span class="compact-title">
+                {{ article.title }}
+            </span>
+
+
+            <span class="compact-date">
+                {{ article.created_at.strftime("%Y-%m-%d") }}
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         正文
+         ================================================== -->
+
+    <article>
+
+        <div class="article-content markdown-body">
+
+            {{ article_html | safe }}
+
+        </div>
+
+    </article>
+
+
+    <!-- ==================================================
+         右侧文章导航
+         ================================================== -->
+
+    <aside class="toc-container">
+    </aside>
+
+</main>
+
+
+<!-- ==================================================
+     底部操作栏
+     ================================================== -->
+
+<div class="article-bottom-bar">
+
+    <div class="article-bottom-info">
+
+    <a
+        href="/"
+        class="article-bottom-back"
+    >
+        ← 返回首页
+    </a>
+
+
+    {% if article.status == "draft" and is_admin %}
+
+    <span class="article-status article-status-draft">
+        草稿
+    </span>
+
+    {% endif %}
+
+</div>
+
+
+    <div class="article-bottom-actions">
+
+
+        {% if is_admin %}
+
+        <!-- 编辑 -->
+
+        <a
+            href="/admin/edit/{{ article.id }}"
+            class="article-bottom-edit"
+        >
+            编辑文章
+        </a>
+
+
+        <!-- 删除 -->
+
+        <form
+            method="post"
+            action="/admin/delete/{{ article.id }}"
+            class="article-bottom-delete-form"
+            onsubmit="return confirm('确定要删除这篇文章吗？删除后无法恢复。');"
+        >
+
+            <button
+                type="submit"
+                class="article-bottom-delete"
+            >
+                删除文章
+            </button>
+
+        </form>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ==================================================
+     文章导航
+     ================================================== -->
+
+<script
+    src="{{ url_for('static', path='toc.js') }}"
+></script>
+
+
+<!-- ==================================================
+     代码复制
+     ================================================== -->
+
+<script
+    src="{{ url_for('static', path='code-copy.js') }}"
+></script>
+
+
+<!-- ==================================================
+     标题栏收缩
+     ================================================== -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const header =
+            document.getElementById(
+                "articleStickyHeader"
+            );
+
+
+        if (!header) {
+            return;
+        }
+
+
+        const compactPoint = 120;
+
+
+        function updateArticleHeader() {
+
+            if (window.scrollY > compactPoint) {
+
+                header.classList.add(
+                    "is-compact"
+                );
+
+            } else {
+
+                header.classList.remove(
+                    "is-compact"
+                );
+
+            }
+
+        }
+
+
+        /*
+         * 点击标题栏回到顶部
+         */
+
+        header.addEventListener(
+            "click",
+            function () {
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
+
+            }
+        );
+
+
+        window.addEventListener(
+            "scroll",
+            updateArticleHeader,
+            {
+                passive: true
+            }
+        );
+
+
+        updateArticleHeader();
+
+    }
+);
+
+</script>
+
+{% endblock %}
