@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from pwdlib import PasswordHash
 import markdown
+from sqlalchemy.orm import selectinload
 
 from database import SessionLocal, Base, engine
 from models import (
@@ -140,9 +141,14 @@ def home(request: Request):
 
         moments = (
             db.query(Moment)
-            .order_by(
-                Moment.created_at.desc()
+            .options(
+               selectinload(Moment.images),
+               selectinload(Moment.likes),
+               selectinload(Moment.comments),
             )
+            .order_by(
+               Moment.created_at.desc()
+            ) 
             .all()
         )
 
@@ -185,6 +191,11 @@ def home(request: Request):
         context = get_common_context(request)
 
         context["timeline"] = timeline
+
+        context["liked_moment_ids"] = request.session.get(
+            "liked_moment_ids",
+            []
+        )
 
 
         return templates.TemplateResponse(
@@ -1110,3 +1121,135 @@ print("========== 当前路由 ==========")
 
 for route in app.routes:
     print(route.path)
+
+# ============================================================
+# PUBLIC：朋友圈点赞
+# ============================================================
+
+@app.post("/moment/{moment_id}/like")
+def like_moment(
+    request: Request,
+    moment_id: int,
+):
+    db = SessionLocal()
+
+    try:
+
+        moment = (
+            db.query(Moment)
+            .filter(
+                Moment.id == moment_id
+            )
+            .first()
+        )
+
+        if moment is None:
+            return RedirectResponse(
+                url="/",
+                status_code=303,
+            )
+
+        liked_moments = request.session.get(
+            "liked_moment_ids",
+            []
+        )
+
+        # 已经点过就不重复增加
+        if moment_id not in liked_moments:
+
+            nickname = request.session.get(
+                "admin_username",
+                "匿名用户"
+            )
+
+            like = MomentLike(
+                moment_id=moment.id,
+                nickname=nickname,
+            )
+
+            db.add(like)
+
+            db.commit()
+
+            liked_moments.append(moment_id)
+
+            # 防止 session 无限变大
+            request.session["liked_moment_ids"] = (
+                liked_moments[-100:]
+            )
+
+        return RedirectResponse(
+            url="/",
+            status_code=303,
+        )
+
+    finally:
+        db.close()
+
+
+# ============================================================
+# PUBLIC：朋友圈评论
+# ============================================================
+
+@app.post("/moment/{moment_id}/comment")
+def comment_moment(
+    request: Request,
+    moment_id: int,
+    content: str = Form(...),
+    nickname: str = Form("匿名用户"),
+):
+    db = SessionLocal()
+
+    try:
+
+        moment = (
+            db.query(Moment)
+            .filter(
+                Moment.id == moment_id
+            )
+            .first()
+        )
+
+        if moment is None:
+            return RedirectResponse(
+                url="/",
+                status_code=303,
+            )
+
+        content = content.strip()
+
+        if not content:
+            return RedirectResponse(
+                url="/",
+                status_code=303,
+            )
+
+        # 登录用户直接使用登录名
+        if is_admin(request):
+            nickname = request.session.get(
+                "admin_username",
+                "管理员"
+            )
+        else:
+            nickname = nickname.strip()[:50]
+
+            if not nickname:
+                nickname = "匿名用户"
+
+        comment = MomentComment(
+            moment_id=moment.id,
+            nickname=nickname,
+            content=content[:1000],
+        )
+
+        db.add(comment)
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/",
+            status_code=303,
+        )
+
+    finally:
+        db.close()

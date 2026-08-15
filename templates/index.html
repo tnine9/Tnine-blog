@@ -111,28 +111,150 @@ Tnine
                  底部操作
                  ================================================== -->
 
-            <div class="moment-actions">
+            <!-- ==================================================
+     点赞 / 评论
+     ================================================== -->
 
-                <button
-                    type="button"
-                    class="moment-action-button"
-                >
-                    ❤️
-                    <span>点赞</span>
-                </button>
+<div class="moment-actions">
+
+    <form
+        method="post"
+        action="/moment/{{ item.data.id }}/like"
+        class="moment-like-form"
+    >
+
+        <button
+            type="submit"
+            class="
+                moment-action-button
+                {% if item.data.id in liked_moment_ids %}
+                is-liked
+                {% endif %}
+            "
+        >
+            ❤️
+
+            <span>
+                {% if item.data.id in liked_moment_ids %}
+                    已赞
+                {% else %}
+                    点赞
+                {% endif %}
+            </span>
+
+            <span class="moment-action-count">
+                {{ item.data.likes|length }}
+            </span>
+
+        </button>
+
+    </form>
 
 
-                <button
-                    type="button"
-                    class="moment-action-button"
-                >
-                    💬
-                    <span>评论</span>
-                </button>
+    <a
+        href="#moment-comments-{{ item.data.id }}"
+        class="moment-action-button"
+    >
+        💬
+        <span>评论</span>
+
+        <span class="moment-action-count">
+            {{ item.data.comments|length }}
+        </span>
+    </a>
+
+</div>
+
+
+<!-- ==================================================
+     评论区
+     ================================================== -->
+
+<details
+    class="moment-comments"
+    id="moment-comments-{{ item.data.id }}"
+>
+
+    <summary>
+        查看评论
+    </summary>
+
+
+    <div class="moment-comments-body">
+
+        {% if item.data.comments %}
+
+            <div class="moment-comment-list">
+
+                {% for comment in item.data.comments|sort(attribute="created_at") %}
+
+                <div class="moment-comment">
+
+                    <span class="moment-comment-user">
+                        {{ comment.nickname }}
+                    </span>
+
+                    <span class="moment-comment-content">
+                        {{ comment.content }}
+                    </span>
+
+                    <div class="moment-comment-time">
+                        {{ comment.created_at.strftime("%Y-%m-%d %H:%M") }}
+                    </div>
+
+                </div>
+
+                {% endfor %}
 
             </div>
 
-        </article>
+        {% else %}
+
+            <div class="moment-comments-empty">
+                还没有评论，来说点什么吧。
+            </div>
+
+        {% endif %}
+
+
+        <!-- 评论表单 -->
+
+        <form
+            method="post"
+            action="/moment/{{ item.data.id }}/comment"
+            class="moment-comment-form"
+        >
+
+            {% if not is_admin %}
+
+            <input
+                type="text"
+                name="nickname"
+                maxlength="50"
+                placeholder="你的昵称"
+            >
+
+            {% endif %}
+
+
+            <textarea
+                name="content"
+                rows="3"
+                maxlength="1000"
+                placeholder="说点什么..."
+                required
+            ></textarea>
+
+
+            <button type="submit">
+                发表评论
+            </button>
+
+        </form>
+
+    </div>
+
+</details>
 
 
         <!-- ==================================================
