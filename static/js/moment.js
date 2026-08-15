@@ -9,53 +9,36 @@ document.addEventListener(
         ==========================================
         */
 
-
         const nicknameModal =
             document.getElementById(
                 "nickname-modal"
             );
 
 
-        /*
-        没有弹窗直接结束
-        防止其它页面报错
-        */
-
-        if (!nicknameModal) {
-            return;
-        }
-
-
-
-        const nicknameInput =
-            document.getElementById(
-                "nickname-input"
-            );
-
-
-        const nicknameCancel =
-            document.getElementById(
-                "nickname-cancel"
-            );
-
-
-        const nicknameConfirm =
-            document.getElementById(
-                "nickname-confirm"
-            );
-
-
-
         let pendingAction = null;
-
 
 
         function openNicknameModal(action){
 
+            if(!nicknameModal){
+                return;
+            }
+
+
             pendingAction = action;
 
 
-            nicknameInput.value = "";
+            const input =
+                document.getElementById(
+                    "nickname-input"
+                );
+
+
+            if(input){
+
+                input.value = "";
+
+            }
 
 
             nicknameModal.classList.add(
@@ -65,7 +48,9 @@ document.addEventListener(
 
             setTimeout(
                 ()=>{
-                    nicknameInput.focus();
+
+                    input?.focus();
+
                 },
                 50
             );
@@ -74,8 +59,11 @@ document.addEventListener(
 
 
 
-
         function closeNicknameModal(){
+
+            if(!nicknameModal){
+                return;
+            }
 
 
             nicknameModal.classList.remove(
@@ -90,6 +78,25 @@ document.addEventListener(
 
 
 
+        const nicknameCancel =
+            document.getElementById(
+                "nickname-cancel"
+            );
+
+
+        const nicknameConfirm =
+            document.getElementById(
+                "nickname-confirm"
+            );
+
+
+        const nicknameInput =
+            document.getElementById(
+                "nickname-input"
+            );
+
+
+
         nicknameCancel?.addEventListener(
             "click",
             closeNicknameModal
@@ -98,16 +105,13 @@ document.addEventListener(
 
 
         nicknameModal
-            .querySelector(
-                ".nickname-modal-backdrop"
-            )
-            ?.addEventListener(
-                "click",
-                closeNicknameModal
-            );
-
-
-
+        ?.querySelector(
+            ".nickname-modal-backdrop"
+        )
+        ?.addEventListener(
+            "click",
+            closeNicknameModal
+        );
 
 
 
@@ -115,24 +119,20 @@ document.addEventListener(
             "keydown",
             function(event){
 
-
                 if(
-                    event.key==="Enter"
+                    event.key === "Enter"
                     &&
                     !event.shiftKey
                 ){
 
                     event.preventDefault();
 
-
-                    nicknameConfirm.click();
+                    nicknameConfirm?.click();
 
                 }
 
-
             }
         );
-
 
 
 
@@ -148,20 +148,18 @@ document.addEventListener(
 
 
 
+                const action =
+                    pendingAction;
+
+
 
                 /*
-                空昵称
+                匿名
                 */
 
                 if(!nickname){
 
-
-                    const action =
-                        pendingAction;
-
-
                     closeNicknameModal();
-
 
 
                     if(action){
@@ -181,20 +179,18 @@ document.addEventListener(
 
 
 
-
                 /*
                 保存昵称
                 */
 
-
                 try{
 
 
-                    const formData =
+                    const data =
                         new FormData();
 
 
-                    formData.append(
+                    data.append(
                         "nickname",
                         nickname
                     );
@@ -206,7 +202,7 @@ document.addEventListener(
                             "/nickname",
                             {
                                 method:"POST",
-                                body:formData
+                                body:data
                             }
                         );
 
@@ -230,10 +226,6 @@ document.addEventListener(
 
 
 
-                    const action =
-                        pendingAction;
-
-
                     closeNicknameModal();
 
 
@@ -246,10 +238,12 @@ document.addEventListener(
 
 
 
-                }catch(error){
+                }
+                catch(error){
 
-
-                    console.error(error);
+                    console.error(
+                        error
+                    );
 
 
                     alert(
@@ -269,10 +263,9 @@ document.addEventListener(
 
 
 
-
         /*
         ==========================================
-        需要昵称操作
+        需要昵称执行
         ==========================================
         */
 
@@ -280,7 +273,7 @@ document.addEventListener(
         async function executeWithNickname(action){
 
 
-            let response =
+            const response =
                 await action();
 
 
@@ -314,7 +307,10 @@ document.addEventListener(
                                         );
 
 
-                                    resolve(retry);
+                                    resolve(
+                                        retry
+                                    );
+
 
                                 }
                             );
@@ -322,7 +318,6 @@ document.addEventListener(
 
                         }
                     );
-
 
                 }
 
@@ -389,7 +384,6 @@ document.addEventListener(
 
 
 
-
                             return fetch(
                                 form.action,
                                 {
@@ -413,9 +407,10 @@ document.addEventListener(
 
 
                         if(!response){
-                            return;
-                        }
 
+                            return;
+
+                        }
 
 
 
@@ -440,6 +435,9 @@ document.addEventListener(
 
 
 
+                        /*
+                        刷新同步状态
+                        */
 
                         window.location.reload();
 
@@ -462,7 +460,7 @@ document.addEventListener(
 
         /*
         ==========================================
-        评论展开
+        评论输入框展开
         ==========================================
         */
 
@@ -488,9 +486,10 @@ document.addEventListener(
 
 
                         if(!target){
-                            return;
-                        }
 
+                            return;
+
+                        }
 
 
 
@@ -503,8 +502,10 @@ document.addEventListener(
                     }
                 );
 
+
             }
         );
+
 
 
 
@@ -529,7 +530,6 @@ document.addEventListener(
             function(form){
 
 
-
                 form.addEventListener(
                     "submit",
                     async function(event){
@@ -552,9 +552,10 @@ document.addEventListener(
 
 
                         if(!content){
-                            return;
-                        }
 
+                            return;
+
+                        }
 
 
 
@@ -587,6 +588,7 @@ document.addEventListener(
 
 
 
+
                             return fetch(
                                 form.action,
                                 {
@@ -613,6 +615,7 @@ document.addEventListener(
 
 
 
+
                         if(!result.success){
 
 
@@ -636,7 +639,6 @@ document.addEventListener(
                 );
 
 
-
             }
         );
 
@@ -654,64 +656,74 @@ document.addEventListener(
         ==========================================
         */
 
-
-        document
-        .querySelectorAll(
-            "[data-comment-more]"
-        )
-        .forEach(
-            button=>{
-
-
-                button.addEventListener(
-                    "click",
-                    function(){
+document
+.querySelectorAll(
+    "[data-comment-more]"
+)
+.forEach(
+    function(button){
 
 
-
-                        const list =
-                            button.closest(
-                                ".moment-comment-list"
-                            );
+        button.addEventListener(
+            "click",
+            function(){
 
 
+                const list =
+                    button.closest(
+                        ".moment-comment-list"
+                    );
 
-                        const extra =
-                            list.querySelector(
-                                "[data-comment-extra]"
-                            );
+
+                if(!list){
+                    return;
+                }
 
 
 
-                        if(!extra){
-                            return;
-                        }
+                const extra =
+                    list.querySelector(
+                        "[data-comment-extra]"
+                    );
 
 
 
-                        extra.classList.toggle(
-                            "is-expanded"
-                        );
+                if(!extra){
+                    return;
+                }
 
 
 
-                        button.textContent =
-                            extra.classList.contains(
-                                "is-expanded"
-                            )
-                            ?
-                            "收起评论"
-                            :
-                            button.dataset.text;
+                const isExpanded =
+                    extra.classList.toggle(
+                        "is-expanded"
+                    );
 
 
 
-                    }
-                );
+                if(isExpanded){
+
+                    button.innerText =
+                        "收起评论";
+
+
+                }else{
+
+
+                    button.innerText =
+                        button.dataset.text;
+
+
+                }
+
 
 
             }
         );
+
+
+    }
+);
 
 
 
