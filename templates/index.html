@@ -6,195 +6,188 @@ Tnine
 {% endblock %}
 
 
-
 {% block content %}
-
 
 <main class="container">
 
+    <!-- ==================================================
+         首页 Hero
+         ================================================== -->
 
+    <section class="hero">
 
-<section class="hero">
+        <h2>
+            天涯里自会相逢
+        </h2>
 
-<h2>
-天涯里自会相逢
-</h2>
+        <p>
+            只是重逢，就不必了。
+        </p>
 
-<p>
-只是重逢，就不必了。
-</p>
+    </section>
 
-</section>
 
+    <!-- ==================================================
+         时间线
+         ================================================== -->
 
+    <section class="timeline">
 
+        {% for item in timeline %}
 
 
-<section class="timeline">
+        <!-- ==================================================
+             朋友圈
+             ================================================== -->
 
+        {% if item.type == "moment" %}
 
+        <article class="moment-card">
 
-{% for item in timeline %}
+            <!-- 顶部：头像 + 昵称 -->
 
+            <div class="moment-header">
 
+                <div class="moment-avatar">
+                    {{ item.data.nickname[0] }}
+                </div>
 
-{% if item.type == "moment" %}
+                <div class="moment-user-info">
 
+                    <div class="moment-user">
+                        {{ item.data.nickname }}
+                    </div>
 
+                    <div class="moment-time">
+                        {{ item.data.created_at.strftime("%Y-%m-%d %H:%M") }}
+                    </div>
 
-<article class="moment-card">
+                </div>
 
+            </div>
 
 
-<div class="article-date">
+            <!-- 朋友圈正文 -->
 
-{{ 
-item.data.created_at.strftime("%Y-%m-%d %H:%M")
-}}
+            {% if item.data.content %}
 
-</div>
+            <div class="moment-content">
+                {{ item.data.content }}
+            </div>
 
+            {% endif %}
 
 
-<h3 class="moment-user">
+            <!-- ==================================================
+                 图片
+                 ================================================== -->
 
-{{ item.data.nickname }}
+            {% if item.data.images %}
 
-</h3>
+            <div
+                class="moment-images moment-images-count-{{ item.data.images|length }}"
+            >
 
+                {% for image in item.data.images %}
 
+                <div class="moment-image-item">
 
-<p>
+                    <img
+                        src="{{ image.image_path }}"
+                        alt="朋友圈图片"
+                        loading="lazy"
+                    >
 
-{{ item.data.content }}
+                </div>
 
-</p>
+                {% endfor %}
 
+            </div>
 
+            {% endif %}
 
 
-{% if item.data.images %}
+            <!-- ==================================================
+                 底部操作
+                 ================================================== -->
 
+            <div class="moment-actions">
 
-<div class="moment-images">
+                <button
+                    type="button"
+                    class="moment-action-button"
+                >
+                    ❤️
+                    <span>点赞</span>
+                </button>
 
 
-{% for image in item.data.images %}
+                <button
+                    type="button"
+                    class="moment-action-button"
+                >
+                    💬
+                    <span>评论</span>
+                </button>
 
+            </div>
 
-<img
-src="{{ image.image_path }}"
->
+        </article>
 
 
-{% endfor %}
+        <!-- ==================================================
+             博客文章
+             ================================================== -->
 
+        {% elif item.type == "article" %}
 
-</div>
+        <article class="article-card">
 
+            <div class="article-date">
 
-{% endif %}
+                {{
+                    item.data.created_at.strftime("%Y-%m-%d")
+                }}
 
+            </div>
 
 
+            <h2>
+                {{ item.data.title }}
+            </h2>
 
-<div class="moment-actions">
 
+            <p>
+                {{ item.data.summary }}
+            </p>
 
-<span>
-👍 点赞
-</span>
 
+            <a
+                href="/article/{{ item.data.id }}"
+                class="read-more"
+            >
+                阅读全文 →
+            </a>
 
-<span>
-💬 评论
-</span>
+        </article>
 
+        {% endif %}
 
-</div>
 
+        {% else %}
 
+        <div class="admin-empty">
 
-</article>
+            <p>
+                目前还没有内容。
+            </p>
 
+        </div>
 
+        {% endfor %}
 
-
-{% elif item.type == "article" %}
-
-
-
-
-<article class="article-card">
-
-
-<div class="article-date">
-
-{{ 
-item.data.created_at.strftime("%Y-%m-%d")
-}}
-
-</div>
-
-
-
-<h2>
-
-{{ item.data.title }}
-
-</h2>
-
-
-
-<p>
-
-{{ item.data.summary }}
-
-</p>
-
-
-
-<a
-href="/article/{{ item.data.id }}"
-class="read-more"
->
-
-阅读全文 →
-
-</a>
-
-
-
-</article>
-
-
-
-{% endif %}
-
-
-
-{% else %}
-
-
-<div class="admin-empty">
-
-<p>
-目前还没有内容。
-</p>
-
-</div>
-
-
-{% endfor %}
-
-
-
-</section>
-
-
-
+    </section>
 
 </main>
-
 
 {% endblock %}

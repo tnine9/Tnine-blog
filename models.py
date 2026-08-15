@@ -6,6 +6,7 @@ from sqlalchemy import (
     String,
     Text,
     DateTime,
+    ForeignKey,
 )
 
 from sqlalchemy.orm import relationship
@@ -170,8 +171,12 @@ class MomentImage(Base):
 
 
     moment_id = Column(
-        Integer,
-        nullable=False
+    Integer,
+    ForeignKey(
+        "moments.id",
+        ondelete="CASCADE"
+    ),
+    nullable=False
     )
 
 
@@ -210,9 +215,13 @@ class MomentLike(Base):
 
 
     moment_id = Column(
-        Integer,
-        nullable=False
-    )
+    Integer,
+    ForeignKey(
+        "moments.id",
+        ondelete="CASCADE"
+    ),
+    nullable=False
+   )
 
 
     nickname = Column(
@@ -250,8 +259,12 @@ class MomentComment(Base):
 
 
     moment_id = Column(
-        Integer,
-        nullable=False
+    Integer,
+    ForeignKey(
+        "moments.id",
+        ondelete="CASCADE"
+    ),
+    nullable=False
     )
 
 

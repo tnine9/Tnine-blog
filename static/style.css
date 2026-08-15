@@ -2426,3 +2426,370 @@ nav a:hover {
         flex: 0 0 auto;
     }
 }
+
+/* =========================================================
+   Tnine 朋友圈
+   ========================================================= */
+
+
+/* =========================================================
+   时间线
+   ========================================================= */
+
+.timeline {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 20px;
+
+    padding-bottom: 70px;
+}
+
+
+/* =========================================================
+   朋友圈卡片
+   ========================================================= */
+
+.moment-card {
+    background:
+        var(--color-surface);
+
+    border:
+        1px solid var(--color-border);
+
+    border-radius:
+        var(--radius-lg);
+
+    box-shadow:
+        var(--shadow-sm);
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   朋友圈头部
+   ========================================================= */
+
+.moment-header {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding:
+        22px 24px 0;
+}
+
+
+.moment-avatar {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 50%;
+
+    background:
+        #eef2ff;
+
+    color:
+        var(--color-primary);
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+    line-height: 1;
+}
+
+
+.moment-user-info {
+    min-width: 0;
+}
+
+
+.moment-user {
+    overflow: hidden;
+
+    color:
+        var(--color-text);
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    line-height: 1.4;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+}
+
+
+.moment-time {
+    margin-top: 2px;
+
+    color:
+        var(--color-text-muted);
+
+    font-size: 12px;
+
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   朋友圈正文
+   ========================================================= */
+
+.moment-content {
+    padding:
+        16px 24px 4px;
+
+    color:
+        var(--color-text);
+
+    font-size: 16px;
+
+    line-height: 1.8;
+
+    white-space: pre-wrap;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   图片区域
+   ========================================================= */
+
+.moment-images {
+    display: grid;
+
+    gap: 6px;
+
+    margin:
+        16px 24px 4px;
+
+    max-width: 560px;
+}
+
+
+/* 一张 */
+
+.moment-images-count-1 {
+    grid-template-columns: minmax(0, 1fr);
+
+    max-width: 420px;
+}
+
+
+/* 两张 */
+
+.moment-images-count-2 {
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+}
+
+
+/* 三张及以上 */
+
+.moment-images-count-3,
+.moment-images-count-4,
+.moment-images-count-5,
+.moment-images-count-6,
+.moment-images-count-7,
+.moment-images-count-8,
+.moment-images-count-9 {
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+}
+
+
+/* 图片 */
+
+.moment-image-item {
+    position: relative;
+
+    width: 100%;
+
+    aspect-ratio: 1 / 1;
+
+    overflow: hidden;
+
+    border-radius:
+        8px;
+
+    background:
+        #f3f4f6;
+}
+
+
+.moment-image-item img {
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+/* 单张图片稍微大一点 */
+
+.moment-images-count-1
+.moment-image-item {
+    aspect-ratio: auto;
+
+    max-height: 520px;
+}
+
+
+.moment-images-count-1
+.moment-image-item img {
+    width: auto;
+
+    max-width: 100%;
+
+    height: auto;
+
+    max-height: 520px;
+
+    object-fit: contain;
+}
+
+
+/* =========================================================
+   操作栏
+   ========================================================= */
+
+.moment-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 18px;
+
+    padding:
+        10px 24px 16px;
+
+    border-top:
+        1px solid #f3f4f6;
+}
+
+
+.moment-action-button {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    padding:
+        6px 10px;
+
+    border: none;
+
+    border-radius: 6px;
+
+    background:
+        transparent;
+
+    color:
+        var(--color-text-secondary);
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    line-height: 1;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+
+.moment-action-button:hover {
+    background:
+        #f3f4f6;
+
+    color:
+        var(--color-text);
+}
+
+
+/* =========================================================
+   移动端
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    .timeline {
+        gap: 16px;
+
+        padding-bottom: 50px;
+    }
+
+
+    .moment-header {
+        padding:
+            18px 18px 0;
+    }
+
+
+    .moment-content {
+        padding:
+            14px 18px 4px;
+
+        font-size: 15px;
+    }
+
+
+    .moment-images {
+        gap: 5px;
+
+        margin:
+            14px 18px 2px;
+    }
+
+
+    .moment-actions {
+        margin-top: 14px;
+
+        padding:
+            9px 18px 14px;
+    }
+
+
+    .moment-action-button {
+        padding:
+            6px 8px;
+
+        font-size: 12px;
+    }
+
+
+    .moment-avatar {
+        width: 38px;
+
+        height: 38px;
+
+        font-size: 16px;
+    }
+}

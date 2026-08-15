@@ -263,7 +263,7 @@ def article_detail(
 
 
 # ============================================================
-# GUEST：登录页面
+# GUEST：管理员登录页面
 # ============================================================
 
 @app.get("/admin/login")
@@ -271,21 +271,54 @@ def admin_login_page(
     request: Request,
 ):
 
+    # 已经登录
     if not require_guest(request):
+
         return RedirectResponse(
             url="/admin",
             status_code=303,
         )
 
-    context = get_common_context(request)
 
-    context["error"] = None
+    db = SessionLocal()
 
-    return templates.TemplateResponse(
-        request=request,
-        name="admin_login.html",
-        context=context,
-    )
+    try:
+
+        # ====================================================
+        # 检查系统是否已经存在管理员
+        # ====================================================
+
+        admin_count = (
+            db.query(Admin)
+            .count()
+        )
+
+
+        # 没有任何管理员
+        # 自动进入首次创建管理员页面
+
+        if admin_count == 0:
+
+            return RedirectResponse(
+                url="/admin/register",
+                status_code=303,
+            )
+
+
+        context = get_common_context(request)
+
+        context["error"] = None
+
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_login.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
 
 
 # ============================================================
@@ -371,6 +404,206 @@ def admin_login(
         db.close()
 
 
+# ============================================================
+# GUEST：首次创建管理员页面
+# ============================================================
+
+@app.get("/admin/register")
+def admin_register_page(
+    request: Request,
+):
+
+    # 已经登录
+    if not require_guest(request):
+
+        return RedirectResponse(
+            url="/admin",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        # 如果已经存在管理员，
+        # 就不能再通过这个页面创建
+
+        admin_count = (
+            db.query(Admin)
+            .count()
+        )
+
+
+        if admin_count > 0:
+
+            return RedirectResponse(
+                url="/admin/login",
+                status_code=303,
+            )
+
+
+        context = get_common_context(request)
+
+        context["error"] = None
+
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_register.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+
+# ============================================================
+# GUEST：创建第一个管理员
+# ============================================================
+
+@app.post("/admin/register")
+def admin_register(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+):
+
+    if not require_guest(request):
+
+        return RedirectResponse(
+            url="/admin",
+            status_code=303,
+        )
+
+
+    username = username.strip()
+
+
+    db = SessionLocal()
+
+    try:
+
+        # ====================================================
+        # 再次检查
+        # 防止已经存在管理员时绕过前端访问
+        # ====================================================
+
+        admin_count = (
+            db.query(Admin)
+            .count()
+        )
+
+
+        if admin_count > 0:
+
+            return RedirectResponse(
+                url="/admin/login",
+                status_code=303,
+            )
+
+
+        # ====================================================
+        # 基础验证
+        # ====================================================
+
+        if not username:
+
+            context = get_common_context(request)
+
+            context["error"] = "用户名不能为空"
+
+            return templates.TemplateResponse(
+                request=request,
+                name="admin_register.html",
+                context=context,
+            )
+
+
+        if not password:
+
+            context = get_common_context(request)
+
+            context["error"] = "密码不能为空"
+
+            return templates.TemplateResponse(
+                request=request,
+                name="admin_register.html",
+                context=context,
+            )
+
+
+        if len(password) < 6:
+
+            context = get_common_context(request)
+
+            context["error"] = "密码至少需要 6 位"
+
+            return templates.TemplateResponse(
+                request=request,
+                name="admin_register.html",
+                context=context,
+            )
+
+
+        if password != confirm_password:
+
+            context = get_common_context(request)
+
+            context["error"] = "两次输入的密码不一致"
+
+            return templates.TemplateResponse(
+                request=request,
+                name="admin_register.html",
+                context=context,
+            )
+
+
+        # ====================================================
+        # 创建管理员
+        # ====================================================
+
+        password_hash = (
+            password_hasher.hash(password)
+        )
+
+
+        admin = Admin(
+            username=username,
+            password_hash=password_hash,
+        )
+
+
+        db.add(admin)
+
+        db.commit()
+
+        db.refresh(admin)
+
+
+        # ====================================================
+        # 创建成功后直接登录
+        # ====================================================
+
+        request.session["admin_id"] = admin.id
+
+        request.session[
+            "admin_username"
+        ] = admin.username
+
+
+        return RedirectResponse(
+            url="/admin",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+        
 # ============================================================
 # AUTHENTICATED：管理员主页
 # ============================================================
