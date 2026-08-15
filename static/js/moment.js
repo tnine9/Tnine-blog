@@ -458,62 +458,40 @@ document.addEventListener(
 
 
 
-        /*
-        ==========================================
-        评论输入框展开
-        ==========================================
-        */
+/*
+==========================================
+评论输入框展开
+==========================================
+*/
+document
+.querySelectorAll(
+    ".moment-comment-toggle"
+)
+.forEach(
+    function(button){
 
+        button.addEventListener(
+            "click",
+            function(){
 
-        document
-        .querySelectorAll(
-            ".moment-comment-toggle"
-        )
-        .forEach(
-            function(button){
+                const target =
+                    document.getElementById(
+                        button.dataset.commentTarget
+                    );
 
+                if(!target){
+                    return;
+                }
 
-                button.addEventListener(
-                    "click",
-                    function(){
-
-
-                        const target =
-                            document.getElementById(
-                                button.dataset.commentTarget
-                            );
-
-
-
-                        if(!target){
-
-                            return;
-
-                        }
-
-
-
-                        target.classList.toggle(
-                            "is-open"
-                        );
-
-
-
-                    }
+                target.classList.toggle(
+                    "is-open"
                 );
-
 
             }
         );
 
-
-
-
-
-
-
-
-
+    }
+);
 
         /*
         ==========================================
