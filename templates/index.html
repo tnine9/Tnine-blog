@@ -608,6 +608,54 @@ document.addEventListener(
         /* ==================================================
            通用：执行需要昵称的操作
            ================================================== */
+
+           async function executeWithNickname(action) {
+
+    let response = await action();
+
+
+    // 没昵称
+    if (response.status === 401) {
+
+        const result =
+            await response.json();
+
+
+        if (
+            result.nickname_required
+        ) {
+
+            return new Promise(
+                function(resolve){
+
+                    openNicknameModal(
+                        async function(
+                            nickname
+                        ){
+
+                            const retry =
+                                await action(
+                                    nickname
+                                );
+
+                            resolve(retry);
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+
+    }
+
+
+    return response;
+
+}
+
+
            function handlePendingResult(result) {
 
     if (!result) {
@@ -634,9 +682,9 @@ document.addEventListener(
     ) {
 
         const button =
-            document.querySelector(
-                `.moment-like-form button`
-            );
+    document.querySelector(
+        `.moment-like-form button[data-id="${result.moment_id}"]`
+    );
 
 
         if (button) {
@@ -783,7 +831,7 @@ if (!result.success) {
 
     alert(
         result.error ||
-        "评论失败"
+        "点赞失败"
     );
 
     return;
@@ -791,13 +839,6 @@ if (!result.success) {
 
 
 window.location.reload();
-
-         
-
-
-                        window.location.reload();
-
-
 
                             /*
                              * 已赞 / 取消

@@ -3766,15 +3766,15 @@ nav a:hover {
 
 
 .nickname-modal-backdrop {
-    position: absolute;
 
-    inset: 0;
+    position:absolute;
 
-    background:
-        rgba(15, 23, 42, 0.28);
+    inset:0;
 
-    backdrop-filter:
-        blur(4px);
+    z-index:1;
+
+    background:rgba(0,0,0,.45);
+
 }
 
 
@@ -3985,4 +3985,88 @@ nav a:hover {
 .moment-comments-more:hover {
     color:
         var(--color-primary-hover);
+}
+
+/* ==================================================
+   昵称弹窗
+   ================================================== */
+
+
+.nickname-modal {
+
+    display:none;
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:9999;
+
+}
+
+
+.nickname-modal.is-open {
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+
+
+
+
+.nickname-modal-box {
+
+    position:relative;
+
+    z-index:2;
+
+    width:360px;
+
+    padding:30px;
+
+    background:#fff;
+
+    border-radius:20px;
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.2);
+
+}
+
+
+.nickname-modal-box h3 {
+
+    margin-top:0;
+
+}
+
+
+.nickname-modal-box input {
+
+    width:100%;
+
+    padding:10px;
+
+    margin:15px 0;
+
+    border:1px solid #ddd;
+
+    border-radius:8px;
+
+}
+
+
+.nickname-modal-actions {
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:10px;
+
 }
