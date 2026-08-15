@@ -1,0 +1,926 @@
+/* =========================================================
+   Tnine 朋友圈
+   ========================================================= */
+
+
+/* =========================================================
+   时间线
+   ========================================================= */
+
+
+.timeline {
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+    padding-bottom:70px;
+
+}
+
+
+
+/* =========================================================
+   动态卡片
+   ========================================================= */
+
+
+.moment-card {
+
+
+    overflow:hidden;
+
+
+    background:
+        var(--color-surface);
+
+
+    border:
+        1px solid var(--color-border);
+
+
+    border-radius:
+        var(--radius-lg);
+
+
+    box-shadow:
+        var(--shadow-sm);
+
+}
+
+
+
+
+/* =========================================================
+   头部
+   ========================================================= */
+
+
+.moment-header {
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    gap:12px;
+
+
+    padding:
+        22px 24px 0;
+
+}
+
+
+
+.moment-avatar {
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    justify-content:center;
+
+
+    flex-shrink:0;
+
+
+    width:42px;
+
+
+    height:42px;
+
+
+    border-radius:50%;
+
+
+    background:#eef2ff;
+
+
+    color:
+        var(--color-primary);
+
+
+    font-size:18px;
+
+
+    font-weight:700;
+
+}
+
+
+
+.moment-user-info {
+
+    min-width:0;
+
+}
+
+
+
+.moment-user {
+
+
+    overflow:hidden;
+
+
+    color:
+        var(--color-text);
+
+
+    font-size:15px;
+
+
+    font-weight:700;
+
+
+    white-space:nowrap;
+
+
+    text-overflow:ellipsis;
+
+}
+
+
+
+.moment-time {
+
+
+    margin-top:2px;
+
+
+    color:
+        var(--color-text-muted);
+
+
+    font-size:12px;
+
+}
+
+
+
+
+/* =========================================================
+   正文
+   ========================================================= */
+
+
+.moment-content {
+
+
+    padding:
+        16px 24px;
+
+
+    color:
+        var(--color-text);
+
+
+    font-size:16px;
+
+
+    line-height:1.8;
+
+
+    white-space:pre-wrap;
+
+
+    word-break:break-word;
+
+}
+
+
+
+
+
+/* =========================================================
+   图片
+   ========================================================= */
+
+
+.moment-images {
+
+
+    display:grid;
+
+
+    gap:6px;
+
+
+    margin:
+        0 24px 10px;
+
+
+    max-width:560px;
+
+}
+
+
+
+.moment-images-count-1 {
+
+
+    grid-template-columns:
+        minmax(0,1fr);
+
+
+    max-width:420px;
+
+}
+
+
+
+.moment-images-count-2 {
+
+
+    grid-template-columns:
+        repeat(2,minmax(0,1fr));
+
+}
+
+
+
+.moment-images-count-3,
+.moment-images-count-4,
+.moment-images-count-5,
+.moment-images-count-6,
+.moment-images-count-7,
+.moment-images-count-8,
+.moment-images-count-9 {
+
+
+    grid-template-columns:
+        repeat(3,minmax(0,1fr));
+
+}
+
+
+
+
+.moment-image-item {
+
+
+    overflow:hidden;
+
+
+    aspect-ratio:1 / 1;
+
+
+    border-radius:8px;
+
+
+    background:#f3f4f6;
+
+}
+
+
+
+.moment-image-item img {
+
+
+    width:100%;
+
+
+    height:100%;
+
+
+    display:block;
+
+
+    object-fit:cover;
+
+}
+
+
+
+.moment-images-count-1
+.moment-image-item {
+
+
+    aspect-ratio:auto;
+
+
+    max-height:520px;
+
+}
+
+
+
+.moment-images-count-1
+.moment-image-item img {
+
+
+    width:auto;
+
+
+    height:auto;
+
+
+    max-width:100%;
+
+
+    max-height:520px;
+
+
+    object-fit:contain;
+
+}
+
+
+
+
+/* =========================================================
+   互动按钮区域
+   ========================================================= */
+
+
+.moment-actions {
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    gap:8px;
+
+
+    margin-top:10px;
+
+
+    padding:
+        10px 24px;
+
+
+    border-top:
+        1px solid #f3f4f6;
+
+}
+
+
+
+.moment-like-form {
+
+    display:inline;
+
+}
+
+
+
+.moment-action-button {
+
+
+    display:inline-flex;
+
+
+    align-items:center;
+
+
+    gap:5px;
+
+
+    padding:
+        6px 10px;
+
+
+    border:none;
+
+
+    border-radius:7px;
+
+
+    background:transparent;
+
+
+    color:
+        var(--color-text-secondary);
+
+
+    font-family:inherit;
+
+
+    font-size:13px;
+
+
+    font-weight:600;
+
+
+    cursor:pointer;
+
+
+    transition:
+        background .2s ease,
+        color .2s ease;
+
+}
+
+
+
+.moment-action-button:hover {
+
+
+    background:#f3f4f6;
+
+
+    color:
+        var(--color-text);
+
+}
+
+
+
+.moment-action-button.is-liked {
+
+
+    color:
+        #e11d48;
+
+}
+
+
+
+.moment-action-count {
+
+
+    color:
+        var(--color-text-muted);
+
+
+    font-size:12px;
+
+}
+
+
+
+
+/* =========================================================
+   点赞列表
+   ========================================================= */
+
+
+.moment-like-list {
+
+
+    display:flex;
+
+
+    gap:7px;
+
+
+    margin:
+        0 24px;
+
+
+    padding:
+        8px 10px;
+
+
+    border-radius:7px;
+
+
+    background:#f8fafc;
+
+
+    color:
+        var(--color-text-secondary);
+
+
+    font-size:13px;
+
+}
+
+
+
+.moment-like-icon {
+
+
+    flex-shrink:0;
+
+}
+
+
+
+.moment-like-name {
+
+
+    color:
+        var(--color-primary);
+
+
+    font-weight:600;
+
+}
+
+
+
+
+
+/* =========================================================
+   评论区域
+   ========================================================= */
+
+
+.moment-comment-list {
+
+
+    margin:
+        8px 24px;
+
+
+    padding:
+        8px 10px;
+
+
+    border-radius:7px;
+
+
+    background:#f8fafc;
+
+}
+
+
+
+.moment-comment {
+
+
+    padding:
+        5px 0;
+
+
+    font-size:13px;
+
+
+    line-height:1.7;
+
+
+    word-break:break-word;
+
+}
+
+
+
+.moment-comment-user {
+
+
+    color:
+        var(--color-text);
+
+
+    font-weight:600;
+
+}
+
+
+
+.moment-comment-content {
+
+
+    margin-left:5px;
+
+
+    color:
+        var(--color-text-secondary);
+
+}
+
+
+
+.moment-comment-time {
+
+
+    margin-top:2px;
+
+
+    color:
+        var(--color-text-muted);
+
+
+    font-size:11px;
+
+}
+
+
+
+
+/* =========================================================
+   评论折叠
+   ========================================================= */
+
+
+.moment-comment-extra {
+
+    display:none;
+
+}
+
+
+.moment-comment-extra.is-expanded {
+
+    display:block;
+
+}
+
+
+
+.moment-comments-more {
+
+
+    margin:
+        6px 24px;
+
+
+    padding:3px 0;
+
+
+    border:none;
+
+
+    background:none;
+
+
+    color:
+        var(--color-primary);
+
+
+    font-size:12px;
+
+
+    font-weight:600;
+
+
+    cursor:pointer;
+
+}
+
+
+
+
+/* =========================================================
+   评论输入
+   ========================================================= */
+
+
+.moment-comment-panel {
+
+
+    display:none;
+
+
+    margin:
+        8px 24px 18px;
+
+
+}
+
+
+
+.moment-comment-panel.is-open {
+
+    display:block;
+
+}
+
+
+
+
+.moment-comment-form {
+
+
+    display:flex;
+
+
+    flex-direction:column;
+
+
+    gap:8px;
+
+}
+
+
+
+.moment-comment-nickname,
+.moment-comment-input {
+
+
+    width:100%;
+
+
+    border:
+        1px solid var(--color-border-input);
+
+
+    border-radius:7px;
+
+
+    background:
+        var(--color-surface);
+
+
+    color:
+        var(--color-text);
+
+
+    outline:none;
+
+
+    font-size:13px;
+
+}
+
+
+
+.moment-comment-nickname {
+
+
+    height:34px;
+
+
+    padding:
+        0 10px;
+
+}
+
+
+
+.moment-comment-input {
+
+
+    min-height:36px;
+
+
+    max-height:120px;
+
+
+    padding:
+        8px 10px;
+
+
+    resize:vertical;
+
+}
+
+
+
+.moment-comment-input:focus,
+.moment-comment-nickname:focus {
+
+
+    border-color:
+        var(--color-primary);
+
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37,99,235,.08);
+
+}
+
+
+
+.moment-comment-input-row {
+
+
+    display:flex;
+
+
+    align-items:flex-end;
+
+
+    gap:8px;
+
+}
+
+
+
+.moment-comment-submit {
+
+
+    height:36px;
+
+
+    padding:
+        0 14px;
+
+
+    border:none;
+
+
+    border-radius:7px;
+
+
+    background:
+        var(--color-primary);
+
+
+    color:white;
+
+
+    font-weight:600;
+
+
+    cursor:pointer;
+
+}
+
+
+
+.moment-comment-submit:hover {
+
+
+    background:
+        var(--color-primary-hover);
+
+}
+
+
+
+
+/* =========================================================
+   移动端
+   ========================================================= */
+
+
+@media(max-width:700px){
+
+
+    .moment-header{
+
+        padding:
+            18px 18px 0;
+
+    }
+
+
+    .moment-content{
+
+        padding:
+            14px 18px;
+
+        font-size:15px;
+
+    }
+
+
+    .moment-images{
+
+        margin:
+            0 18px 10px;
+
+    }
+
+
+    .moment-actions{
+
+        padding:
+            9px 18px;
+
+    }
+
+
+    .moment-comments-more{
+
+        margin-left:18px;
+
+    }
+
+
+    .moment-comment-list{
+
+        margin:
+            8px 18px;
+
+    }
+
+
+    .moment-comment-panel{
+
+        margin:
+            8px 18px 16px;
+
+    }
+
+
+    .moment-comment-input-row{
+
+        flex-direction:column;
+
+        align-items:stretch;
+
+    }
+
+
+    .moment-comment-submit{
+
+        width:100%;
+
+    }
+
+}

@@ -1,0 +1,315 @@
+<article class="moment-card">
+
+    <!-- 用户信息 -->
+    <div class="moment-header">
+
+        <div class="moment-avatar">
+            {{ item.data.nickname[0] }}
+        </div>
+
+        <div class="moment-user-info">
+
+            <div class="moment-user">
+                {{ item.data.nickname }}
+            </div>
+
+            <div class="moment-time">
+                {{ item.data.created_at.strftime("%Y-%m-%d %H:%M") }}
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- 内容 -->
+
+    {% if item.data.content %}
+
+    <div class="moment-content">
+        {{ item.data.content }}
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- 图片 -->
+
+    {% if item.data.images %}
+
+    <div class="moment-images moment-images-count-{{ item.data.images|length }}">
+
+
+        {% for image in item.data.images %}
+
+        <div class="moment-image-item">
+
+            <img
+                src="{{ image.image_path }}"
+                alt="朋友圈图片"
+                loading="lazy"
+                decoding="async"
+            >
+
+        </div>
+
+        {% endfor %}
+
+
+    </div>
+
+    {% endif %}
+
+
+
+    <!-- 操作按钮 -->
+
+    <div class="moment-actions">
+
+
+        <form
+            method="post"
+            action="/moment/{{ item.data.id }}/like"
+            class="moment-like-form"
+        >
+
+            <button
+                type="submit"
+                data-id="{{ item.data.id }}"
+                class="
+                    moment-action-button
+                    {% if item.data.id in liked_moment_ids %}
+                    is-liked
+                    {% endif %}
+                "
+            >
+
+                ❤️
+
+                <span class="moment-action-label">
+
+                    {% if item.data.id in liked_moment_ids %}
+                        已赞
+                    {% else %}
+                        点赞
+                    {% endif %}
+
+                </span>
+
+
+                {% if item.data.likes|length > 0 %}
+
+                <span class="moment-action-count">
+                    {{ item.data.likes|length }}
+                </span>
+
+                {% endif %}
+
+
+            </button>
+
+
+        </form>
+
+
+
+        <button
+            type="button"
+            class="
+                moment-action-button
+                moment-comment-toggle
+            "
+            data-comment-target="moment-comment-panel-{{ item.data.id }}"
+        >
+
+            💬
+
+            <span>
+                评论
+            </span>
+
+
+            {% if item.data.comments|length > 0 %}
+
+            <span class="moment-action-count">
+                {{ item.data.comments|length }}
+            </span>
+
+            {% endif %}
+
+
+        </button>
+
+
+    </div>
+
+
+
+
+    <!-- 点赞列表 -->
+
+    {% if item.data.likes %}
+
+    <div class="moment-like-list">
+
+        ❤️
+
+        {% for like in item.data.likes %}
+
+        <span class="moment-like-name">
+
+            {{ like.nickname }}
+
+        </span>
+
+        {% if not loop.last %}
+        、
+        {% endif %}
+
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+
+
+
+    <!-- 评论列表 -->
+
+    {% if item.data.comments %}
+
+    <div class="moment-comment-list">
+
+
+        {% set sorted_comments =
+            item.data.comments|sort(attribute="created_at")
+        %}
+
+
+
+        {% for comment in sorted_comments[:5] %}
+
+        <div class="moment-comment">
+
+
+            <span class="moment-comment-user">
+                {{ comment.nickname }}
+            </span>
+
+
+            <span class="moment-comment-content">
+                {{ comment.content }}
+            </span>
+
+
+        </div>
+
+
+        {% endfor %}
+
+
+
+        {% if sorted_comments|length > 5 %}
+
+
+        <div
+            class="moment-comment-extra"
+            data-comment-extra
+        >
+
+            {% for comment in sorted_comments[5:] %}
+
+            <div class="moment-comment">
+
+                <span class="moment-comment-user">
+                    {{ comment.nickname }}
+                </span>
+
+
+                <span class="moment-comment-content">
+                    {{ comment.content }}
+                </span>
+
+
+            </div>
+
+            {% endfor %}
+
+
+        </div>
+
+
+        <button
+            type="button"
+            class="moment-comments-more"
+            data-comment-more
+        >
+
+            查看全部 {{ sorted_comments|length }} 条评论
+
+        </button>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+    {% endif %}
+
+
+
+
+    <!-- 评论输入框 -->
+
+
+    <div
+        class="moment-comment-panel"
+        id="moment-comment-panel-{{ item.data.id }}"
+    >
+
+
+        <form
+            method="post"
+            action="/moment/{{ item.data.id }}/comment"
+            class="moment-comment-form"
+        >
+
+
+            <div class="moment-comment-input-row">
+
+
+                <textarea
+                    name="content"
+                    rows="1"
+                    maxlength="1000"
+                    placeholder="说点什么..."
+                    class="moment-comment-input"
+                    required
+                ></textarea>
+
+
+
+                <button
+                    type="submit"
+                    class="moment-comment-submit"
+                >
+                    发送
+                </button>
+
+
+            </div>
+
+
+        </form>
+
+
+    </div>
+
+
+</article>

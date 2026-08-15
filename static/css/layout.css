@@ -1,0 +1,196 @@
+/* =========================================================
+   Tnine Layout CSS
+   Header / Footer / Container
+   ========================================================= */
+
+
+
+/* =========================================================
+   容器
+   ========================================================= */
+
+
+.container {
+
+    width:min(
+        var(--container-width),
+        calc(100% - 40px)
+    );
+
+
+    margin:
+        0 auto;
+
+}
+
+
+
+
+/* =========================================================
+   顶部导航
+   ========================================================= */
+
+
+.site-header {
+
+    position:sticky;
+
+    top:0;
+
+
+    z-index:100;
+
+
+    background:
+
+        rgba(255,255,255,.96);
+
+
+    border-bottom:
+
+        1px solid
+        var(--color-border);
+
+
+    backdrop-filter:
+        blur(10px);
+
+}
+
+
+
+
+.header-inner {
+
+    min-height:70px;
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    justify-content:space-between;
+
+
+    gap:20px;
+
+}
+
+
+
+
+.logo {
+
+    color:
+        var(--color-text);
+
+
+    font-size:24px;
+
+
+    font-weight:700;
+
+
+    line-height:1;
+
+
+}
+
+
+
+
+nav {
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    justify-content:flex-end;
+
+
+    flex-wrap:wrap;
+
+
+    gap:20px;
+
+}
+
+
+
+nav a {
+
+    color:
+        #4b5563;
+
+
+    transition:
+        var(--transition);
+
+}
+
+
+
+nav a:hover {
+
+    color:
+        var(--color-text);
+
+}
+
+
+
+.user-status {
+
+    color:
+        var(--color-text-secondary);
+
+
+    font-size:14px;
+
+
+    font-weight:600;
+
+}
+
+
+
+.login-link {
+
+    color:
+        var(--color-primary);
+
+
+    font-weight:600;
+
+}
+
+
+
+/* =========================================================
+   Footer
+   ========================================================= */
+
+
+.site-footer {
+
+
+    padding:
+
+        50px 20px;
+
+
+    text-align:center;
+
+
+    color:
+
+        var(--color-text-muted);
+
+
+    font-size:14px;
+
+}

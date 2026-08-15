@@ -1,0 +1,330 @@
+/* =========================================================
+   Tnine 弹窗系统
+   ========================================================= */
+
+
+.nickname-modal {
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:9999;
+
+    display:none;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+
+
+.nickname-modal.is-open {
+
+    display:flex;
+
+}
+
+
+
+/*
+    遮罩层
+
+    注意：
+    不使用 blur
+    防止影响弹窗
+*/
+
+.nickname-modal-backdrop {
+
+    position:absolute;
+
+    inset:0;
+
+    z-index:0;
+
+    background:
+        rgba(0,0,0,.45);
+
+}
+
+
+
+/*
+    弹窗主体
+*/
+
+
+.nickname-modal-box {
+
+
+    position:relative;
+
+
+    z-index:1;
+
+
+    width:
+        min(
+            360px,
+            calc(100% - 40px)
+        );
+
+
+    padding:
+        30px;
+
+
+    background:
+        var(--color-surface);
+
+
+    border:
+        1px solid var(--color-border);
+
+
+    border-radius:
+        20px;
+
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.2);
+
+
+    animation:
+        modal-show .2s ease;
+
+}
+
+
+
+@keyframes modal-show {
+
+
+    from {
+
+        opacity:0;
+
+        transform:
+            translateY(10px)
+            scale(.98);
+
+    }
+
+
+    to {
+
+        opacity:1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+}
+
+
+
+/* 标题 */
+
+
+.nickname-modal-box h3 {
+
+
+    margin-top:0;
+
+
+    margin-bottom:8px;
+
+
+    color:
+        var(--color-text);
+
+
+}
+
+
+
+.nickname-modal-description {
+
+
+    color:
+        var(--color-text-secondary);
+
+
+    font-size:13px;
+
+
+    line-height:1.6;
+
+}
+
+
+
+/* 输入 */
+
+
+.nickname-input {
+
+
+    width:100%;
+
+
+    height:40px;
+
+
+    margin-top:15px;
+
+
+    padding:
+        0 12px;
+
+
+    border:
+        1px solid var(--color-border-input);
+
+
+    border-radius:
+        var(--radius-sm);
+
+
+    background:
+        var(--color-surface);
+
+
+    color:
+        var(--color-text);
+
+
+    outline:none;
+
+}
+
+
+
+.nickname-input:focus {
+
+
+    border-color:
+        var(--color-primary);
+
+
+    box-shadow:
+
+        0 0 0 3px
+        rgba(37,99,235,.08);
+
+}
+
+
+
+/* 按钮 */
+
+.nickname-modal-actions {
+
+
+    display:flex;
+
+
+    justify-content:flex-end;
+
+
+    gap:10px;
+
+
+    margin-top:20px;
+
+}
+
+
+
+.nickname-cancel,
+.nickname-confirm {
+
+
+    height:34px;
+
+
+    padding:
+        0 14px;
+
+
+    border-radius:7px;
+
+
+    font-size:13px;
+
+
+    font-weight:600;
+
+
+    cursor:pointer;
+
+}
+
+
+
+.nickname-cancel {
+
+
+    border:
+        1px solid var(--color-border-input);
+
+
+    background:white;
+
+
+    color:
+        var(--color-text-secondary);
+
+}
+
+
+
+.nickname-confirm {
+
+
+    border:none;
+
+
+    background:
+        var(--color-primary);
+
+
+    color:white;
+
+}
+
+
+
+.nickname-confirm:hover {
+
+
+    background:
+        var(--color-primary-hover);
+
+}
+
+
+
+/* 手机 */
+
+@media(max-width:700px){
+
+
+    .nickname-modal-box {
+
+
+        width:
+            calc(100% - 28px);
+
+
+        padding:
+            22px;
+
+    }
+
+}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Tnine
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<main class="container">
+
+
+    <!-- ==============================
+         首页介绍
+         ============================== -->
+
+    <section class="hero">
+
+        <h2>
+            天涯里自会相逢
+        </h2>
+
+
+        <p>
+            只是重逢，就不必了。
+        </p>
+
+    </section>
+
+
+
+
+    <!-- ==============================
+         时间线
+         ============================== -->
+
+    <section class="timeline">
+
+
+        {% for item in timeline %}
+
+
+            {% if item.type == "moment" %}
+
+
+                {% include "components/moment_card.html" %}
+
+
+
+            {% elif item.type == "article" %}
+
+
+                {% include "components/article_card.html" %}
+
+
+
+            {% endif %}
+
+
+
+        {% else %}
+
+
+            <div class="admin-empty">
+
+
+                <p>
+                    目前还没有内容。
+                </p>
+
+
+            </div>
+
+
+        {% endfor %}
+
+
+
+    </section>
+
+
+
+</main>
+
+
+{% endblock %}

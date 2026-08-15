@@ -17,8 +17,17 @@
 
     <link
         rel="stylesheet"
-        href="{{ url_for('static', path='style.css') }}?v=5"
-    >
+        href="{{ url_for('static', path='static/css/style.css') }}?v=5"
+        href="{{ url_for('static', path='static/css/article.css') }}?v=1"
+        href="{{ url_for('static', path='static/css/admin.css') }}"
+        href="{{ url_for('static', path='static/css/editor.css') }}"
+        
+        >
+    <link 
+rel="stylesheet"
+
+>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/editor.css') }}?v=1">
 
     {% block extra_head %}
     {% endblock %}
@@ -161,6 +170,14 @@
 
 
 </div>
+
+<script
+src="{{ url_for('static', path='static/js/main.js') }}",
+src="{{ url_for('static', path='static/js/moment.js') }}"
+`
+>
+
+</script>
 
 </body>
 

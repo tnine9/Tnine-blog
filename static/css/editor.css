@@ -1,0 +1,362 @@
+/* =========================================================
+   Tnine Editor CSS
+   EasyMDE / 编辑器页面
+   ========================================================= */
+
+
+/* =========================================================
+   EasyMDE
+   ========================================================= */
+
+
+.EasyMDEContainer {
+
+    width:100%;
+
+}
+
+
+
+/* 工具栏 */
+
+
+.EasyMDEContainer .editor-toolbar {
+
+
+    position:sticky;
+
+
+    top:80px;
+
+
+    z-index:80;
+
+
+    display:flex;
+
+
+    flex-wrap:wrap;
+
+
+    gap:4px;
+
+
+    padding:
+
+        8px 10px;
+
+
+    background:
+
+        rgba(249,250,251,.96);
+
+
+    border:
+
+        1px solid
+        var(--color-border);
+
+
+    border-radius:
+
+        var(--radius-lg)
+        var(--radius-lg)
+        0
+        0;
+
+
+    backdrop-filter:
+        blur(8px);
+
+}
+
+
+
+.EasyMDEContainer .editor-toolbar button {
+
+
+    width:34px;
+
+
+    height:34px;
+
+
+    border:none;
+
+
+    border-radius:6px;
+
+
+}
+
+
+
+.EasyMDEContainer .editor-toolbar button:hover {
+
+
+    background:#eff6ff;
+
+
+    color:
+        var(--color-primary);
+
+}
+
+
+
+
+/* 编辑区域 */
+
+
+.EasyMDEContainer .CodeMirror {
+
+
+    min-height:420px;
+
+
+    border:
+
+        1px solid
+        var(--color-border);
+
+
+    border-radius:
+
+        0
+        0
+        var(--radius-lg)
+        var(--radius-lg);
+
+
+    font-size:16px;
+
+
+    line-height:1.8;
+
+}
+
+
+
+.EasyMDEContainer .CodeMirror-lines {
+
+
+    padding:20px;
+
+}
+
+
+
+
+/* =========================================================
+   编辑页顶部标题
+   ========================================================= */
+
+
+.editor-sticky-header {
+
+
+    position:sticky;
+
+
+    top:70px;
+
+
+    z-index:90;
+
+
+    padding:
+
+        16px 20px;
+
+
+    margin-bottom:20px;
+
+
+    background:
+
+        rgba(255,255,255,.95);
+
+
+    border:
+
+        1px solid
+        var(--color-border);
+
+
+    border-radius:
+        var(--radius-md);
+
+
+    backdrop-filter:
+        blur(10px);
+
+}
+
+
+
+
+.editor-sticky-title {
+
+
+    width:100%;
+
+
+    border:none;
+
+
+    outline:none;
+
+
+    background:transparent;
+
+
+    font-size:28px;
+
+
+    font-weight:700;
+
+}
+
+
+
+.editor-sticky-summary {
+
+
+    width:100%;
+
+
+    border:none;
+
+
+    background:transparent;
+
+
+    color:
+        var(--color-text-secondary);
+
+}
+
+
+
+
+
+/* =========================================================
+   底部发布栏
+   ========================================================= */
+
+
+.editor-bottom-bar {
+
+
+    position:fixed;
+
+
+    left:0;
+
+
+    right:0;
+
+
+    bottom:0;
+
+
+    z-index:200;
+
+
+    height:52px;
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    justify-content:space-between;
+
+
+    padding:
+
+        0 20px;
+
+
+    background:
+
+        rgba(255,255,255,.96);
+
+
+    border-top:
+
+        1px solid
+        var(--color-border);
+
+
+    backdrop-filter:
+        blur(10px);
+
+}
+
+
+
+.editor-bottom-actions {
+
+
+    display:flex;
+
+
+    gap:14px;
+
+}
+
+
+
+.editor-publish-button {
+
+
+    height:32px;
+
+
+    padding:
+
+        0 16px;
+
+
+    border:none;
+
+
+    border-radius:7px;
+
+
+    background:
+        var(--color-primary);
+
+
+    color:white;
+
+}
+
+
+
+.editor-draft-button {
+
+
+    height:32px;
+
+
+    padding:
+
+        0 16px;
+
+
+    border:
+
+        1px solid
+        var(--color-border-input);
+
+
+    border-radius:7px;
+
+
+    background:white;
+
+}
