@@ -299,19 +299,6 @@ Tnine
         class="moment-comment-form"
     >
 
-        {% if not is_admin %}
-
-        <input
-            type="text"
-            name="nickname"
-            maxlength="50"
-            placeholder="你的昵称"
-            class="moment-comment-nickname"
-        >
-
-        {% endif %}
-
-
         <div class="moment-comment-input-row">
 
             <textarea
@@ -402,92 +389,738 @@ document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-        const buttons =
-            document.querySelectorAll(
-                ".moment-comment-toggle"
+        /* ==================================================
+           昵称弹窗
+           ================================================== */
+
+        const nicknameModal =
+            document.getElementById(
+                "nickname-modal"
+            );
+
+        const nicknameInput =
+            document.getElementById(
+                "nickname-input"
+            );
+
+        const nicknameCancel =
+            document.getElementById(
+                "nickname-cancel"
+            );
+
+        const nicknameConfirm =
+            document.getElementById(
+                "nickname-confirm"
             );
 
 
-        buttons.forEach(
-            function (button) {
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        const targetId =
-                            button.dataset.commentTarget;
+        let pendingAction = null;
 
 
-                        const panel =
-                            document.getElementById(
-                                targetId
-                            );
+        function openNicknameModal(
+            action
+        ) {
+
+            pendingAction = action;
+
+            nicknameInput.value = "";
+
+            nicknameModal.classList.add(
+                "is-open"
+            );
+
+            setTimeout(
+                function () {
+
+                    nicknameInput.focus();
+
+                },
+                50
+            );
+        }
 
 
-                        if (!panel) {
-                            return;
-                        }
+        function closeNicknameModal() {
+
+            nicknameModal.classList.remove(
+                "is-open"
+            );
+
+            pendingAction = null;
+        }
 
 
-                        const isOpen =
-                            panel.classList.contains(
-                                "is-open"
-                            );
+        nicknameCancel.addEventListener(
+            "click",
+            function () {
+
+                closeNicknameModal();
+
+            }
+        );
 
 
-                        /*
-                         * 关闭其它输入框
-                         */
+        nicknameModal
+            .querySelector(
+                ".nickname-modal-backdrop"
+            )
+            .addEventListener(
+                "click",
+                function () {
 
-                        document
-                            .querySelectorAll(
-                                ".moment-comment-panel.is-open"
-                            )
-                            .forEach(
-                                function (item) {
+                    closeNicknameModal();
 
-                                    item.classList.remove(
-                                        "is-open"
-                                    );
-
-                                }
-                            );
+                }
+            );
 
 
-                        /*
-                         * 当前没有打开才展开
-                         */
+        nicknameInput.addEventListener(
+            "keydown",
+            function (event) {
 
-                        if (!isOpen) {
+                if (
+                    event.key === "Enter"
+                    &&
+                    !event.shiftKey
+                ) {
 
-                            panel.classList.add(
-                                "is-open"
-                            );
+                    event.preventDefault();
 
+                    nicknameConfirm.click();
 
-                            const input =
-                                panel.querySelector(
-                                    ".moment-comment-input"
-                                );
-
-
-                            if (input) {
-                                input.focus();
-                            }
-
-                        }
-
-                    }
-                );
+                }
 
             }
         );
 
 
         /*
-         * 超过五条评论时展开 / 收起
+         * 保存昵称后继续刚才的操作
          */
+
+        nicknameConfirm.addEventListener(
+            "click",
+            async function () {
+
+                const nickname =
+                    nicknameInput.value.trim();
+
+
+                /*
+                 * 留空：
+                 * 本次使用匿名访客
+                 */
+
+                if (!nickname) {
+
+                    const action =
+                        pendingAction;
+
+                    closeNicknameModal();
+
+
+                    if (
+                        typeof action ===
+                        "function"
+                    ) {
+
+                        await action(
+                            "匿名访客"
+                        );
+
+                    }
+
+                    return;
+                }
+
+
+                /*
+                 * 输入昵称：
+                 * 保存 Cookie
+                 */
+
+                try {
+
+                    const formData =
+                        new FormData();
+
+                    formData.append(
+                        "nickname",
+                        nickname
+                    );
+
+
+                    const response =
+                        await fetch(
+                            "/nickname",
+                            {
+                                method: "POST",
+                                body: formData,
+                            }
+                        );
+
+
+                    const result =
+                        await response.json();
+
+
+                    if (!result.success) {
+
+                        alert(
+                            "昵称保存失败"
+                        );
+
+                        return;
+                    }
+
+
+                    const action =
+                        pendingAction;
+
+                    closeNicknameModal();
+
+
+                    if (
+                        typeof action ===
+                        "function"
+                    ) {
+
+                        await action();
+
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        error
+                    );
+
+                    alert(
+                        "网络错误，请稍后再试"
+                    );
+
+                }
+
+            }
+        );
+
+
+        /* ==================================================
+           通用：执行需要昵称的操作
+           ================================================== */
+           function handlePendingResult(result) {
+
+    if (!result) {
+        return;
+    }
+
+
+    if (!result.success) {
+
+        alert(
+            result.error || "操作失败"
+        );
+
+        return;
+    }
+
+
+    /*
+     * 点赞结果
+     */
+    if (
+        typeof result.liked !==
+        "undefined"
+    ) {
+
+        const button =
+            document.querySelector(
+                `.moment-like-form button`
+            );
+
+
+        if (button) {
+
+            const label =
+                button.querySelector(
+                    ".moment-action-label"
+                );
+
+
+            if (result.liked) {
+
+                button.classList.add(
+                    "is-liked"
+                );
+
+
+                if (label) {
+
+                    label.textContent =
+                        "已赞";
+                }
+
+            } else {
+
+                button.classList.remove(
+                    "is-liked"
+                );
+
+
+                if (label) {
+
+                    label.textContent =
+                        "点赞";
+                }
+
+            }
+        }
+
+
+        /*
+         * 点赞完成后直接刷新
+         *
+         * 这样所有朋友圈的点赞名单、
+         * 数量和状态都会保持一致。
+         */
+        window.location.reload();
+
+        return;
+    }
+
+
+    /*
+     * 评论结果
+     */
+    if (
+        typeof result.comment_count !==
+        "undefined"
+    ) {
+
+        window.location.reload();
+
+        return;
+    }
+}
+
+
+
+        /* ==================================================
+           点赞
+           ================================================== */
+
+        document
+            .querySelectorAll(
+                ".moment-like-form"
+            )
+            .forEach(
+                function (form) {
+
+                    form.addEventListener(
+                        "submit",
+                        async function (event) {
+
+                            event.preventDefault();
+
+
+                            const button =
+                                form.querySelector(
+                                    ".moment-action-button"
+                                );
+
+
+                            const count =
+                                button.querySelector(
+                                    ".moment-action-count"
+                                );
+
+
+                            const action =
+                                async function (
+                                    nickname = null
+                                ) {
+
+                                    const formData =
+                                        new FormData();
+
+
+                                    if (
+                                        nickname
+                                    ) {
+
+                                        formData.append(
+                                            "nickname",
+                                            nickname
+                                        );
+
+                                    }
+
+
+                                    return fetch(
+                                        form.action,
+                                        {
+                                            method: "POST",
+                                            body: formData,
+                                        }
+                                    );
+
+                                };
+
+const response =
+    await executeWithNickname(action);
+
+
+if (!response) {
+    return;
+}
+
+
+const result =
+    await response.json();
+
+
+if (!result.success) {
+
+    alert(
+        result.error ||
+        "评论失败"
+    );
+
+    return;
+}
+
+
+window.location.reload();
+
+         
+
+
+                        window.location.reload();
+
+
+
+                            /*
+                             * 已赞 / 取消
+                             */
+
+                            if (result.liked) {
+
+                                button.classList.add(
+                                    "is-liked"
+                                );
+
+                                button
+                                    .querySelector(
+                                        "span"
+                                    )
+                                    .textContent =
+                                    "已赞";
+
+                            } else {
+
+                                button.classList.remove(
+                                    "is-liked"
+                                );
+
+                                button
+                                    .querySelector(
+                                        "span"
+                                    )
+                                    .textContent =
+                                    "点赞";
+
+                            }
+
+
+                            /*
+                             * 数量
+                             */
+
+                            let countElement =
+                                button.querySelector(
+                                    ".moment-action-count"
+                                );
+
+
+                            if (
+                                result.like_count >
+                                0
+                            ) {
+
+                                if (!countElement) {
+
+                                    countElement =
+                                        document.createElement(
+                                            "span"
+                                        );
+
+                                    countElement.className =
+                                        "moment-action-count";
+
+                                    button.appendChild(
+                                        countElement
+                                    );
+
+                                }
+
+
+                                countElement.textContent =
+                                    result.like_count;
+
+                            } else if (
+                                countElement
+                            ) {
+
+                                countElement.remove();
+
+                            }
+
+
+                            /*
+                             * 刷新页面上的点赞名单
+                             *
+                             * 这部分先保持简单，
+                             * 下次刷新页面会得到最新名单。
+                             */
+
+                        }
+                    );
+
+                }
+            );
+
+
+        /* ==================================================
+           评论输入框
+           ================================================== */
+
+        document
+            .querySelectorAll(
+                ".moment-comment-toggle"
+            )
+            .forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            const targetId =
+                                button.dataset.commentTarget;
+
+
+                            const panel =
+                                document.getElementById(
+                                    targetId
+                                );
+
+
+                            if (!panel) {
+
+                                return;
+
+                            }
+
+
+                            const isOpen =
+                                panel.classList.contains(
+                                    "is-open"
+                                );
+
+
+                            document
+                                .querySelectorAll(
+                                    ".moment-comment-panel.is-open"
+                                )
+                                .forEach(
+                                    function (item) {
+
+                                        item.classList.remove(
+                                            "is-open"
+                                        );
+
+                                    }
+                                );
+
+
+                            if (!isOpen) {
+
+                                panel.classList.add(
+                                    "is-open"
+                                );
+
+
+                                const input =
+                                    panel.querySelector(
+                                        ".moment-comment-input"
+                                    );
+
+
+                                if (input) {
+
+                                    input.focus();
+
+                                }
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+        /* ==================================================
+           提交评论
+           ================================================== */
+
+        document
+            .querySelectorAll(
+                ".moment-comment-form"
+            )
+            .forEach(
+                function (form) {
+
+                    form.addEventListener(
+                        "submit",
+                        async function (event) {
+
+                            event.preventDefault();
+
+
+                            const input =
+                                form.querySelector(
+                                    ".moment-comment-input"
+                                );
+
+
+                            const content =
+                                input.value.trim();
+
+
+                            if (!content) {
+
+                                return;
+
+                            }
+
+
+                            const button =
+                                form.querySelector(
+                                    ".moment-comment-submit"
+                                );
+
+
+                            button.disabled = true;
+
+
+                            const action =
+                                async function (
+                                    nickname = null
+                                ) {
+
+                                    const formData =
+                                        new FormData();
+
+
+                                    formData.append(
+                                        "content",
+                                        content
+                                    );
+
+
+                                    if (
+                                        nickname
+                                    ) {
+
+                                        formData.append(
+                                            "nickname",
+                                            nickname
+                                        );
+
+                                    }
+
+
+                                    return fetch(
+                                        form.action,
+                                        {
+                                            method: "POST",
+                                            body: formData,
+                                        }
+                                    );
+
+                                };
+
+
+                            try {
+
+                                const response =
+                                    await executeWithNickname(
+                                        action
+                                    );
+
+
+                                if (
+                                    response.status ===
+                                    401
+                                ) {
+
+                                    return;
+
+                                }
+
+
+                                const result =
+                                    await response.json();
+
+
+                                if (!result.success) {
+
+                                    alert(
+                                        result.error
+                                        ||
+                                        "评论失败"
+                                    );
+
+                                    return;
+
+                                }
+
+
+                                /*
+                                 * 最简单可靠：
+                                 * 评论成功后刷新页面
+                                 */
+
+                                window.location.reload();
+
+                            } catch (error) {
+
+                                console.error(
+                                    error
+                                );
+
+                                alert(
+                                    "网络错误，请稍后再试"
+                                );
+
+                            } finally {
+
+                                button.disabled = false;
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+        /* ==================================================
+           五条评论展开 / 收起
+           ================================================== */
 
         document
             .querySelectorAll(
@@ -506,6 +1139,13 @@ document.addEventListener(
                                 );
 
 
+                            if (!list) {
+
+                                return;
+
+                            }
+
+
                             const extra =
                                 list.querySelector(
                                     "[data-comment-extra]"
@@ -513,7 +1153,9 @@ document.addEventListener(
 
 
                             if (!extra) {
+
                                 return;
+
                             }
 
 

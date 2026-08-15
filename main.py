@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -80,6 +80,76 @@ def get_common_context(request: Request):
             "admin_username"
         ),
     }
+
+
+# ============================================================
+# 访客昵称
+# ============================================================
+
+VISITOR_NICKNAME_COOKIE = "tnine_nickname"
+
+ANONYMOUS_GUEST_NAME = "匿名访客"
+
+
+def get_visitor_nickname(request: Request):
+    """
+    获取游客昵称 Cookie。
+
+    返回：
+    - 有昵称：昵称
+    - 没有：None
+    """
+
+    return request.cookies.get(
+        VISITOR_NICKNAME_COOKIE
+    )
+
+
+def get_actor_name(
+    request: Request,
+    fallback_nickname: str | None = None,
+):
+    """
+    获取当前互动用户名称。
+
+    管理员：
+        使用管理员账号
+
+    游客：
+        优先使用本次操作传入的昵称
+        没有则使用 Cookie
+        都没有则返回 None
+    """
+
+    # 管理员
+    if is_admin(request):
+
+        return request.session.get(
+            "admin_username"
+        )
+
+
+    # 本次操作明确指定昵称
+    if fallback_nickname is not None:
+
+        nickname = fallback_nickname.strip()
+
+        if nickname:
+
+            return nickname[:50]
+
+        return None
+
+
+    # Cookie
+    nickname = get_visitor_nickname(request)
+
+    if nickname:
+
+        return nickname.strip()[:50]
+
+
+    return None
 
 
 # ============================================================
@@ -1117,19 +1187,72 @@ def create_moment(
 
         db.close()
 
-print("========== 当前路由 ==========")
 
-for route in app.routes:
-    print(route.path)
+# ============================================================
+# PUBLIC：保存访客昵称
+# ============================================================
+
+@app.post("/nickname")
+def save_visitor_nickname(
+    request: Request,
+    nickname: str = Form(""),
+):
+    """
+    保存游客昵称。
+
+    输入昵称：
+        保存 180 天 Cookie
+
+    留空：
+        删除昵称 Cookie
+    """
+
+    nickname = nickname.strip()[:50]
+
+
+    response = JSONResponse(
+        {
+            "success": True,
+            "nickname": nickname,
+        }
+    )
+
+
+    # 有昵称
+    if nickname:
+
+        response.set_cookie(
+            key=VISITOR_NICKNAME_COOKIE,
+            value=nickname,
+            max_age=60 * 60 * 24 * 180,
+            httponly=True,
+            samesite="lax",
+            path="/",
+        )
+
+    else:
+
+        response.delete_cookie(
+            key=VISITOR_NICKNAME_COOKIE,
+            path="/",
+        )
+
+
+    return response
 
 # ============================================================
 # PUBLIC：朋友圈点赞
+# ============================================================
+
+# ============================================================
+# PUBLIC：朋友圈点赞 / 取消点赞
 # ============================================================
 
 @app.post("/moment/{moment_id}/like")
 def like_moment(
     request: Request,
     moment_id: int,
+    nickname: str | None = Form(None),
 ):
     db = SessionLocal()
 
@@ -1143,47 +1266,107 @@ def like_moment(
             .first()
         )
 
+
         if moment is None:
-            return RedirectResponse(
-                url="/",
-                status_code=303,
+
+            return JSONResponse(
+                {
+                    "success": False,
+                    "error": "朋友圈不存在",
+                },
+                status_code=404,
             )
 
-        liked_moments = request.session.get(
-            "liked_moment_ids",
-            []
+
+        # ====================================================
+        # 获取当前身份
+        # ====================================================
+
+        actor_name = get_actor_name(
+            request,
+            nickname,
         )
 
-        # 已经点过就不重复增加
-        if moment_id not in liked_moments:
 
-            nickname = request.session.get(
-                "admin_username",
-                "匿名用户"
+        # 没有昵称
+        if not actor_name:
+
+            return JSONResponse(
+                {
+                    "success": False,
+                    "nickname_required": True,
+                },
+                status_code=401,
             )
 
+
+        # ====================================================
+        # 查询当前昵称是否已经点赞
+        # ====================================================
+
+        existing_like = (
+            db.query(MomentLike)
+            .filter(
+                MomentLike.moment_id == moment_id,
+                MomentLike.nickname == actor_name,
+            )
+            .first()
+        )
+
+
+        # ====================================================
+        # 已点赞 → 取消
+        # ====================================================
+
+        if existing_like:
+
+            db.delete(existing_like)
+
+            liked = False
+
+
+        # ====================================================
+        # 未点赞 → 新增
+        # ====================================================
+
+        else:
+
             like = MomentLike(
-                moment_id=moment.id,
-                nickname=nickname,
+                moment_id=moment_id,
+                nickname=actor_name,
             )
 
             db.add(like)
 
-            db.commit()
+            liked = True
 
-            liked_moments.append(moment_id)
 
-            # 防止 session 无限变大
-            request.session["liked_moment_ids"] = (
-                liked_moments[-100:]
+        db.commit()
+
+
+        # ====================================================
+        # 重新统计
+        # ====================================================
+
+        like_count = (
+            db.query(MomentLike)
+            .filter(
+                MomentLike.moment_id == moment_id
             )
-
-        return RedirectResponse(
-            url="/",
-            status_code=303,
+            .count()
         )
 
+
+        return {
+            "success": True,
+            "liked": liked,
+            "like_count": like_count,
+            "nickname": actor_name,
+        }
+
+
     finally:
+
         db.close()
 
 
@@ -1196,7 +1379,7 @@ def comment_moment(
     request: Request,
     moment_id: int,
     content: str = Form(...),
-    nickname: str = Form("匿名用户"),
+    nickname: str | None = Form(None),
 ):
     db = SessionLocal()
 
@@ -1210,46 +1393,99 @@ def comment_moment(
             .first()
         )
 
+
         if moment is None:
-            return RedirectResponse(
-                url="/",
-                status_code=303,
+
+            return JSONResponse(
+                {
+                    "success": False,
+                    "error": "朋友圈不存在",
+                },
+                status_code=404,
             )
+
 
         content = content.strip()
 
+
         if not content:
-            return RedirectResponse(
-                url="/",
-                status_code=303,
+
+            return JSONResponse(
+                {
+                    "success": False,
+                    "error": "评论内容不能为空",
+                },
+                status_code=400,
             )
 
-        # 登录用户直接使用登录名
-        if is_admin(request):
-            nickname = request.session.get(
-                "admin_username",
-                "管理员"
-            )
-        else:
-            nickname = nickname.strip()[:50]
 
-            if not nickname:
-                nickname = "匿名用户"
+        if len(content) > 1000:
+
+            return JSONResponse(
+                {
+                    "success": False,
+                    "error": "评论不能超过 1000 个字符",
+                },
+                status_code=400,
+            )
+
+
+        # ====================================================
+        # 获取当前身份
+        # ====================================================
+
+        actor_name = get_actor_name(
+            request,
+            nickname,
+        )
+
+
+        if not actor_name:
+
+            return JSONResponse(
+                {
+                    "success": False,
+                    "nickname_required": True,
+                },
+                status_code=401,
+            )
+
+
+        # ====================================================
+        # 保存评论
+        # ====================================================
 
         comment = MomentComment(
             moment_id=moment.id,
-            nickname=nickname,
-            content=content[:1000],
+            nickname=actor_name,
+            content=content,
         )
+
 
         db.add(comment)
 
         db.commit()
 
-        return RedirectResponse(
-            url="/",
-            status_code=303,
+        db.refresh(comment)
+
+
+        comment_count = (
+            db.query(MomentComment)
+            .filter(
+                MomentComment.moment_id == moment_id
+            )
+            .count()
         )
 
+
+        return {
+            "success": True,
+            "nickname": actor_name,
+            "content": comment.content,
+            "comment_count": comment_count,
+        }
+
+
     finally:
+
         db.close()
