@@ -44,7 +44,9 @@ Tnine
 
         <article class="moment-card">
 
-            <!-- 顶部：头像 + 昵称 -->
+            <!-- ==============================
+                 用户信息
+                 ============================== -->
 
             <div class="moment-header">
 
@@ -67,7 +69,9 @@ Tnine
             </div>
 
 
-            <!-- 朋友圈正文 -->
+            <!-- ==============================
+                 朋友圈正文
+                 ============================== -->
 
             {% if item.data.content %}
 
@@ -78,9 +82,9 @@ Tnine
             {% endif %}
 
 
-            <!-- ==================================================
+            <!-- ==============================
                  图片
-                 ================================================== -->
+                 ============================== -->
 
             {% if item.data.images %}
 
@@ -106,16 +110,13 @@ Tnine
 
             {% endif %}
 
-
-            <!-- ==================================================
-                 底部操作
-                 ================================================== -->
-
-            <!-- ==================================================
-     点赞 / 评论
+<!-- ==================================================
+     朋友圈互动区域
      ================================================== -->
 
 <div class="moment-actions">
+
+    <!-- 点赞按钮 -->
 
     <form
         method="post"
@@ -132,6 +133,7 @@ Tnine
                 {% endif %}
             "
         >
+
             ❤️
 
             <span>
@@ -142,121 +144,198 @@ Tnine
                 {% endif %}
             </span>
 
+            {% if item.data.likes|length > 0 %}
+
             <span class="moment-action-count">
                 {{ item.data.likes|length }}
             </span>
+
+            {% endif %}
 
         </button>
 
     </form>
 
 
-    <a
-        href="#moment-comments-{{ item.data.id }}"
-        class="moment-action-button"
+    <!-- 评论按钮 -->
+
+    <button
+        type="button"
+        class="moment-action-button moment-comment-toggle"
+        data-comment-target="moment-comment-panel-{{ item.data.id }}"
     >
+
         💬
-        <span>评论</span>
+
+        <span>
+            评论
+        </span>
+
+        {% if item.data.comments|length > 0 %}
 
         <span class="moment-action-count">
             {{ item.data.comments|length }}
         </span>
-    </a>
+
+        {% endif %}
+
+    </button>
 
 </div>
 
 
 <!-- ==================================================
-     评论区
+     点赞列表
      ================================================== -->
 
-<details
-    class="moment-comments"
-    id="moment-comments-{{ item.data.id }}"
+{% if item.data.likes %}
+
+<div class="moment-like-list">
+
+    <span class="moment-like-icon">
+        ❤️
+    </span>
+
+    <span class="moment-like-names">
+
+        {% for like in item.data.likes %}
+
+        <span class="moment-like-name">
+            {{ like.nickname }}
+        </span>{% if not loop.last %}、{% endif %}
+
+        {% endfor %}
+
+    </span>
+
+</div>
+
+{% endif %}
+
+
+<!-- ==================================================
+     评论列表
+     ================================================== -->
+
+{% if item.data.comments %}
+
+<div class="moment-comment-list">
+
+    {% set sorted_comments =
+        item.data.comments|sort(attribute="created_at")
+    %}
+
+    {% for comment in sorted_comments[:5] %}
+
+    <div class="moment-comment">
+
+        <span class="moment-comment-user">
+            {{ comment.nickname }}
+        </span>
+
+        <span class="moment-comment-content">
+            {{ comment.content }}
+        </span>
+
+    </div>
+
+    {% endfor %}
+
+
+    {% if sorted_comments|length > 5 %}
+
+    <div
+        class="moment-comment-extra"
+        data-comment-extra
+    >
+
+        {% for comment in sorted_comments[5:] %}
+
+        <div class="moment-comment">
+
+            <span class="moment-comment-user">
+                {{ comment.nickname }}
+            </span>
+
+            <span class="moment-comment-content">
+                {{ comment.content }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    <button
+        type="button"
+        class="moment-comments-more"
+        data-comment-more
+    >
+        查看全部 {{ sorted_comments|length }} 条评论
+    </button>
+
+    {% endif %}
+
+</div>
+
+{% endif %}
+
+
+<!-- ==================================================
+     评论输入区域
+     默认隐藏
+     ================================================== -->
+
+<div
+    class="moment-comment-panel"
+    id="moment-comment-panel-{{ item.data.id }}"
 >
 
-    <summary>
-        查看评论
-    </summary>
+    <form
+        method="post"
+        action="/moment/{{ item.data.id }}/comment"
+        class="moment-comment-form"
+    >
 
+        {% if not is_admin %}
 
-    <div class="moment-comments-body">
-
-        {% if item.data.comments %}
-
-            <div class="moment-comment-list">
-
-                {% for comment in item.data.comments|sort(attribute="created_at") %}
-
-                <div class="moment-comment">
-
-                    <span class="moment-comment-user">
-                        {{ comment.nickname }}
-                    </span>
-
-                    <span class="moment-comment-content">
-                        {{ comment.content }}
-                    </span>
-
-                    <div class="moment-comment-time">
-                        {{ comment.created_at.strftime("%Y-%m-%d %H:%M") }}
-                    </div>
-
-                </div>
-
-                {% endfor %}
-
-            </div>
-
-        {% else %}
-
-            <div class="moment-comments-empty">
-                还没有评论，来说点什么吧。
-            </div>
+        <input
+            type="text"
+            name="nickname"
+            maxlength="50"
+            placeholder="你的昵称"
+            class="moment-comment-nickname"
+        >
 
         {% endif %}
 
 
-        <!-- 评论表单 -->
-
-        <form
-            method="post"
-            action="/moment/{{ item.data.id }}/comment"
-            class="moment-comment-form"
-        >
-
-            {% if not is_admin %}
-
-            <input
-                type="text"
-                name="nickname"
-                maxlength="50"
-                placeholder="你的昵称"
-            >
-
-            {% endif %}
-
+        <div class="moment-comment-input-row">
 
             <textarea
                 name="content"
-                rows="3"
+                rows="1"
                 maxlength="1000"
                 placeholder="说点什么..."
+                class="moment-comment-input"
                 required
             ></textarea>
 
 
-            <button type="submit">
-                发表评论
+            <button
+                type="submit"
+                class="moment-comment-submit"
+            >
+                发送
             </button>
 
-        </form>
+        </div>
 
-    </div>
+    </form>
 
-</details>
-
-
+</div>
         <!-- ==================================================
              博客文章
              ================================================== -->
@@ -311,5 +390,166 @@ Tnine
     </section>
 
 </main>
+
+
+<!-- =========================================================
+     评论区域交互
+     ========================================================= -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const buttons =
+            document.querySelectorAll(
+                ".moment-comment-toggle"
+            );
+
+
+        buttons.forEach(
+            function (button) {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        const targetId =
+                            button.dataset.commentTarget;
+
+
+                        const panel =
+                            document.getElementById(
+                                targetId
+                            );
+
+
+                        if (!panel) {
+                            return;
+                        }
+
+
+                        const isOpen =
+                            panel.classList.contains(
+                                "is-open"
+                            );
+
+
+                        /*
+                         * 关闭其它输入框
+                         */
+
+                        document
+                            .querySelectorAll(
+                                ".moment-comment-panel.is-open"
+                            )
+                            .forEach(
+                                function (item) {
+
+                                    item.classList.remove(
+                                        "is-open"
+                                    );
+
+                                }
+                            );
+
+
+                        /*
+                         * 当前没有打开才展开
+                         */
+
+                        if (!isOpen) {
+
+                            panel.classList.add(
+                                "is-open"
+                            );
+
+
+                            const input =
+                                panel.querySelector(
+                                    ".moment-comment-input"
+                                );
+
+
+                            if (input) {
+                                input.focus();
+                            }
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+
+        /*
+         * 超过五条评论时展开 / 收起
+         */
+
+        document
+            .querySelectorAll(
+                "[data-comment-more]"
+            )
+            .forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            const list =
+                                button.closest(
+                                    ".moment-comment-list"
+                                );
+
+
+                            const extra =
+                                list.querySelector(
+                                    "[data-comment-extra]"
+                                );
+
+
+                            if (!extra) {
+                                return;
+                            }
+
+
+                            const expanded =
+                                extra.classList.toggle(
+                                    "is-expanded"
+                                );
+
+
+                            if (expanded) {
+
+                                button.textContent =
+                                    "收起评论";
+
+                            } else {
+
+                                const total =
+                                    list.querySelectorAll(
+                                        ".moment-comment"
+                                    ).length;
+
+                                button.textContent =
+                                    `查看全部 ${total} 条评论`;
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+    }
+);
+
+</script>
+
 
 {% endblock %}
