@@ -6,6 +6,7 @@ from sqlalchemy import (
     String,
     Text,
     DateTime,
+    Boolean,
     ForeignKey,
 )
 
@@ -54,6 +55,14 @@ class Article(Base):
     )
 
 
+    # 浏览次数
+    views = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+
     created_at = Column(
         DateTime,
         default=datetime.now
@@ -64,6 +73,126 @@ class Article(Base):
         DateTime,
         default=datetime.now,
         onupdate=datetime.now
+    )
+
+
+    # 点赞
+    likes = relationship(
+        "ArticleLike",
+        back_populates="article",
+        cascade="all, delete"
+    )
+
+
+    # 评论
+    comments = relationship(
+        "ArticleComment",
+        back_populates="article",
+        cascade="all, delete"
+    )
+
+
+    @property
+    def like_count(self):
+        return len(self.likes)
+
+
+    @property
+    def comment_count(self):
+        return len(self.comments)
+
+
+
+# ===========================
+# 文章点赞
+# ===========================
+
+class ArticleLike(Base):
+
+    __tablename__ = "article_likes"
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    article_id = Column(
+        Integer,
+        ForeignKey(
+            "articles.id",
+            ondelete="CASCADE"
+        ),
+        nullable=False
+    )
+
+
+    nickname = Column(
+        String(50),
+        default="匿名用户"
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )
+
+
+    article = relationship(
+        "Article",
+        back_populates="likes"
+    )
+
+
+
+# ===========================
+# 文章评论
+# ===========================
+
+class ArticleComment(Base):
+
+    __tablename__ = "article_comments"
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    article_id = Column(
+        Integer,
+        ForeignKey(
+            "articles.id",
+            ondelete="CASCADE"
+        ),
+        nullable=False
+    )
+
+
+    nickname = Column(
+        String(50),
+        default="匿名用户"
+    )
+
+
+    content = Column(
+        Text,
+        nullable=False
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )
+
+
+    article = relationship(
+        "Article",
+        back_populates="comments"
     )
 
 
@@ -154,6 +283,16 @@ class Moment(Base):
     )
 
 
+    @property
+    def like_count(self):
+        return len(self.likes)
+
+
+    @property
+    def comment_count(self):
+        return len(self.comments)
+
+
 
 # ===========================
 # 朋友圈图片
@@ -200,7 +339,7 @@ class MomentImage(Base):
 
 
 # ===========================
-# 点赞
+# 朋友圈点赞
 # ===========================
 
 class MomentLike(Base):
@@ -244,7 +383,7 @@ class MomentLike(Base):
 
 
 # ===========================
-# 评论
+# 朋友圈评论
 # ===========================
 
 class MomentComment(Base):
@@ -291,6 +430,8 @@ class MomentComment(Base):
         back_populates="comments"
     )
 
+
+
 # ===========================
 # 留言
 # ===========================
@@ -318,7 +459,50 @@ class Message(Base):
     )
 
 
+    # 是否私密（仅管理员可见）
+    is_private = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+
+    # 发布者标识（访客 cookie 中的访客 ID）
+    # 用于识别"发布者本人"以允许其回复
+    visitor_id = Column(
+        String(64),
+        default=""
+    )
+
+
+    # 回复父留言 ID（NULL 表示顶层留言）
+    parent_id = Column(
+        Integer,
+        ForeignKey(
+            "message.id",
+            ondelete="CASCADE"
+        ),
+        nullable=True
+    )
+
+
     created_at = Column(
         DateTime,
         default=datetime.now
+    )
+
+
+    # 该留言下的回复
+    replies = relationship(
+        "Message",
+        back_populates="parent",
+        cascade="all, delete",
+        order_by="Message.created_at"
+    )
+
+
+    parent = relationship(
+        "Message",
+        back_populates="replies",
+        remote_side=[id]
     )

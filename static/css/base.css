@@ -233,7 +233,7 @@ textarea {
 .btn-danger {
 
     background:
-        #fef2f2;
+        var(--color-danger-soft);
 
 
     color:
@@ -241,7 +241,7 @@ textarea {
 
 
     border:
-        1px solid #fecaca;
+        1px solid rgba(225,29,72,.25);
 
 }
 
@@ -250,7 +250,7 @@ textarea {
 .btn-danger:hover {
 
     background:
-        #fee2e2;
+        rgba(225,29,72,.14);
 
 }
 
@@ -306,7 +306,7 @@ textarea {
 
     background:
 
-        rgba(255,255,255,.7);
+        var(--color-surface);
 
 
 
@@ -334,7 +334,7 @@ textarea {
     box-shadow:
 
         0 0 0 3px
-        rgba(37,99,235,.1);
+        var(--color-focus-ring);
 
 }
 

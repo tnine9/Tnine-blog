@@ -15,7 +15,7 @@
 
 
     <div
-        class="nickname-modal-content"
+        class="nickname-modal-box"
     >
 
 
@@ -24,9 +24,15 @@
         </h3>
 
 
+        <p class="nickname-modal-description">
+            参与点赞或评论需要先留下昵称
+        </p>
+
+
 
         <input
             type="text"
+            class="nickname-input"
             id="nickname-input"
             maxlength="20"
             placeholder="请输入昵称"
@@ -40,6 +46,7 @@
 
             <button
                 type="button"
+                class="nickname-cancel"
                 id="nickname-cancel"
             >
                 取消
@@ -49,6 +56,7 @@
 
             <button
                 type="button"
+                class="nickname-confirm"
                 id="nickname-confirm"
             >
                 确认

@@ -1,13 +1,9 @@
 {% extends "base.html" %}
 
 
-
 {% block title %}
-
 朋友圈 - Tnine
-
 {% endblock %}
-
 
 
 
@@ -16,154 +12,125 @@
 
 
 
-<header class="section-header">
-
-
-<div class="section-header-top">
+<div class="container">
 
 
 
-<h1 class="section-title">
+    <!-- 页面标题 -->
 
-朋友圈
+    <section class="hero moments-hero">
 
-</h1>
+        <h2>
+            朋友圈
+        </h2>
+
+        <p>
+            一些日常，一些碎片。
+        </p>
+
+    </section>
 
 
 
+
+    <!-- 动态列表 -->
+
+    <section class="moment-stream">
+
+
+
+        {% for moment in moments %}
+
+
+
+        {% set item = {"type": "moment", "data": moment} %}
+
+
+
+        {% include "components/moment_card.html" %}
+
+
+
+        {% else %}
+
+
+
+        <!-- 空状态 -->
+
+        <div class="empty-state">
+
+            <div class="empty-state-title">
+
+                这里还没有动态
+
+            </div>
+
+            <div class="empty-state-text">
+
+                第一条朋友圈，等待你的记录
+
+            </div>
+
+        </div>
+
+
+
+        {% endfor %}
+
+
+
+    </section>
+
+
+
+</div>
+
+
+
+<!-- 发朋友圈浮动按钮 -->
 
 {% if is_admin %}
 
-
-<a
-href="/admin/moment/new"
-class="action-button"
+<button
+    type="button"
+    class="moment-fab"
+    id="momentCreateFab"
+    title="发朋友圈"
 >
 
-＋ 发布动态
+    ＋
 
-</a>
-
+</button>
 
 {% endif %}
 
 
 
-</div>
+<script>
 
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
+        const fab = document.getElementById("momentCreateFab");
 
-<p class="text-secondary">
+        if (fab) {
 
-记录一些生活碎片
+            fab.addEventListener(
+                "click",
+                function () {
 
-</p>
+                    window.location.href = "/admin/moment/new";
 
+                }
+            );
 
+        }
 
-</header>
+    }
+);
 
-
-
-
-
-<div class="moment-page-list">
-
-
-
-{% for moment in moments %}
-
-
-
-<article class="content-card">
-
-
-
-    <div class="moment-header">
-
-
-        <strong>
-
-            {{ moment.nickname }}
-
-        </strong>
-
-
-
-        <span>
-
-            {{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
-
-        </span>
-
-
-    </div>
-
-
-
-
-
-    <div class="moment-content">
-
-
-        {{ moment.content }}
-
-
-    </div>
-
-
-
-</article>
-
-
-
-
-
-{% else %}
-
-
-
-
-
-<div class="empty-state">
-
-
-    <div class="empty-state-title">
-
-        还没有动态
-
-    </div>
-
-
-
-    <div class="empty-state-text">
-
-        暂时没有发布任何朋友圈
-
-    </div>
-
-
-</div>
-
-
-
-
-
-{% endfor %}
-
-
-
-
-
-</div>
-
-
-
-
-
-</section>
-
-
+</script>
 
 
 

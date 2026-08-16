@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+留言详情 - Tnine
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="container detail-page">
+
+
+    <header class="detail-page-head">
+
+        <a href="/messages" class="detail-back">
+
+            ← 返回留言
+
+        </a>
+
+    </header>
+
+
+
+    <!-- 页面标题区 -->
+
+    <div class="detail-title-area">
+
+        <h1 class="detail-title">
+
+            留言详情
+
+        </h1>
+
+        <p class="detail-subtitle">
+
+            {{ message.nickname }} 留言于 {{ message.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+        </p>
+
+    </div>
+
+
+
+    <!-- 留言详情卡片 -->
+
+    <article class="content-card message-card message-detail-card">
+
+
+        <div class="detail-card-header">
+
+            <div class="detail-author">
+
+                <span class="detail-avatar">
+
+                    {{ (message.nickname or "匿")[0] }}
+
+                </span>
+
+                <div>
+
+                    <div class="detail-author-name">
+
+                        {{ message.nickname }}
+
+                        {% if message.is_private %}
+
+                        <span class="message-private-badge">
+
+                            🔒 私密
+
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+                    <div class="detail-author-time">
+
+                        {{ message.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {% if is_admin %}
+
+            <div class="detail-card-actions">
+
+                <form
+                    method="post"
+                    action="/admin/message/{{ message.id }}/delete"
+                    class="detail-delete-form"
+                    onsubmit="return confirm('确定删除这条留言吗？其回复将一并删除。');"
+                >
+
+                    <button
+                        type="submit"
+                        class="detail-delete-button"
+                    >
+
+                        🗑️ 删除
+
+                    </button>
+
+                </form>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+
+        <div class="message-content">
+
+            {{ message.content }}
+
+        </div>
+
+
+        <!-- 交互区（卡片底部） -->
+
+        <section class="detail-interactions">
+
+        <!-- 统计行 -->
+
+        <div class="detail-stats">
+
+            <span class="detail-stat">
+
+                <span>💬</span>
+
+                <strong>{{ message.replies|length }}</strong>
+
+                回复
+
+            </span>
+
+        </div>
+
+
+        <!-- 回复入口（仅发布者或管理员） -->
+
+        {% if is_admin or
+            (message.visitor_id and
+             message.visitor_id == visitor_id) %}
+
+        <div class="message-reply-form-wrap">
+
+            <form
+                method="post"
+                action="/message/{{ message.id }}/reply"
+                class="message-reply-form"
+            >
+
+                <textarea
+                    name="content"
+                    rows="2"
+                    maxlength="1000"
+                    placeholder="回复这条留言..."
+                    class="message-reply-input"
+                    required
+                ></textarea>
+
+                <div class="message-reply-actions">
+
+                    <button
+                        type="submit"
+                        class="message-reply-submit"
+                    >
+
+                        回复
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+        {% endif %}
+
+
+
+        <!-- 全部回复 -->
+
+        <div class="message-reply-list">
+
+            {% set sorted_replies =
+                message.replies|sort(attribute="created_at")
+            %}
+
+
+            {% for reply in sorted_replies %}
+
+            <div class="message-reply-item">
+
+                <div class="message-reply-header">
+
+                    <span class="message-reply-avatar">
+
+                        {{ (reply.nickname or "匿")[0] }}
+
+                    </span>
+
+                    <span class="message-reply-user">
+
+                        {{ reply.nickname }}
+
+                    </span>
+
+                    <span class="message-reply-time">
+
+                        {{ reply.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+                    </span>
+
+
+                    {% if is_admin %}
+
+                    <form
+                        method="post"
+                        action="/admin/message/reply/{{ reply.id }}/delete"
+                        class="inline-delete-form"
+                        onsubmit="return confirm('确定删除这条回复吗？');"
+                    >
+
+                        <button
+                            type="submit"
+                            class="inline-delete-button"
+                        >
+
+                            删除
+
+                        </button>
+
+                    </form>
+
+                    {% endif %}
+
+                </div>
+
+                <div class="message-reply-content">
+
+                    {{ reply.content }}
+
+                </div>
+
+            </div>
+
+            {% else %}
+
+            <div class="message-reply-empty">
+
+                还没有回复
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        </section>
+
+
+    </article>
+
+
+
+</div>
+
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const replyForms =
+            document.querySelectorAll(
+                ".message-reply-form"
+            );
+
+
+        if (
+            typeof executeWithNickname ===
+            "function"
+        ) {
+
+            replyForms.forEach(
+                function (form) {
+
+                    form.addEventListener(
+                        "submit",
+                        async function (event) {
+
+                            event.preventDefault();
+
+
+                            const input =
+                                form.querySelector(
+                                    "textarea"
+                                );
+
+
+                            if (
+                                !input ||
+                                !input.value.trim()
+                            ) {
+
+                                alert(
+                                    "回复内容不能为空"
+                                );
+
+                                return;
+
+                            }
+
+
+                            async function doReply(
+                                nickname = null
+                            ) {
+
+                                const data =
+                                    new FormData(form);
+
+
+                                if (nickname) {
+
+                                    data.append(
+                                        "nickname",
+                                        nickname
+                                    );
+
+                                }
+
+
+                                return fetch(
+                                    form.action,
+                                    {
+                                        method: "POST",
+                                        body: data
+                                    }
+                                );
+
+                            }
+
+
+                            const response =
+                                await executeWithNickname(
+                                    doReply
+                                );
+
+
+                            if (!response) {
+
+                                return;
+
+                            }
+
+
+                            const result =
+                                await response.json();
+
+
+                            if (!result.success) {
+
+                                alert(
+                                    result.error ||
+                                    "回复失败"
+                                );
+
+                                return;
+
+                            }
+
+
+                            window.location.reload();
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+
+    }
+);
+
+</script>
+
+{% endblock %}

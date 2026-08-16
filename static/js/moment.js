@@ -700,6 +700,22 @@ document
         );
 
 
+        /* ==========================================
+        暴露给其它页面内联脚本使用：
+        - article_detail.html 文章点赞/评论
+        - messages.html 留言发布
+        - message_detail.html 留言回复
+        这些函数在 DOMContentLoaded 闭包内定义，
+        必须挂到 window 才能被其它回调访问。
+        ========================================== */
+
+        window.executeWithNickname =
+            executeWithNickname;
+
+        window.openNicknameModal =
+            openNicknameModal;
+
+
     }
 );
 
@@ -708,72 +724,251 @@ document
     }
 );
 
-function openImageViewer(src){
 
-
-const viewer =
-document.getElementById(
-"image-viewer"
-);
-
-
-const img =
-document.getElementById(
-"viewer-image"
-);
+/*
+==========================================
+朋友圈图片查看器
+==========================================
+*/
 
 
 
-img.src=src;
+let viewerImages = [];
+
+let viewerIndex = 0;
 
 
-viewer.classList.add(
-"show"
-);
 
+function openImageViewer(images,index){
+
+
+    viewerImages = images;
+
+    viewerIndex = index;
+
+
+
+    const viewer =
+        document.getElementById(
+            "image-viewer"
+        );
+
+
+    const img =
+        document.getElementById(
+            "viewer-image"
+        );
+
+
+
+    if(!viewer || !img){
+
+        console.log(
+            "图片查看器不存在"
+        );
+
+        return;
+
+    }
+
+
+
+    img.src =
+        viewerImages[
+            viewerIndex
+        ];
+
+
+
+    viewer.classList.add(
+        "show"
+    );
 
 
 }
+
+
+
 
 
 
 function closeImageViewer(){
 
 
-document
-.getElementById(
-"image-viewer"
-)
-.classList.remove(
-"show"
-);
+    const viewer =
+        document.getElementById(
+            "image-viewer"
+        );
+
+
+    if(viewer){
+
+        viewer.classList.remove(
+            "show"
+        );
+
+    }
+
 
 }
+
+
+
+
 
 document.addEventListener(
 "click",
 function(event){
 
 
-const viewer =
-document.getElementById(
-"image-viewer"
+    const viewer =
+        document.getElementById(
+            "image-viewer"
+        );
+
+
+
+    if(
+        viewer &&
+        event.target === viewer
+    ){
+
+        closeImageViewer();
+
+    }
+
+
+});
+
+
+
+function showNextImage(){
+
+
+    if(
+        viewerImages.length <= 1
+    ){
+
+        return;
+
+    }
+
+
+
+    viewerIndex++;
+
+
+
+    if(
+        viewerIndex >= viewerImages.length
+    ){
+
+        viewerIndex = 0;
+
+    }
+
+
+
+    document
+    .getElementById(
+        "viewer-image"
+    )
+    .src =
+    viewerImages[
+        viewerIndex
+    ];
+
+}
+
+
+
+
+function showPrevImage(){
+
+
+    if(
+        viewerImages.length <= 1
+    ){
+
+        return;
+
+    }
+
+
+
+    viewerIndex--;
+
+
+
+    if(
+        viewerIndex < 0
+    ){
+
+        viewerIndex =
+            viewerImages.length - 1;
+
+    }
+
+
+
+    document
+    .getElementById(
+        "viewer-image"
+    )
+    .src =
+    viewerImages[
+        viewerIndex
+    ];
+
+}
+
+
+
+
+
+
+
+document
+.querySelectorAll(
+".moment-image-item"
+)
+.forEach(
+function(item){
+
+
+const img =
+item.querySelector(
+"img"
 );
 
 
-if(!viewer){
-    return;
-}
+
+img.addEventListener(
+"click",
+function(){
+
+
+const images =
+JSON.parse(
+item.dataset.images
+);
 
 
 
-if(
-event.target === viewer
-){
+const index =
+Number(
+item.dataset.imageIndex
+);
 
-    closeImageViewer();
 
-}
+
+openImageViewer(
+images,
+index
+);
+
+
+});
 
 
 });

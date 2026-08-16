@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+朋友圈详情 - Tnine
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="container detail-page">
+
+
+    <header class="detail-page-head">
+
+        <a href="/moments" class="detail-back">
+
+            ← 返回朋友圈
+
+        </a>
+
+    </header>
+
+
+
+    <!-- 页面标题区 -->
+
+    <div class="detail-title-area">
+
+        <h1 class="detail-title">
+
+            朋友圈详情
+
+        </h1>
+
+        <p class="detail-subtitle">
+
+            发布于 {{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+        </p>
+
+    </div>
+
+
+
+    <!-- 朋友圈详情卡片 -->
+
+    <article class="content-card moment-card moment-detail-card">
+
+
+        <!-- 发布者信息 -->
+
+        <div class="detail-card-header">
+
+            <div class="detail-author">
+
+                <span class="detail-avatar">
+
+                    {{ (moment.nickname or "匿")[0] }}
+
+                </span>
+
+                <div>
+
+                    <div class="detail-author-name">
+
+                        {{ moment.nickname }}
+
+                    </div>
+
+                    <div class="detail-author-time">
+
+                        {{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {% if is_admin %}
+
+            <div class="detail-card-actions">
+
+                <form
+                    method="post"
+                    action="/admin/moment/{{ moment.id }}/delete"
+                    class="detail-delete-form"
+                    onsubmit="return confirm('确定删除这条朋友圈吗？其评论与点赞将一并删除。');"
+                >
+
+                    <button
+                        type="submit"
+                        class="detail-delete-button"
+                    >
+
+                        🗑️ 删除
+
+                    </button>
+
+                </form>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+
+
+        <!-- 完整内容 -->
+
+        {% if moment.content %}
+
+        <div class="moment-content moment-content-flex">
+
+            {{ moment.content }}
+
+        </div>
+
+        {% endif %}
+
+
+
+
+        <!-- 全部图片 -->
+
+        {% if moment.images %}
+
+        <div class="moment-images-grid detail-images-grid">
+
+            {% for img in moment.images|sort(attribute="sort_order") %}
+
+            <div
+                class="detail-image-item moment-image-item"
+                data-images='{{ moment.images|sort(attribute="sort_order")|map(attribute="image_path")|list|tojson }}'
+                data-image-index="{{ loop.index0 }}"
+            >
+
+                <img
+                    src="{{ img.image_path }}"
+                    alt="朋友圈图片"
+                    loading="lazy"
+                    decoding="async"
+                >
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+
+
+
+        <!-- 交互区（卡片底部） -->
+
+        <section class="detail-interactions">
+
+        <!-- 统计行 -->
+
+        <div class="detail-stats">
+
+            <span class="detail-stat">
+
+                <span>❤️</span>
+
+                <strong>{{ moment.like_count }}</strong>
+
+                点赞
+
+            </span>
+
+            <span class="detail-stat">
+
+                <span>💬</span>
+
+                <strong>{{ moment.comment_count }}</strong>
+
+                评论
+
+            </span>
+
+        </div>
+
+
+        <!-- 点赞按钮 -->
+
+        <div class="detail-like-row">
+
+            <form
+                method="post"
+                action="/moment/{{ moment.id }}/like"
+                class="moment-like-form"
+            >
+
+                <button
+                    type="submit"
+                    class="
+                        moment-action-button
+                        {% if moment.id in liked_moment_ids %}
+                        is-liked
+                        {% endif %}
+                    "
+                >
+
+                    ❤️
+
+                    <span class="moment-action-label">
+
+                        {% if moment.id in liked_moment_ids %}
+
+                        已赞
+
+                        {% else %}
+
+                        点赞
+
+                        {% endif %}
+
+                    </span>
+
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <!-- 点赞列表 -->
+
+        {% if moment.likes %}
+
+        <div class="moment-like-list moment-interactive">
+
+
+            <span class="like-section-title">
+
+                ❤️ {{ moment.likes|length }} 人赞过
+
+            </span>
+
+
+            <div class="moment-like-names">
+
+                {% for like in moment.likes %}
+
+                <span class="moment-like-name">
+
+                    {{ like.nickname }}
+
+                </span>
+
+                {% if not loop.last %}
+
+                、
+
+                {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+
+
+        <!-- 评论输入 -->
+
+        <div class="moment-comment-panel moment-interactive">
+
+
+            <form
+                method="post"
+                action="/moment/{{ moment.id }}/comment"
+                class="moment-comment-form"
+            >
+
+
+
+                <div class="moment-comment-input-row">
+
+
+
+                    <textarea
+                        name="content"
+                        rows="1"
+                        maxlength="1000"
+                        placeholder="说点什么..."
+                        class="moment-comment-input"
+                        required
+                    ></textarea>
+
+
+
+
+                    <button
+                        type="submit"
+                        class="moment-comment-submit"
+                    >
+
+                        发送
+
+                    </button>
+
+
+
+                </div>
+
+
+
+            </form>
+
+
+
+        </div>
+
+
+
+
+        <!-- 全部评论 -->
+
+        <div class="moment-comment-list moment-interactive detail-comment-list">
+
+
+            {% set sorted_comments =
+                moment.comments|sort(attribute="created_at")
+            %}
+
+
+            {% for comment in sorted_comments %}
+
+
+
+            <div class="moment-comment detail-comment">
+
+
+
+                <span class="moment-comment-user">
+
+                    {{ comment.nickname }}
+
+                </span>
+
+
+
+                <span class="moment-comment-content">
+
+                    {{ comment.content }}
+
+                </span>
+
+
+
+                {% if is_admin %}
+
+                <form
+                    method="post"
+                    action="/admin/moment/comment/{{ comment.id }}/delete"
+                    class="inline-delete-form"
+                    onsubmit="return confirm('确定删除这条评论吗？');"
+                >
+
+                    <button
+                        type="submit"
+                        class="inline-delete-button"
+                    >
+
+                        删除
+
+                    </button>
+
+                </form>
+
+                {% endif %}
+
+
+
+            </div>
+
+
+
+            {% else %}
+
+
+
+            <div class="moment-comment-empty">
+
+                还没有评论
+
+            </div>
+
+
+
+            {% endfor %}
+
+
+
+        </div>
+
+        </section>
+
+
+
+    </article>
+
+
+
+</div>
+
+
+{% endblock %}

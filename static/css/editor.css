@@ -48,7 +48,7 @@
 
     background:
 
-        rgba(249,250,251,.96);
+        var(--color-surface);
 
 
     border:
@@ -94,7 +94,7 @@
 .EasyMDEContainer .editor-toolbar button:hover {
 
 
-    background:#eff6ff;
+    background:var(--color-soft);
 
 
     color:
@@ -174,7 +174,7 @@
 
     background:
 
-        rgba(255,255,255,.95);
+        var(--color-surface);
 
 
     border:
@@ -282,7 +282,7 @@
 
     background:
 
-        rgba(255,255,255,.96);
+        var(--color-surface);
 
 
     border-top:
@@ -357,6 +357,6 @@
     border-radius:7px;
 
 
-    background:white;
+    background:var(--color-card);
 
 }

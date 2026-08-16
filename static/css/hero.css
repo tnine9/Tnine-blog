@@ -1,0 +1,561 @@
+/* =========================================================
+   首页全屏 Hero 开场画面
+   ========================================================= */
+
+
+.home-hero {
+
+    position: relative;
+
+    min-height: 100vh;
+
+    min-height: 100svh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    overflow: hidden;
+
+    background: var(--color-bg);
+
+    transition:
+        opacity .45s ease,
+        transform .45s ease,
+        min-height .55s cubic-bezier(.4, 0, .2, 1),
+        visibility .45s ease;
+
+}
+
+/* 轻滑即隐藏：滚动超过阈值后 hero 完全收起，内容自然上移展示 */
+
+.home-hero.is-hidden {
+
+    opacity: 0;
+
+    transform: translateY(-48px) scale(.98);
+
+    visibility: hidden;
+
+    min-height: 0;
+
+    pointer-events: none;
+
+}
+
+
+
+
+.home-hero-bg {
+
+    position: absolute;
+
+    inset: 0;
+
+    background:
+
+        radial-gradient(
+            ellipse 80% 60% at 20% 15%,
+            rgba(124,58,237,.30),
+            transparent 60%
+        ),
+
+        radial-gradient(
+            ellipse 70% 55% at 80% 70%,
+            rgba(168,85,247,.24),
+            transparent 60%
+        ),
+
+        linear-gradient(
+            180deg,
+            #fbfcfe 0%,
+            #f2f5fb 100%
+        );
+
+    z-index: 0;
+
+}
+
+
+
+html[data-theme="dark"] .home-hero-bg {
+
+    background:
+
+        radial-gradient(
+            ellipse 80% 60% at 20% 15%,
+            rgba(124,58,237,.22),
+            transparent 60%
+        ),
+
+        radial-gradient(
+            ellipse 70% 55% at 80% 70%,
+            rgba(168,85,247,.20),
+            transparent 60%
+        ),
+
+        linear-gradient(
+            180deg,
+            #0f1115 0%,
+            #131722 100%
+        );
+
+}
+
+
+
+.home-hero-grad {
+
+    position: absolute;
+
+    inset: 0;
+
+    background:
+
+        linear-gradient(
+            180deg,
+            transparent 70%,
+            var(--color-bg) 100%
+        );
+
+    z-index: 1;
+
+}
+
+
+
+.home-hero-content {
+
+    position: relative;
+
+    z-index: 2;
+
+    text-align: center;
+
+    padding: 24px;
+
+    max-width: 720px;
+
+    animation: heroFadeIn .9s ease both;
+
+}
+
+
+
+@keyframes heroFadeIn {
+
+    from {
+
+        opacity: 0;
+
+        transform: translateY(24px);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+    }
+
+}
+
+
+
+/* ---------- 头像 ---------- */
+
+.home-hero-avatar-wrap {
+
+    position: relative;
+
+    display: inline-block;
+
+    margin-bottom: 20px;
+
+}
+
+
+
+.home-hero-avatar {
+
+    width: 96px;
+
+    height: 96px;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 44px;
+
+    font-weight: 700;
+
+    color: #fff;
+
+    background: var(--gradient-primary);
+
+    box-shadow: var(--shadow-lg);
+
+    user-select: none;
+
+}
+
+
+
+.home-hero-avatar-ring {
+
+    position: absolute;
+
+    inset: -8px;
+
+    border-radius: 50%;
+
+    border: 2px solid rgba(124,58,237,.35);
+
+    animation: heroRingPulse 3s ease-in-out infinite;
+
+}
+
+
+
+@keyframes heroRingPulse {
+
+    0%, 100% {
+
+        transform: scale(1);
+
+        opacity: .7;
+
+    }
+
+    50% {
+
+        transform: scale(1.08);
+
+        opacity: .25;
+
+    }
+
+}
+
+
+
+/* ---------- 文字 ---------- */
+
+.home-hero-name {
+
+    font-size: 56px;
+
+    font-weight: 800;
+
+    letter-spacing: 2px;
+
+    color: var(--color-text);
+
+    margin: 0 0 12px;
+
+}
+
+
+
+.home-hero-slogan {
+
+    font-size: 20px;
+
+    font-weight: 600;
+
+    color: var(--color-text-secondary);
+
+    margin: 0 0 8px;
+
+}
+
+
+
+.home-hero-sub {
+
+    font-size: 15px;
+
+    color: var(--color-text-muted);
+
+    margin: 0 0 32px;
+
+}
+
+
+
+/* ---------- 按钮 ---------- */
+
+.home-hero-actions {
+
+    display: flex;
+
+    gap: 16px;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+}
+
+
+
+.hero-btn {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 12px 28px;
+
+    border-radius: 999px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition: var(--transition);
+
+    border: 1px solid transparent;
+
+    cursor: pointer;
+
+}
+
+
+
+.hero-btn-primary {
+
+    background: var(--gradient-primary);
+
+    color: #fff;
+
+    box-shadow: 0 8px 24px rgba(124,58,237,.35);
+
+}
+
+
+
+.hero-btn-primary:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 12px 32px rgba(124,58,237,.45);
+
+}
+
+
+
+.hero-btn-ghost {
+
+    background: var(--color-surface-solid);
+
+    color: var(--color-text);
+
+    border-color: var(--color-border);
+
+}
+
+
+
+.hero-btn-ghost:hover {
+
+    transform: translateY(-2px);
+
+    border-color: var(--color-primary);
+
+    color: var(--color-primary);
+
+}
+
+
+
+/* ---------- 滚动提示 ---------- */
+
+.home-hero-scroll {
+
+    margin-top: 56px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 8px;
+
+    color: var(--color-text-muted);
+
+    font-size: 13px;
+
+    cursor: pointer;
+
+    animation: heroScrollHint 2s ease-in-out infinite;
+
+}
+
+
+
+@keyframes heroScrollHint {
+
+    0%, 100% {
+
+        transform: translateY(0);
+
+        opacity: .7;
+
+    }
+
+    50% {
+
+        transform: translateY(8px);
+
+        opacity: 1;
+
+    }
+
+}
+
+
+
+.hero-mouse {
+
+    width: 26px;
+
+    height: 42px;
+
+    border: 2px solid var(--color-text-muted);
+
+    border-radius: 14px;
+
+    display: flex;
+
+    justify-content: center;
+
+    padding-top: 6px;
+
+}
+
+
+
+.hero-wheel {
+
+    width: 4px;
+
+    height: 8px;
+
+    border-radius: 2px;
+
+    background: var(--color-primary);
+
+    animation: heroWheel 1.6s ease-in-out infinite;
+
+}
+
+
+
+@keyframes heroWheel {
+
+    0% {
+
+        transform: translateY(0);
+
+        opacity: 1;
+
+    }
+
+    70% {
+
+        transform: translateY(10px);
+
+        opacity: 0;
+
+    }
+
+    100% {
+
+        transform: translateY(0);
+
+        opacity: 0;
+
+    }
+
+}
+
+
+
+/* ---------- 内容区 ---------- */
+
+.home-content {
+
+    position: relative;
+
+    z-index: 2;
+
+    padding: 48px 0 72px;
+
+    background: var(--color-bg);
+
+}
+
+
+
+
+.home-content-head {
+
+    text-align: left;
+
+    margin-bottom: 40px;
+
+}
+
+
+
+
+/* ---------- 响应式 ---------- */
+
+@media (max-width: 768px) {
+
+    .home-hero-name {
+
+        font-size: 40px;
+
+    }
+
+    .home-hero-slogan {
+
+        font-size: 17px;
+
+    }
+
+    .home-hero-avatar {
+
+        width: 76px;
+
+        height: 76px;
+
+        font-size: 34px;
+
+    }
+
+    .hero-btn {
+
+        padding: 10px 22px;
+
+        font-size: 14px;
+
+    }
+
+}

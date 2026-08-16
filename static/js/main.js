@@ -9,335 +9,19 @@ document.addEventListener(
     () => {
 
 
-        initNicknameModal();
-
-
-        initCommentToggle();
-
-
-        initCommentMore();
-
-
+        // 昵称弹窗 / 评论展开 / 评论更多 统一由 moment.js 管理，
+        // 此处不重复绑定，避免同一元素事件被触发两次
         initCardNavigation();
 
 
         initUserMenu();
 
 
+        initThemeToggle();
+
+
     }
 );
-
-
-
-
-
-/*
-=========================================================
-昵称弹窗
-=========================================================
-*/
-
-
-function initNicknameModal(){
-
-
-    const modal =
-        document.querySelector(
-            ".nickname-modal"
-        );
-
-
-    if(!modal){
-
-        return;
-
-    }
-
-
-
-
-    const openButtons =
-        document.querySelectorAll(
-            "[data-open-nickname]"
-        );
-
-
-
-    const closeButtons =
-        modal.querySelectorAll(
-            "[data-close-modal]"
-        );
-
-
-
-
-
-    function openModal(){
-
-
-        modal.classList.add(
-            "is-open"
-        );
-
-
-        document.body.style.overflow =
-            "hidden";
-
-
-    }
-
-
-
-
-
-
-    function closeModal(){
-
-
-        modal.classList.remove(
-            "is-open"
-        );
-
-
-        document.body.style.overflow =
-            "";
-
-
-    }
-
-
-
-
-
-
-
-    openButtons.forEach(
-        btn=>{
-
-
-            btn.addEventListener(
-                "click",
-                openModal
-            );
-
-
-        }
-    );
-
-
-
-
-
-
-    closeButtons.forEach(
-        btn=>{
-
-
-            btn.addEventListener(
-                "click",
-                closeModal
-            );
-
-
-        }
-    );
-
-
-
-
-
-
-
-
-    modal.addEventListener(
-        "click",
-        e=>{
-
-
-            if(
-                e.target.classList.contains(
-                    "nickname-modal-backdrop"
-                )
-            ){
-
-
-                closeModal();
-
-
-            }
-
-
-        }
-    );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-/*
-=========================================================
-评论展开
-=========================================================
-*/
-
-
-function initCommentToggle(){
-
-
-    const buttons =
-        document.querySelectorAll(
-            ".moment-comment-toggle"
-        );
-
-
-
-    buttons.forEach(
-        button=>{
-
-
-            button.addEventListener(
-                "click",
-                ()=>{
-
-
-                    const targetId =
-                        button.dataset.commentTarget;
-
-
-
-                    const panel =
-                        document.getElementById(
-                            targetId
-                        );
-
-
-
-                    if(!panel){
-
-                        return;
-
-                    }
-
-
-
-
-                    panel.classList.toggle(
-                        "is-open"
-                    );
-
-
-
-                }
-            );
-
-
-
-        }
-    );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-/*
-=========================================================
-查看更多评论
-=========================================================
-*/
-
-
-function initCommentMore(){
-
-
-    const buttons =
-        document.querySelectorAll(
-            "[data-comment-more]"
-        );
-
-
-
-    buttons.forEach(
-        button=>{
-
-
-            button.addEventListener(
-                "click",
-                ()=>{
-
-
-                    const box =
-                        button
-                        .previousElementSibling;
-
-
-
-                    if(!box){
-
-                        return;
-
-                    }
-
-
-
-
-                    box.classList.toggle(
-                        "show-all"
-                    );
-
-
-
-                    if(
-                        box.classList.contains(
-                            "show-all"
-                        )
-                    ){
-
-                        button.innerText =
-                            "收起评论";
-
-
-                    }
-                    else{
-
-
-                        button.innerText =
-                            button.dataset.text;
-
-
-
-                    }
-
-
-
-                }
-            );
-
-
-        }
-    );
-
-
-}
-
-
-
-
 
 
 
@@ -438,9 +122,76 @@ function initCardNavigation(){
 
 /*
 =========================================================
-用户头像菜单
+明暗主题切换
+按钮图标由 CSS 根据 html[data-theme] 自动显隐，
+JS 只负责切换主题并持久化到 localStorage
 =========================================================
 */
+
+
+function initThemeToggle(){
+
+
+    const toggle =
+        document.getElementById(
+            "themeToggle"
+        );
+
+
+    if(
+        !toggle
+    ){
+
+        return;
+
+    }
+
+
+
+
+    toggle.addEventListener(
+        "click",
+        function(){
+
+
+            const root =
+                document.documentElement;
+
+
+            const next =
+                root.getAttribute(
+                    "data-theme"
+                ) === "dark"
+                    ? "light"
+                    : "dark";
+
+
+            root.setAttribute(
+                "data-theme",
+                next
+            );
+
+
+            try {
+
+                localStorage.setItem(
+                    "tnine-theme",
+                    next
+                );
+
+            } catch (e) { }
+
+
+        }
+    );
+
+
+}
+
+
+/* =========================================================
+   用户头像菜单
+   ========================================================= */
 
 
 function initUserMenu(){

@@ -1,0 +1,39 @@
+{% if item.data.images %}
+
+
+<div 
+    class="
+        moment-images
+        moment-images-count-{{ item.data.images|length }}
+    "
+>
+
+
+{% for image in item.data.images %}
+
+
+<div 
+    class="moment-image-item"
+    data-images='{{ item.data.images | map(attribute="image_path") | list | tojson }}'
+    data-image-index="{{ loop.index0 }}"
+>
+
+
+<img
+    src="{{ image.image_path }}"
+    alt="朋友圈图片"
+    loading="lazy"
+    decoding="async"
+>
+
+
+</div>
+
+
+{% endfor %}
+
+
+</div>
+
+
+{% endif %}

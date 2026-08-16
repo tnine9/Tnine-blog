@@ -5,36 +5,44 @@
 
 
 
-    <!-- 日期 -->
+    <div class="article-card-top">
+
+        {% if item.data.status == "draft" and is_admin %}
+
+        <span class="article-draft-badge">
+            草稿
+        </span>
+
+        {% endif %}
 
 
-    <div class="article-date">
+        <div class="article-date">
 
-        {{ 
-        item.data.created_at.strftime("%Y-%m-%d")
-        }}
+            {{
+            item.data.created_at.strftime("%Y-%m-%d")
+            }}
+
+        </div>
 
     </div>
 
 
 
-
-
     <!-- 标题 -->
-
 
     <h2 class="article-title">
 
-        {{ item.data.title }}
+        <a href="/article/{{ item.data.id }}">
+
+            {{ item.data.title }}
+
+        </a>
 
     </h2>
 
 
 
-
-
     <!-- 摘要 -->
-
 
     {% if item.data.summary %}
 
@@ -44,24 +52,47 @@
 
     </p>
 
-
     {% endif %}
 
 
 
+    <!-- 互动统计 -->
+
+    <div class="article-card-stats">
+
+        <span class="article-stat">
+
+            <span class="stat-icon">👁</span>
+
+            {{ item.data.views }}
+
+            <span class="stat-label">浏览</span>
+
+        </span>
 
 
-    <!-- 阅读 -->
+        <span class="article-stat">
+
+            <span class="stat-icon">❤️</span>
+
+            {{ item.data.like_count }}
+
+            <span class="stat-label">点赞</span>
+
+        </span>
 
 
-    <a
-        href="/article/{{ item.data.id }}"
-        class="read-more"
-    >
+        <span class="article-stat">
 
-        阅读全文 →
+            <span class="stat-icon">💬</span>
 
-    </a>
+            {{ item.data.comment_count }}
+
+            <span class="stat-label">评论</span>
+
+        </span>
+
+    </div>
 
 
 

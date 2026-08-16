@@ -2,9 +2,16 @@
 
 
 {% block title %}
-Tnine
+Tnine · 记录文字与生活
 {% endblock %}
 
+
+{% block extra_head %}
+
+<link rel="stylesheet"
+      href="{{ url_for('static', path='css/hero.css') }}?v=3">
+
+{% endblock %}
 
 
 
@@ -12,70 +19,162 @@ Tnine
 
 
 
-<div class="container">
+<!-- ==================================================
+     全屏 Hero 开场画面
+     ================================================== -->
 
+<section
+    class="home-hero"
+    id="homeHero"
+>
 
+    <div class="home-hero-bg" id="heroBg"></div>
 
-    <!-- 首页介绍 -->
+    <div class="home-hero-grad"></div>
 
+    <div class="home-hero-content">
 
-    <section class="hero">
+        <div class="home-hero-avatar-wrap">
 
+            <div class="home-hero-avatar">
 
-        <h2>
+                T
+
+            </div>
+
+            <span class="home-hero-avatar-ring"></span>
+
+        </div>
+
+        <h1 class="home-hero-name">
+
+            Tnine
+
+        </h1>
+
+        <p class="home-hero-slogan">
+
             天涯里自会相逢
-        </h2>
 
-
-
-        <p>
-            只是重逢，就不必了。
         </p>
 
+        <p class="home-hero-sub">
 
-    </section>
+            只是重逢，就不必了。
+
+        </p>
+
+        <div class="home-hero-actions">
+
+            <a href="/articles" class="hero-btn hero-btn-primary">
+
+                进入文章
+
+            </a>
+
+            <a href="/moments" class="hero-btn hero-btn-ghost">
+
+                查看朋友圈
+
+            </a>
+
+        </div>
+
+        <div class="home-hero-scroll" id="heroScroll">
+
+            <div class="hero-mouse">
+
+                <div class="hero-wheel"></div>
+
+            </div>
+
+            <span>向下滚动</span>
+
+        </div>
+
+    </div>
+
+</section>
 
 
 
+<!-- ==================================================
+     主页内容（时间线）
+     ================================================== -->
+
+<section class="home-content" id="homeContent">
+
+    <div class="container">
 
 
 
+        <!-- 内容区标题 -->
 
-    <!-- 时间线 -->
+        <header class="section-header home-content-head">
 
+            <h1 class="section-title">
 
-    <section class="timeline">
+                时间线
 
+            </h1>
 
+            <p class="text-secondary">
 
-        {% for item in timeline %}
+                文章与朋友圈，都在这里
 
+            </p>
 
-
-        <div class="timeline-item">
-
-
-
-            <!-- 左侧时间 -->
-
-
-            <div class="timeline-side">
+        </header>
 
 
-                <div class="timeline-date">
+
+        <!-- 时间线 -->
+
+        <div class="timeline">
 
 
-                    {{ 
-                    item.data.created_at.strftime("%Y-%m-%d")
-                    }}
+
+            {% for item in timeline %}
 
 
+
+            <div class="timeline-item">
+
+
+
+                <!-- 左侧时间 -->
+
+                <div class="timeline-side">
+
+                    <div class="timeline-date">
+
+                        {{
+                        item.data.created_at.strftime("%Y-%m-%d")
+                        }}
+
+                    </div>
+
+                    <div class="timeline-dot"></div>
 
                 </div>
 
 
 
-                <div class="timeline-dot"></div>
+                <!-- 右侧内容 -->
+
+                <div class="timeline-content">
+
+                    {% if item.type == "moment" %}
+
+                        {% include "components/moment_card.html" %}
+
+                    {% elif item.type == "article" %}
+
+                        {% include "components/article_card.html" %}
+
+                    {% endif %}
+
+                </div>
 
 
 
@@ -83,42 +182,31 @@ Tnine
 
 
 
+            {% else %}
 
 
 
+            <!-- 空状态 -->
 
-            <!-- 右侧内容 -->
+            <div class="empty-state">
 
+                <div class="empty-state-title">
 
-            <div class="timeline-content">
+                    这里还没有内容
 
+                </div>
 
+                <div class="empty-state-text">
 
-                {% if item.type == "moment" %}
+                    第一篇文章或第一条动态，等待你的记录
 
-
-
-                    {% include "components/moment_card.html" %}
-
-
-
-
-
-                {% elif item.type == "article" %}
-
-
-
-                    {% include "components/article_card.html" %}
-
-
-
-
-
-                {% endif %}
-
-
+                </div>
 
             </div>
+
+
+
+            {% endfor %}
 
 
 
@@ -126,53 +214,106 @@ Tnine
 
 
 
+    </div>
 
-
-        {% else %}
-
-
-
-        <!-- 空状态 -->
-
-
-        <div class="empty-state">
-
-
-            <div class="empty-state-title">
-
-                这里还没有内容
-
-            </div>
+</section>
 
 
 
-            <div class="empty-state-text">
+<!-- ==================================================
+     平滑滚动过渡
+     ================================================== -->
 
-                第一篇文章或第一条动态，等待你的记录
+<script>
 
-            </div>
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
+        const hero = document.getElementById("homeHero");
 
-        </div>
+        const content = document.getElementById("homeContent");
 
+        const scrollHint = document.getElementById("heroScroll");
 
+        if (!hero || !content) {
 
-        {% endfor %}
+            return;
 
-
-
-    </section>
-
-
-
-
-
-
-
-</div>
+        }
 
 
+        /* 滚轮下滑平滑过渡到内容区 */
 
+        function scrollToContent() {
+
+            content.scrollIntoView({
+
+                behavior: "smooth",
+
+                block: "start"
+
+            });
+
+        }
+
+
+        /* 点击滚动提示 */
+
+        if (scrollHint) {
+
+            scrollHint.addEventListener(
+
+                "click",
+
+                scrollToContent
+
+            );
+
+        }
+
+
+        /* 轻滑即隐藏：滚动超过阈值后 hero 完全收起 */
+
+        const hideThreshold = 24;
+
+        let heroHidden = false;
+
+        function onScroll() {
+
+            const y = window.scrollY;
+
+            if (y > hideThreshold && !heroHidden) {
+
+                heroHidden = true;
+
+                hero.classList.add("is-hidden");
+
+            } else if (y <= 0 && heroHidden) {
+
+                heroHidden = false;
+
+                hero.classList.remove("is-hidden");
+
+            }
+
+        }
+
+
+        window.addEventListener(
+
+            "scroll",
+
+            onScroll,
+
+            { passive: true }
+
+        );
+
+    }
+);
+
+</script>
 
 
 {% endblock %}

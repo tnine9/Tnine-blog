@@ -27,7 +27,7 @@
 
 {% if is_admin %}
 
-<a 
+<a
 href="/admin/new"
 class="action-button"
 >
@@ -43,11 +43,20 @@ class="action-button"
 </div>
 
 
+<p class="text-secondary">
+
+一些沉淀下来的文字
+
+</p>
+
+
 </header>
 
 
 
-<div class="timeline">
+<!-- 文章网格（无时间轴） -->
+
+<div class="article-grid">
 
 
 {% if articles %}
@@ -59,37 +68,96 @@ class="action-button"
 
 
 <article
-class="content-card article-card"
+class="content-card article-card article-grid-card"
 data-url="/article/{{ article.id }}"
 >
 
 
-<div class="article-date">
 
-{{article.created_at.strftime("%Y-%m-%d")}}
+<div class="article-card-top">
+
+
+{% if article.status == "draft" and is_admin %}
+
+<span class="article-draft-badge">
+草稿
+</span>
+
+{% endif %}
+
+
+
+<span class="article-date">
+
+{{ article.created_at.strftime("%Y-%m-%d") }}
+
+</span>
 
 </div>
 
 
-<h2>
+<h2 class="article-title">
 
-{{article.title}}
+<a href="/article/{{ article.id }}">
+
+{{ article.title }}
+
+</a>
 
 </h2>
 
 
-<p>
 
-{{article.summary}}
+{% if article.summary %}
+
+<p class="article-summary">
+
+{{ article.summary }}
 
 </p>
 
+{% endif %}
 
-<a href="/article/{{article.id}}">
 
-阅读全文 →
 
-</a>
+<!-- 互动统计 -->
+
+<div class="article-card-stats">
+
+<span class="article-stat">
+
+<span class="stat-icon">👁</span>
+
+{{ article.views }}
+
+<span class="stat-label">浏览</span>
+
+</span>
+
+
+<span class="article-stat">
+
+<span class="stat-icon">❤️</span>
+
+{{ article.like_count }}
+
+<span class="stat-label">点赞</span>
+
+</span>
+
+
+<span class="article-stat">
+
+<span class="stat-icon">💬</span>
+
+{{ article.comment_count }}
+
+<span class="stat-label">评论</span>
+
+</span>
+
+</div>
+
 
 
 </article>

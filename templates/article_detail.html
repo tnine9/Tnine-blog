@@ -7,10 +7,25 @@
 
 {% block content %}
 
-<main class="container article-page">
+<main class="container detail-page article-page">
 
     <!-- ==================================================
-         顶部悬浮标题栏
+         返回导航
+         ================================================== -->
+
+    <header class="detail-page-head">
+
+        <a href="/articles" class="detail-back">
+
+            ← 返回文章
+
+        </a>
+
+    </header>
+
+
+    <!-- ==================================================
+         顶部悬浮标题栏（下滑收缩为一行横向，含标题+社交数据）
          ================================================== -->
 
     <header
@@ -42,6 +57,21 @@
                 </span>
 
 
+                <span class="article-sticky-stat">
+                    👁 {{ article.views }}
+                </span>
+
+
+                <span class="article-sticky-stat">
+                    ❤️ {{ article.like_count }}
+                </span>
+
+
+                <span class="article-sticky-stat">
+                    💬 {{ article.comment_count }}
+                </span>
+
+
                 {% if article.status == "draft" and is_admin %}
 
                 <span class="article-draft-badge">
@@ -68,22 +98,296 @@
                 {{ article.created_at.strftime("%Y-%m-%d") }}
             </span>
 
+
+            <span class="compact-stats">
+                <span>👁 {{ article.views }}</span>
+                <span>❤️ {{ article.like_count }}</span>
+                <span>💬 {{ article.comment_count }}</span>
+            </span>
+
         </div>
 
     </header>
 
 
     <!-- ==================================================
-         正文
+         详情卡片：发布者信息 + 正文 + 交互区
          ================================================== -->
 
-    <article>
+    <article class="content-card article-detail-card">
+
+        <!-- 发布者信息 -->
+
+        <div class="detail-card-header">
+
+            <div class="detail-author">
+
+                <span class="detail-avatar">
+
+                    {{ admin_username[0] }}
+
+                </span>
+
+                <div>
+
+                    <div class="detail-author-name">
+
+                        {{ admin_username }}
+
+                    </div>
+
+                    <div class="detail-author-time">
+
+                        {{ article.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+                        {% if article.status == "draft" and is_admin %}
+
+                        · 草稿
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {% if is_admin %}
+
+            <div class="detail-card-actions">
+
+                <a
+                    href="/admin/edit/{{ article.id }}"
+                    class="detail-edit-button"
+                >
+
+                    ✏️ 编辑
+
+                </a>
+
+
+                <form
+                    method="post"
+                    action="/admin/delete/{{ article.id }}"
+                    class="detail-delete-form"
+                    onsubmit="return confirm('确定要删除这篇文章吗？点赞、评论等互动数据将一并删除，且无法恢复。');"
+                >
+
+                    <button
+                        type="submit"
+                        class="detail-delete-button"
+                    >
+
+                        🗑️ 删除
+
+                    </button>
+
+                </form>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- 正文 -->
 
         <div class="article-content markdown-body">
 
             {{ article_html | safe }}
 
         </div>
+
+
+        <!-- 交互区（卡片底部） -->
+
+        <section class="detail-interactions">
+
+        <!-- 统计行 -->
+
+        <div class="detail-stats">
+
+            <span class="detail-stat">
+                <span>👁</span>
+                <strong>{{ article.views }}</strong>
+                浏览
+            </span>
+
+            <span class="detail-stat">
+                <span>❤️</span>
+                <strong>{{ article.like_count }}</strong>
+                点赞
+            </span>
+
+            <span class="detail-stat">
+                <span>💬</span>
+                <strong>{{ article.comment_count }}</strong>
+                评论
+            </span>
+
+        </div>
+
+
+        <!-- 点赞按钮 -->
+
+        <div class="article-like-row">
+
+            <form
+                method="post"
+                action="/article/{{ article.id }}/like"
+                class="article-like-form"
+            >
+
+                <button
+                    type="submit"
+                    class="
+                        article-like-button
+                        {% if liked_article %}
+                        is-liked
+                        {% endif %}
+                    "
+                >
+
+                    <span class="like-icon">❤️</span>
+
+                    <span class="like-label">
+
+                        {% if liked_article %}
+
+                        已赞
+
+                        {% else %}
+
+                        点赞这篇文章
+
+                        {% endif %}
+
+                    </span>
+
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <!-- 评论输入 -->
+
+        <div class="article-comment-form-wrap">
+
+            <form
+                method="post"
+                action="/article/{{ article.id }}/comment"
+                class="article-comment-form"
+            >
+
+                <textarea
+                    name="content"
+                    rows="2"
+                    maxlength="1000"
+                    placeholder="写下你的评论..."
+                    class="article-comment-input"
+                    required
+                ></textarea>
+
+                <div class="article-comment-form-actions">
+
+                    <button
+                        type="submit"
+                        class="article-comment-submit"
+                    >
+
+                        发表评论
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <!-- 评论列表 -->
+
+        <div class="article-comment-list">
+
+            {% set article_comments =
+                article.comments|sort(attribute="created_at")
+            %}
+
+            {% for comment in article_comments %}
+
+            <div class="article-comment-item" id="article-comment-{{ comment.id }}">
+
+                <div class="article-comment-header">
+
+                    <span class="article-comment-avatar">
+
+                        {{ (comment.nickname or "匿")[0] }}
+
+                    </span>
+
+                    <span class="article-comment-user">
+
+                        {{ comment.nickname }}
+
+                    </span>
+
+                    <span class="article-comment-time">
+
+                        {{ comment.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+                    </span>
+
+
+                    {% if is_admin %}
+
+                    <form
+                        method="post"
+                        action="/admin/article/comment/{{ comment.id }}/delete"
+                        class="inline-delete-form"
+                        onsubmit="return confirm('确定删除这条评论吗？');"
+                    >
+
+                        <button
+                            type="submit"
+                            class="inline-delete-button"
+                        >
+
+                            删除
+
+                        </button>
+
+                    </form>
+
+                    {% endif %}
+
+                </div>
+
+                <div class="article-comment-content">
+
+                    {{ comment.content }}
+
+                </div>
+
+            </div>
+
+            {% else %}
+
+            <div class="article-comment-empty">
+
+                还没有评论，来抢沙发吧。
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        </section>
 
     </article>
 
@@ -93,76 +397,18 @@
          ================================================== -->
 
     <aside class="toc-container">
+
+        <div class="toc-title">
+            文章导航
+        </div>
+
+        <div class="toc-empty">
+            暂无文章导航
+        </div>
+
     </aside>
 
 </main>
-
-
-<!-- ==================================================
-     底部操作栏
-     ================================================== -->
-
-<div class="article-bottom-bar">
-
-    <div class="article-bottom-info">
-
-    <a
-        href="/"
-        class="article-bottom-back"
-    >
-        ← 返回首页
-    </a>
-
-
-    {% if article.status == "draft" and is_admin %}
-
-    <span class="article-status article-status-draft">
-        草稿
-    </span>
-
-    {% endif %}
-
-</div>
-
-
-    <div class="article-bottom-actions">
-
-
-        {% if is_admin %}
-
-        <!-- 编辑 -->
-
-        <a
-            href="/admin/edit/{{ article.id }}"
-            class="article-bottom-edit"
-        >
-            编辑文章
-        </a>
-
-
-        <!-- 删除 -->
-
-        <form
-            method="post"
-            action="/admin/delete/{{ article.id }}"
-            class="article-bottom-delete-form"
-            onsubmit="return confirm('确定要删除这篇文章吗？删除后无法恢复。');"
-        >
-
-            <button
-                type="submit"
-                class="article-bottom-delete"
-            >
-                删除文章
-            </button>
-
-        </form>
-
-        {% endif %}
-
-    </div>
-
-</div>
 
 
 <!-- ==================================================
@@ -170,7 +416,7 @@
      ================================================== -->
 
 <script
-    src="{{ url_for('static', path='js/toc.js') }}"
+    src="{{ url_for('static', path='js/toc.js') }}?v=3"
 ></script>
 
 
@@ -179,12 +425,12 @@
      ================================================== -->
 
 <script
-    src="{{ url_for('static', path='js/code-copy.js') }}"
+    src="{{ url_for('static', path='js/code-copy.js') }}?v=3"
 ></script>
 
 
 <!-- ==================================================
-     标题栏收缩
+     标题栏收缩 + 文章点赞评论
      ================================================== -->
 
 <script>
@@ -253,6 +499,201 @@ document.addEventListener(
 
 
         updateArticleHeader();
+
+
+        /*
+         * 文章点赞/评论（复用昵称弹窗逻辑）
+         */
+
+        const likeForm =
+            document.querySelector(
+                ".article-like-form"
+            );
+
+
+        const commentForms =
+            document.querySelectorAll(
+                ".article-comment-form"
+            );
+
+
+        if (
+            typeof executeWithNickname ===
+            "function"
+        ) {
+
+            if (likeForm) {
+
+                likeForm.addEventListener(
+                    "submit",
+                    async function (event) {
+
+                        event.preventDefault();
+
+
+                        async function doLike(
+                            nickname = null
+                        ) {
+
+                            const data =
+                                new FormData();
+
+
+                            if (nickname) {
+
+                                data.append(
+                                    "nickname",
+                                    nickname
+                                );
+
+                            }
+
+
+                            return fetch(
+                                likeForm.action,
+                                {
+                                    method: "POST",
+                                    body: data
+                                }
+                            );
+
+                        }
+
+
+                        const response =
+                            await executeWithNickname(
+                                doLike
+                            );
+
+
+                        if (!response) {
+
+                            return;
+
+                        }
+
+
+                        const result =
+                            await response.json();
+
+
+                        if (!result.success) {
+
+                            alert(
+                                result.error ||
+                                "操作失败"
+                            );
+
+                            return;
+
+                        }
+
+
+                        window.location.reload();
+
+                    }
+                );
+
+            }
+
+
+            commentForms.forEach(
+                function (form) {
+
+                    form.addEventListener(
+                        "submit",
+                        async function (event) {
+
+                            event.preventDefault();
+
+
+                            const input =
+                                form.querySelector(
+                                    "textarea"
+                                );
+
+
+                            if (
+                                !input ||
+                                !input.value.trim()
+                            ) {
+
+                                alert(
+                                    "评论内容不能为空"
+                                );
+
+                                return;
+
+                            }
+
+
+                            async function doComment(
+                                nickname = null
+                            ) {
+
+                                const data =
+                                    new FormData(form);
+
+
+                                if (nickname) {
+
+                                    data.append(
+                                        "nickname",
+                                        nickname
+                                    );
+
+                                }
+
+
+                                return fetch(
+                                    form.action,
+                                    {
+                                        method: "POST",
+                                        body: data
+                                    }
+                                );
+
+                            }
+
+
+                            const response =
+                                await executeWithNickname(
+                                    doComment
+                                );
+
+
+                            if (!response) {
+
+                                return;
+
+                            }
+
+
+                            const result =
+                                await response.json();
+
+
+                            if (!result.success) {
+
+                                alert(
+                                    result.error ||
+                                    "评论失败"
+                                );
+
+                                return;
+
+                            }
+
+
+                            window.location.reload();
+
+                        }
+                    );
+
+                }
+            );
+
+        }
 
     }
 );

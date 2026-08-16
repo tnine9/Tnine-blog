@@ -371,7 +371,11 @@ files[index]
 
 
 
-openImageViewer(url);
+// openImageViewer 接收图片数组与索引
+openImageViewer(
+[url],
+0
+);
 
 
 }
@@ -508,6 +512,14 @@ if(!preview){
     return;
 }
 
+
+
+// CDN 未加载时（离线环境）跳过拖动排序，避免报错中断
+if(
+    typeof Sortable === "undefined"
+){
+    return;
+}
 
 
 new Sortable(

@@ -12,6 +12,48 @@
     >
 
 
+    <!-- 明暗主题：优先用户手动选择，否则跟随系统（在样式加载前执行，避免闪烁） -->
+
+    <script>
+
+        (function () {
+
+            try {
+
+                var saved =
+                    localStorage.getItem(
+                        "tnine-theme"
+                    );
+
+
+                var dark =
+                    saved === "dark" ||
+                    (
+                        !saved &&
+                        window.matchMedia &&
+                        window.matchMedia(
+                            "(prefers-color-scheme: dark)"
+                        ).matches
+                    );
+
+
+                if (dark) {
+
+                    document.documentElement.setAttribute(
+                        "data-theme",
+                        "dark"
+                    );
+
+                }
+
+            } catch (e) { }
+
+        })();
+
+    </script>
+
+
+
     <title>
 
         {% block title %}
@@ -25,51 +67,51 @@
     <!-- 基础变量 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/variables.css') }}?v=1">
+          href="{{ url_for('static', path='css/variables.css') }}?v=3">
 
 
 
     <!-- 基础样式 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/base.css') }}?v=1">
+          href="{{ url_for('static', path='css/base.css') }}?v=3">
 
 
 
     <!-- 布局 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/layout.css') }}?v=1">
+          href="{{ url_for('static', path='css/layout.css') }}?v=4">
 
 
 
     <!-- 组件 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/components.css') }}?v=1">
+          href="{{ url_for('static', path='css/components.css') }}?v=4">
 
 
 
     <!-- 页面 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/article.css') }}?v=1">
+          href="{{ url_for('static', path='css/article.css') }}?v=5">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/moment.css') }}">
+          href="{{ url_for('static', path='css/moment.css') }}?v=4">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/admin.css') }}">
+          href="{{ url_for('static', path='css/admin.css') }}?v=3">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/editor.css') }}?v=1">
+          href="{{ url_for('static', path='css/editor.css') }}?v=3">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/modal.css') }}">
+          href="{{ url_for('static', path='css/modal.css') }}?v=3">
 
 
 
@@ -92,29 +134,6 @@
 
 
 
-        <!-- Logo -->
-
-
-        <a href="/" class="logo">
-
-
-            <span class="logo-main">
-
-                Tnine
-
-            </span>
-
-
-            <span class="logo-sub">
-
-                archive
-
-            </span>
-
-
-        </a>
-
-
 
 
 
@@ -123,24 +142,89 @@
 <nav class="site-nav">
 
 
-    <a href="/" class="active">
+    <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">
         首页
     </a>
 
 
-    <a href="/articles">
+    <a href="/articles" class="{% if request.url.path in ['/articles'] %}active{% endif %}">
         文章
     </a>
 
 
-    <a href="/moments">
+    <a href="/moments" class="{% if request.url.path in ['/moments'] or request.url.path.startswith('/moment/') %}active{% endif %}">
         朋友圈
     </a>
 
 
-    <a href="/messages">
+    <a href="/messages" class="{% if request.url.path in ['/messages'] or request.url.path.startswith('/message/') %}active{% endif %}">
         留言
     </a>
+
+
+
+
+    <!-- 主题切换按钮 -->
+
+
+    <button
+        class="theme-toggle"
+        id="themeToggle"
+        type="button"
+        aria-label="切换明暗主题"
+        title="切换明暗主题"
+    >
+
+        <svg
+            class="icon-moon"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+        >
+
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+
+        </svg>
+
+
+        <svg
+            class="icon-sun"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+        >
+
+            <circle cx="12" cy="12" r="5"></circle>
+
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+
+        </svg>
+
+    </button>
 
 
 
@@ -202,23 +286,6 @@
 
             </div>
 
-
-
-
-
-            <a href="/admin/profile">
-
-                个人资料
-
-            </a>
-
-
-
-            <a href="/admin/password">
-
-                修改密码
-
-            </a>
 
 
 
@@ -284,8 +351,6 @@
 
 
 
-
-
 <main class="main-layout">
 
 
@@ -312,17 +377,53 @@
 
 
 
+<footer class="site-footer">
 
 
+    <div class="container footer-inner">
 
-<footer class="site-footer container">
+
+        <div class="footer-brand">
+
+            <span class="footer-logo">
+
+                Tnine
+
+            </span>
+
+            <p class="footer-desc">
+
+                记录文字与生活的小站
+
+            </p>
+
+        </div>
 
 
-    <p>
+        <div class="footer-links">
 
-        © 2026 Tnine
+            <a href="/">首页</a>
 
-    </p>
+            <a href="/articles">文章</a>
+
+            <a href="/moments">朋友圈</a>
+
+            <a href="/messages">留言</a>
+
+        </div>
+
+
+        <div class="footer-meta">
+
+            <p>
+
+                © 2026 Tnine
+
+            </p>
+
+        </div>
+
+    </div>
 
 
 </footer>
@@ -332,18 +433,31 @@
 
 <!-- 图片查看器 -->
 
-<div
-    id="image-viewer"
-    class="image-viewer"
-    onclick="closeImageViewer()"
+<div id="image-viewer">
+
+
+<button
+class="viewer-prev"
+onclick="showPrevImage()"
+>
+‹
+</button>
+
+
+
+<img
+id="viewer-image"
 >
 
 
-    <img
-        id="viewer-image"
-        src=""
-        alt="preview"
-    >
+
+<button
+class="viewer-next"
+onclick="showNextImage()"
+>
+›
+</button>
+
 
 
 </div>
@@ -351,11 +465,10 @@
 
 
 
+<script src="{{ url_for('static', path='js/moment.js') }}?v=3"></script>
 
-<script src="{{ url_for('static', path='js/moment.js') }}?v=2"></script>
 
-
-<script src="{{ url_for('static', path='js/main.js') }}?v=2"></script>
+<script src="{{ url_for('static', path='js/main.js') }}?v=4"></script>
 
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>

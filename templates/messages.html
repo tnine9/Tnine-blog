@@ -12,47 +12,188 @@
 
 
 
-
-
 {% block content %}
 
 
 
-<section class="page-content">
+<div class="container messages-page">
 
 
 
-<header class="section-header">
+    <!-- 页面标题 -->
+
+    <section class="hero messages-hero">
+
+        <h2>
+            留言
+        </h2>
+
+        <p>
+            留下你的想法
+        </p>
+
+    </section>
 
 
-<div class="section-header-top">
+
+
+    <!-- ==================================================
+         左侧浮动留言框
+         ================================================== -->
+
+    <aside class="message-float-form-wrap" id="messageFloatForm">
+
+        <div class="message-float-card">
+
+            <div class="message-float-title">
+
+                💬 留言板
+
+            </div>
+
+            <p class="message-float-desc">
+
+                访客可以留言，发布者或管理员可以回复
+
+            </p>
+
+
+            <form
+                method="post"
+                action="/messages"
+                class="message-create-form"
+            >
+
+                <textarea
+                    name="content"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="写下你的留言..."
+                    class="message-create-input"
+                    required
+                ></textarea>
+
+
+                <label class="message-private-toggle">
+
+                    <input
+                        type="checkbox"
+                        name="is_private"
+                        value="true"
+                    >
+
+                    <span>
+                        🔒 私密留言（仅管理员可见）
+                    </span>
+
+                </label>
+
+
+                <div class="message-create-actions">
+
+                    <button
+                        type="submit"
+                        class="message-create-submit"
+                    >
+
+                        发布留言
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </aside>
 
 
 
-<h1 class="section-title">
 
-留言
+    <!-- ==================================================
+         留言列表（不显示回复，点击进入详情）
+         ================================================== -->
 
-</h1>
-
-
-
-
-{% if is_admin %}
+    <section class="message-list">
 
 
-<a
-href="/admin/messages"
-class="action-button"
->
 
-＋ 管理留言
-
-</a>
+        {% for message in messages %}
 
 
-{% endif %}
 
+        <article
+            class="content-card message-card"
+            data-url="/message/{{ message.id }}"
+        >
+
+
+
+            <div class="message-header">
+
+
+                <strong>
+
+                    {{ message.nickname }}
+
+                </strong>
+
+
+                {% if message.is_private %}
+
+                <span class="message-private-badge">
+
+                    🔒 私密
+
+                </span>
+
+                {% endif %}
+
+
+                <span class="message-time">
+
+                    {{ message.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+                </span>
+
+            </div>
+
+
+
+
+            <div class="message-content">
+
+                {{ message.content }}
+
+            </div>
+
+
+
+        </article>
+
+
+
+        {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-title">
+                还没有留言
+            </div>
+
+            <div class="empty-state-text">
+                欢迎留下第一条消息
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+
+
+
+    </section>
 
 
 
@@ -60,95 +201,119 @@ class="action-button"
 
 
 
-<p class="text-secondary">
+<script>
 
-留下你的想法
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-</p>
-
-
-
-</header>
-
-
-
+        const createForm =
+            document.querySelector(
+                ".message-create-form"
+            );
 
 
+        if (
+            createForm &&
+            typeof executeWithNickname ===
+            "function"
+        ) {
+
+            createForm.addEventListener(
+                "submit",
+                async function (event) {
+
+                    event.preventDefault();
 
 
-<div class="message-list">
+                    const input =
+                        createForm.querySelector(
+                            "textarea"
+                        );
 
 
+                    if (
+                        !input ||
+                        !input.value.trim()
+                    ) {
+
+                        alert(
+                            "留言内容不能为空"
+                        );
+
+                        return;
+
+                    }
 
 
+                    async function doCreate(
+                        nickname = null
+                    ) {
 
-{% for message in messages %}
-
-
-
-<article class="content-card message-card">
-
-
-
-<div class="message-header">
+                        const data =
+                            new FormData(createForm);
 
 
-<strong>
+                        if (nickname) {
 
-{{ message.nickname }}
+                            data.append(
+                                "nickname",
+                                nickname
+                            );
 
-</strong>
-
-
-<span>
-
-{{ message.created_at.strftime("%Y-%m-%d %H:%M") }}
-
-</span>
+                        }
 
 
-</div>
+                        return fetch(
+                            createForm.action,
+                            {
+                                method: "POST",
+                                body: data
+                            }
+                        );
+
+                    }
 
 
+                    const response =
+                        await executeWithNickname(
+                            doCreate
+                        );
 
 
-<div class="message-content">
+                    if (!response) {
 
-{{ message.content }}
+                        return;
 
-</div>
-
-
-
-</article>
+                    }
 
 
-
-{% else %}
-
-<div class="empty-state">
-
-<div class="empty-state-title">
-还没有留言
-</div>
-
-<div class="empty-state-text">
-欢迎留下第一条消息
-</div>
-
-</div>
+                    const result =
+                        await response.json();
 
 
-{% endfor %}
+                    if (!result.success) {
+
+                        alert(
+                            result.error ||
+                            "留言失败"
+                        );
+
+                        return;
+
+                    }
 
 
+                    window.location.reload();
 
+                }
+            );
 
-</div>
+        }
 
+    }
+);
 
-</section>
-
-
+</script>
 
 {% endblock %}

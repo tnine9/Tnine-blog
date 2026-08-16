@@ -1,5 +1,6 @@
 <article  
     class="content-card moment-card"
+    data-url="/moment/{{ item.data.id }}"
 >
 
 
@@ -10,7 +11,7 @@
 
         <div class="moment-avatar">
 
-            {{ item.data.nickname[0] }}
+            {{ (item.data.nickname or "匿")[0] }}
 
         </div>
 
@@ -42,12 +43,11 @@
 
 
 
-    <!-- 内容 -->
-
+    <!-- 内容（高度随文字行数自适应） -->
 
     {% if item.data.content %}
 
-    <div class="moment-content">
+    <div class="moment-content moment-content-flex">
 
         {{ item.data.content }}
 
@@ -58,49 +58,9 @@
 
 
 
-    <!-- 图片 -->
-
 <!-- 图片 -->
 
-
-{% if item.data.images %}
-
-
-<div 
-class="
-moment-images 
-moment-images-count-{{ item.data.images|length }}
-"
->
-
-
-{% for image in item.data.images %}
-
-
-<div 
-<div class="moment-image-item">
-
-
-<img 
-    src="{{ image.image_path }}" 
-    alt="朋友圈图片"
-    loading="lazy"
-    decoding="async"
-    onclick="openImageViewer('{{ image.image_path }}')"
->
-
-
-</div>
-
-
-{% endfor %}
-
-
-</div>
-
-
-{% endif %}
-
+{% include "components/moment_images.html" %}
 
 
 
@@ -174,6 +134,25 @@ moment-images-count-{{ item.data.images|length }}
 
 
 
+        <a
+            href="/moment/{{ item.data.id }}"
+            class="moment-action-button moment-detail-link"
+        >
+
+
+            📄
+
+
+            <span>
+
+                详情
+
+            </span>
+
+
+        </a>
+
+
 
         <button
             type="button"
@@ -222,7 +201,6 @@ moment-images-count-{{ item.data.images|length }}
 
 
 
-
     <!-- 点赞列表 -->
 
 
@@ -260,7 +238,6 @@ moment-images-count-{{ item.data.images|length }}
 
 
     {% endif %}
-
 
 
 
@@ -315,7 +292,6 @@ moment-images-count-{{ item.data.images|length }}
 
 
 
-
         {% if sorted_comments|length > 5 %}
 
 
@@ -364,7 +340,6 @@ moment-images-count-{{ item.data.images|length }}
 
 
 
-
         <button
             type="button"
             class="moment-comments-more"
@@ -387,7 +362,6 @@ moment-images-count-{{ item.data.images|length }}
 
 
     {% endif %}
-
 
 
 
