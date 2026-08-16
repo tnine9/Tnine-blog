@@ -707,3 +707,47 @@ document
 
     }
 );
+
+function openImageViewer(src){
+
+
+const viewer =
+document.getElementById(
+"image-viewer"
+);
+
+
+const img =
+document.getElementById(
+"viewer-image"
+);
+
+
+
+img.src=src;
+
+
+viewer.classList.add(
+"show"
+);
+
+
+
+}
+
+
+
+function closeImageViewer(){
+
+
+document
+.getElementById(
+"image-viewer"
+)
+.classList.remove(
+"show"
+);
+
+
+
+}

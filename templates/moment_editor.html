@@ -2,7 +2,7 @@
 
 
 {% block title %}
-发布朋友圈
+发布朋友圈 - Tnine
 {% endblock %}
 
 
@@ -10,12 +10,25 @@
 {% block content %}
 
 
-<main class="container">
+<section class="page-content">
 
 
-<h2>
+<header class="section-header">
+
+<h1 class="section-title">
 发布朋友圈
-</h2>
+</h1>
+
+<p class="text-secondary">
+记录生活碎片
+</p>
+
+</header>
+
+
+
+
+<div class="moment-editor-card">
 
 
 
@@ -26,38 +39,456 @@ enctype="multipart/form-data"
 >
 
 
+
 <textarea
+class="moment-editor-textarea"
 name="content"
 placeholder="这一刻想说什么..."
-rows="8"
+rows="6"
 required
 ></textarea>
 
 
 
-<br>
+
+<div class="moment-upload-area">
+
+
+<label class="upload-button">
+
+
+＋ 添加照片
 
 
 <input
+id="moment-image-input"
 type="file"
 name="images"
 multiple
 accept="image/*"
-/>
+hidden
+>
 
 
-<br><br>
+</label>
 
 
-<button>
+
+<span class="upload-tip">
+
+最多上传9张照片
+
+</span>
+
+
+
+</div>
+
+
+
+
+
+<div
+id="image-preview"
+class="image-preview-grid"
+>
+
+
+</div>
+
+
+
+
+
+
+<button
+class="action-button"
+type="submit"
+>
+
 发布
+
 </button>
+
+
 
 
 </form>
 
 
-</main>
+</div>
+
+
+
+</section>
+
+
+
+
+
+<script>
+
+
+const input =
+document.getElementById(
+"moment-image-input"
+);
+
+
+const preview =
+document.getElementById(
+"image-preview"
+);
+
+
+
+let files=[];
+
+
+
+// ===============================
+// 选择图片
+// ===============================
+
+
+input.addEventListener(
+"change",
+function(){
+
+
+files=[
+...files,
+...input.files
+];
+
+
+
+if(files.length>9){
+
+
+alert(
+"最多只能上传9张图片"
+);
+
+
+files =
+files.slice(0,9);
+
+
+}
+
+
+
+updateInput();
+
+
+renderPreview();
+
+
+});
+
+
+
+
+
+// ===============================
+// 同步 input 文件
+// ===============================
+
+
+function updateInput(){
+
+
+
+const dt =
+new DataTransfer();
+
+
+
+files.forEach(
+file=>{
+
+dt.items.add(file);
+
+}
+
+);
+
+
+
+input.files =
+dt.files;
+
+
+
+}
+
+
+
+
+
+
+
+// ===============================
+// 渲染预览
+// ===============================
+
+
+function renderPreview(){
+
+
+
+preview.innerHTML="";
+
+
+
+files.forEach(
+(file,index)=>{
+
+
+const reader =
+new FileReader();
+
+
+
+reader.onload=function(e){
+
+
+
+const box =
+document.createElement(
+"div"
+);
+
+
+
+box.className=
+"preview-item";
+
+
+
+box.draggable=true;
+
+
+
+box.dataset.index=index;
+
+
+
+
+box.innerHTML=`
+
+<img src="${e.target.result}">
+
+
+
+<div class="preview-actions">
+
+
+<button
+type="button"
+onclick="removeImage(${index})"
+>
+删除
+</button>
+
+
+<button
+type="button"
+onclick="previewImage(${index})"
+>
+放大
+</button>
+
+
+</div>
+
+
+`;
+
+
+
+preview.appendChild(box);
+
+
+
+}
+
+
+
+reader.readAsDataURL(file);
+
+
+
+});
+
+
+
+}
+
+
+
+
+// ===============================
+// 删除
+// ===============================
+
+
+function removeImage(index){
+
+
+files.splice(
+index,
+1
+);
+
+
+updateInput();
+
+
+renderPreview();
+
+
+}
+
+
+
+
+
+
+// ===============================
+// 放大
+// ===============================
+
+
+function previewImage(index){
+
+
+const url =
+URL.createObjectURL(
+files[index]
+);
+
+
+
+openImageViewer(url);
+
+
+}
+
+
+
+
+
+
+// ===============================
+// 拖动排序
+// ===============================
+
+
+let dragIndex=null;
+
+
+
+preview.addEventListener(
+"dragstart",
+function(e){
+
+
+dragIndex =
+Number(
+e.target.dataset.index
+);
+
+
+
+});
+
+
+
+
+
+
+preview.addEventListener(
+"dragover",
+function(e){
+
+
+e.preventDefault();
+
+
+});
+
+
+
+
+
+
+preview.addEventListener(
+"drop",
+function(e){
+
+
+e.preventDefault();
+
+
+
+const targetIndex =
+Number(
+e.target.closest(
+".preview-item"
+).dataset.index
+);
+
+
+
+
+if(
+dragIndex===null ||
+dragIndex===targetIndex
+){
+
+return;
+
+}
+
+
+
+
+
+const moveFile =
+files.splice(
+dragIndex,
+1
+)[0];
+
+
+
+files.splice(
+targetIndex,
+0,
+moveFile
+);
+
+
+
+updateInput();
+
+
+renderPreview();
+
+
+
+dragIndex=null;
+
+
+
+});
+
+
+
+</script>
+
 
 
 {% endblock %}

@@ -21,6 +21,7 @@ from models import (
 from fastapi import UploadFile, File
 import os
 import shutil
+import uuid
 
 
 # ============================================================
@@ -1261,16 +1262,20 @@ def create_moment(
 
         # 保存图片
 
+        # 最多9张
+
+        images = images[:9]
+
+
         for index, image in enumerate(images):
 
+
             if image.filename:
-
-
                 filename = (
                     f"{moment.id}_"
-                    f"{index}_"
+                    f"{uuid.uuid4().hex}_"
                     f"{image.filename}"
-                )
+)
 
 
                 save_path = os.path.join(

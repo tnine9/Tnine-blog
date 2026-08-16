@@ -1,6 +1,5 @@
-<article 
+<article  
     class="content-card moment-card"
-    data-url="/moment/{{ item.data.id }}"
 >
 
 
@@ -61,37 +60,47 @@
 
     <!-- 图片 -->
 
-
-    {% if item.data.images %}
-
-
-    <div class="moment-images moment-images-count-{{ item.data.images|length }}">
+<!-- 图片 -->
 
 
-        {% for image in item.data.images %}
+{% if item.data.images %}
 
 
-        <div class="moment-image-item">
+<div 
+class="
+moment-images 
+moment-images-count-{{ item.data.images|length }}
+"
+>
 
 
-            <img
-                src="{{ image.image_path }}"
-                alt="朋友圈图片"
-                loading="lazy"
-                decoding="async"
-            >
+{% for image in item.data.images %}
 
 
-        </div>
+<div 
+class="moment-image-item"
+onclick="openImageViewer('{{ image.image_path }}')"
+>
 
 
-        {% endfor %}
+<img 
+    src="{{ image.image_path }}"
+    alt="朋友圈图片"
+    loading="lazy"
+    decoding="async"
+>
 
 
-    </div>
+</div>
 
 
-    {% endif %}
+{% endfor %}
+
+
+</div>
+
+
+{% endif %}
 
 
 
