@@ -327,16 +327,26 @@
 
 </footer>
 
+
+
+
+<!-- 图片查看器 -->
+
 <div
-id="image-viewer"
-class="image-viewer"
-onclick="closeImageViewer()"
+    id="image-viewer"
+    class="image-viewer"
+    onclick="closeImageViewer()"
 >
 
 
-<img
-id="viewer-image"
->
+    <img
+        id="viewer-image"
+        src=""
+        alt="preview"
+    >
+
+
+</div>
 
 
 
@@ -347,6 +357,8 @@ id="viewer-image"
 
 <script src="{{ url_for('static', path='js/main.js') }}?v=2"></script>
 
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
 
 </body>

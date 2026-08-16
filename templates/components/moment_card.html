@@ -78,16 +78,15 @@ moment-images-count-{{ item.data.images|length }}
 
 
 <div 
-class="moment-image-item"
-onclick="openImageViewer('{{ image.image_path }}')"
->
+<div class="moment-image-item">
 
 
 <img 
-    src="{{ image.image_path }}"
+    src="{{ image.image_path }}" 
     alt="朋友圈图片"
     loading="lazy"
     decoding="async"
+    onclick="openImageViewer('{{ image.image_path }}')"
 >
 
 

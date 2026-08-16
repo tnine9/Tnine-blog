@@ -1276,3 +1276,125 @@ cursor:move;
 opacity:1;
 
 }
+
+/* =====================================================
+   图片查看器
+===================================================== */
+
+
+.image-viewer{
+
+
+    position:fixed;
+
+
+    inset:0;
+
+
+    background:rgba(0,0,0,.85);
+
+
+    display:none;
+
+
+    align-items:center;
+
+
+    justify-content:center;
+
+
+    z-index:9999;
+
+
+    cursor:zoom-out;
+
+}
+
+
+
+.image-viewer.show{
+
+
+    display:flex;
+
+
+}
+
+
+
+.image-viewer img{
+
+
+    max-width:90vw;
+
+
+    max-height:90vh;
+
+
+    object-fit:contain;
+
+
+    border-radius:8px;
+
+
+}
+
+.image-preview{
+
+
+display:grid;
+
+
+grid-template-columns:
+repeat(3,100px);
+
+
+gap:12px;
+
+
+}
+
+
+
+.image-preview-item{
+
+
+cursor:grab;
+
+
+transition:
+transform .2s ease;
+
+
+}
+
+
+
+.image-preview-item:active{
+
+
+cursor:grabbing;
+
+
+}
+
+
+
+.image-ghost{
+
+
+opacity:.4;
+
+
+}
+
+
+
+.image-chosen{
+
+
+transform:
+scale(1.05);
+
+
+}

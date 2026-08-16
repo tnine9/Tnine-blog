@@ -748,6 +748,32 @@ document
 "show"
 );
 
+}
 
+document.addEventListener(
+"click",
+function(event){
+
+
+const viewer =
+document.getElementById(
+"image-viewer"
+);
+
+
+if(!viewer){
+    return;
+}
+
+
+
+if(
+event.target === viewer
+){
+
+    closeImageViewer();
 
 }
+
+
+});

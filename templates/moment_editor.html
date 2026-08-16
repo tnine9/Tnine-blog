@@ -489,6 +489,68 @@ dragIndex=null;
 
 </script>
 
+<script>
 
+
+document.addEventListener(
+"DOMContentLoaded",
+function(){
+
+
+const preview =
+document.getElementById(
+"image-preview"
+);
+
+
+
+if(!preview){
+    return;
+}
+
+
+
+new Sortable(
+preview,
+{
+
+
+animation:250,
+
+
+ghostClass:
+"image-ghost",
+
+
+chosenClass:
+"image-chosen",
+
+
+dragClass:
+"image-drag",
+
+
+
+onEnd:function(){
+
+
+console.log(
+"新的顺序:",
+this.toArray()
+);
+
+
+}
+
+}
+);
+
+
+
+});
+
+
+
+</script>
 
 {% endblock %}
