@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5" />
+  <title>Tnine · 数字花园</title>
+  <!-- 字体: Inter + PingFang SC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== 全局设计令牌 ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* 主色可配置 — 默认暖灰紫 */
+      --primary: #7c6b8a;
+      --primary-light: #b3a0c7;
+      --primary-dark: #55455e;
+
+      --bg: #faf8f7;
+      --surface: #ffffff;
+      --card: #ffffff;
+      --text: #1e1b1a;
+      --text-secondary: #5f5a57;
+      --border: #e8e2de;
+      --success: #5f8b7a;
+      --warning: #d9b68c;
+      --danger: #c47a7a;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+
+      --shadow-soft: 0 8px 28px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);
+      --shadow-card: 0 12px 40px rgba(0,0,0,0.05);
+      --shadow-hover: 0 20px 48px rgba(0,0,0,0.08);
+
+      --font-sans: 'Inter', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      --transition: 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    /* 暗色主题 */
+    [data-theme="dark"] {
+      --bg: #171515;
+      --surface: #242120;
+      --card: #2b2827;
+      --text: #f0ece9;
+      --text-secondary: #b5aeaa;
+      --border: #3d3835;
+      --shadow-soft: 0 8px 28px rgba(0,0,0,0.4);
+      --shadow-card: 0 12px 40px rgba(0,0,0,0.6);
+      --shadow-hover: 0 20px 48px rgba(0,0,0,0.7);
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    a { color: var(--primary); text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ===== 导航 ===== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    [data-theme="dark"] .navbar {
+      background: rgba(23, 21, 21, 0.82);
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .nav-logo span { color: var(--primary); }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .nav-links a {
+      color: var(--text-secondary);
+      transition: color 0.2s;
+      position: relative;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--primary); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-actions .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #fff;
+      cursor: pointer;
+    }
+    .theme-toggle {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: 0.2s;
+    }
+    .theme-toggle:hover { border-color: var(--primary); }
+
+    /* 响应式导航折叠 */
+    .nav-links.mobile {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-links.mobile {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        padding: 8px 0;
+        justify-content: space-around;
+        backdrop-filter: blur(12px);
+        gap: 0;
+        z-index: 99;
+      }
+      .nav-links.mobile a {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+        color: var(--text-secondary);
+      }
+      .navbar { height: 56px; }
+      .container { padding: 0 16px; }
+    }
+
+    /* ===== Hero ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 80px 24px 60px;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(124,107,138,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(124,107,138,0.04) 0%, transparent 50%),
+        var(--bg);
+      position: relative;
+      transition: background 0.3s;
+    }
+    .hero-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.2rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-card);
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="40" r="24" fill="%23ffffff40"/><circle cx="50" cy="80" r="32" fill="%23ffffff30"/></svg>');
+      background-size: cover;
+    }
+    .hero h1 {
+      font-size: 3.2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .hero .sub {
+      font-size: 1.3rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+      margin-bottom: 32px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 32px;
+      border-radius: 60px;
+      font-weight: 500;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      transition: all 0.25s;
+      box-shadow: var(--shadow-soft);
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+    }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .btn-outline:hover { border-color: var(--primary); background: var(--surface); }
+
+    /* ===== 时间线 ===== */
+    .timeline {
+      padding: 60px 0 80px;
+    }
+    .timeline-item {
+      display: flex;
+      gap: 24px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.6s forwards;
+    }
+    .timeline-item:nth-child(1) { animation-delay: 0.05s; }
+    .timeline-item:nth-child(2) { animation-delay: 0.10s; }
+    .timeline-item:nth-child(3) { animation-delay: 0.15s; }
+    .timeline-item:nth-child(4) { animation-delay: 0.20s; }
+    .timeline-item:nth-child(5) { animation-delay: 0.25s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .timeline-date {
+      min-width: 100px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    .timeline-content {
+      flex: 1;
+    }
+    .timeline-category {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      background: var(--primary-light);
+      color: #fff;
+      padding: 2px 12px;
+      border-radius: 40px;
+      margin-bottom: 6px;
+    }
+    .timeline-content p {
+      margin-top: 4px;
+      color: var(--text-secondary);
+    }
+
+    /* ===== 卡片通用 ===== */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 28px;
+      margin: 40px 0;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-soft);
+      transition: all 0.25s;
+      border: 1px solid var(--border);
+    }
+    .card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-4px);
+    }
+    .card h3 { font-weight: 600; margin-bottom: 8px; }
+    .card .meta {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== 朋友圈卡片 ===== */
+    .moment-card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+      transition: 0.2s;
+    }
+    .moment-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .moment-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 600;
+    }
+    .moment-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+    .moment-actions button {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: 0.15s;
+    }
+    .moment-actions button:hover { color: var(--primary); }
+
+    .comment-area {
+      margin-top: 14px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+    }
+    .comment-item {
+      display: flex;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .comment-item:last-child { border-bottom: none; }
+    .comment-input {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .comment-input textarea {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 8px 16px;
+      resize: none;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+    .comment-input button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 40px;
+      padding: 8px 20px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* ===== 留言板 ===== */
+    .message-form {
+      background: var(--card);
+      padding: 28px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
+      margin: 32px 0;
+    }
+    .message-form .field {
+      margin-bottom: 16px;
+    }
+    .message-form label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
+    }
+    .message-form input, .message-form textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+    }
+    .message-form .radio-group {
+      display: flex;
+      gap: 20px;
+    }
+
+    /* ===== 仪表盘 (示意) ===== */
+    .dashboard-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+      margin: 32px 0;
+    }
+    .stat-card {
+      background: var(--card);
+      padding: 20px 16px;
+      border-radius: var(--radius-md);
+      text-align: center;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat-card .number { font-size: 2rem; font-weight: 700; color: var(--primary); }
+
+    /* ===== 页脚 ===== */
+    .footer {
+      margin-top: 60px;
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    /* ===== 响应式微调 ===== */
+    @media (max-width: 390px) {
+      .hero h1 { font-size: 2.4rem; }
+      .btn { padding: 10px 20px; }
+      .timeline-item { flex-direction: column; gap: 6px; }
+      .timeline-date { min-width: auto; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== 导航 ===== -->
+  <header class="navbar">
+    <div class="nav-logo">T<span>nine</span></div>
+    <div class="nav-links">
+      <a href="#" class="active">首页</a>
+      <a href="#">文章</a>
+      <a href="#">朋友圈</a>
+      <a href="#">留言</a>
+    </div>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" aria-label="切换主题">🌓</button>
+      <div class="avatar" title="Tnine">T</div>
+      <span style="font-size:0.9rem;font-weight:500;">Tnine</span>
+    </div>
+  </header>
+
+  <!-- 移动底部导航 -->
+  <div class="nav-links mobile">
+    <a href="#" class="active">首页</a>
+    <a href="#">文章</a>
+    <a href="#">朋友圈</a>
+    <a href="#">留言</a>
+  </div>
+
+  <main>
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+      <div class="hero-avatar">T</div>
+      <h1>Tnine</h1>
+      <p class="sub">记录技术、生活和思考</p>
+      <div class="hero-actions">
+        <a href="#" class="btn btn-primary">进入文章</a>
+        <a href="#" class="btn btn-outline">查看朋友圈</a>
+      </div>
+    </section>
+
+    <!-- ===== 时间线 ===== -->
+    <div class="container timeline">
+      <h2 style="font-weight:600;font-size:1.8rem;margin-bottom:12px;">动态时间线</h2>
+      <div class="timeline-item">
+        <div class="timeline-date">2026.08.15</div>
+        <div class="timeline-content">
+          <span class="timeline-category">📄 文章</span>
+          <strong>如何设计一个个人博客系统</strong>
+          <p>从设计系统到前端实现，完整记录 Tnine 的构建过程。</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">2026.08.14</div>
+        <div class="timeline-content">
+          <span class="timeline-category">📷 朋友圈</span>
+          <strong>今天完成了新的功能</strong>
+          <p>朋友圈评论与点赞交互优化，体验更流畅。</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">2026.08.13</div>
+        <div class="timeline-content">
+          <span class="timeline-category">💬 留言</span>
+          <strong>你好，很喜欢你的博客</strong>
+          <p>来自访客「小林」的留言，感谢支持。</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">2026.08.12</div>
+        <div class="timeline-content">
+          <span class="timeline-category">📄 文章</span>
+          <strong>Notion 风格知识库搭建</strong>
+          <p>使用数据库与块编辑器打造个人知识体系。</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-date">2026.08.11</div>
+        <div class="timeline-content">
+          <span class="timeline-category">📷 朋友圈</span>
+          <strong>周末在咖啡馆写代码</strong>
+          <p>阳光正好，效率翻倍 ☕️</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 文章卡片预览 ===== -->
+    <div class="container">
+      <h2 style="font-weight:600;font-size:1.8rem;margin: 20px 0 8px;">最新文章</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>设计系统与色彩哲学</h3>
+          <div class="meta"><span>2026.08.10</span><span>📖 6 min</span><span>👁️ 128</span></div>
+          <p style="color:var(--text-secondary);margin-top:8px;">从 Apple 和 Notion 汲取灵感，构建温暖而克制的视觉语言。</p>
+        </div>
+        <div class="card">
+          <h3>朋友圈与社交时刻</h3>
+          <div class="meta"><span>2026.08.08</span><span>📖 4 min</span><span>👁️ 94</span></div>
+          <p style="color:var(--text-secondary);margin-top:8px;">设计类微信朋友圈的交互，让个人网站更有温度。</p>
+        </div>
+        <div class="card">
+          <h3>访客留言板设计</h3>
+          <div class="meta"><span>2026.08.05</span><span>📖 5 min</span><span>👁️ 76</span></div>
+          <p style="color:var(--text-secondary);margin-top:8px;">匿名留言与隐私保护，打造开放的交流空间。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 朋友圈 Moments ===== -->
+    <div class="container">
+      <h2 style="font-weight:600;font-size:1.8rem;margin: 32px 0 12px;">📱 朋友圈</h2>
+      <div class="moment-card">
+        <div class="moment-header">
+          <div class="moment-avatar">T</div>
+          <div><strong>Tnine</strong><div style="font-size:0.8rem;color:var(--text-secondary);">2026.08.14 14:32</div></div>
+        </div>
+        <p>今天完成了新的功能：朋友圈评论与点赞交互优化，体验更流畅 🎉</p>
+        <div style="display:flex;gap:8px;margin:10px 0;">
+          <span style="background:var(--border);border-radius:8px;padding:4px 10px;font-size:0.8rem;">#开发</span>
+          <span style="background:var(--border);border-radius:8px;padding:4px 10px;font-size:0.8rem;">#产品</span>
+        </div>
+        <div class="moment-actions">
+          <button>❤️ 12</button>
+          <button>💬 3</button>
+        </div>
+        <div class="comment-area">
+          <div class="comment-item"><span style="font-weight:500;">小明</span> 太棒了！期待上线</div>
+          <div class="comment-item"><span style="font-weight:500;">阿花</span> 交互很丝滑</div>
+          <div class="comment-input">
+            <textarea placeholder="说点什么..." rows="1"></textarea>
+            <button>发送</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="moment-card">
+        <div class="moment-header">
+          <div class="moment-avatar">T</div>
+          <div><strong>Tnine</strong><div style="font-size:0.8rem;color:var(--text-secondary);">2026.08.11 09:15</div></div>
+        </div>
+        <p>周末在咖啡馆写代码，阳光正好，效率翻倍 ☕️</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0;">
+          <div style="background:var(--border);border-radius:8px;aspect-ratio:1/1;"></div>
+          <div style="background:var(--border);border-radius:8px;aspect-ratio:1/1;"></div>
+          <div style="background:var(--border);border-radius:8px;aspect-ratio:1/1;"></div>
+        </div>
+        <div class="moment-actions">
+          <button>❤️ 8</button>
+          <button>💬 1</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 留言板 ===== -->
+    <div class="container">
+      <h2 style="font-weight:600;font-size:1.8rem;margin: 32px 0 12px;">💬 访客留言</h2>
+      <div class="message-form">
+        <div class="field">
+          <label>昵称</label>
+          <input type="text" placeholder="你的名字" value="小林" />
+        </div>
+        <div class="field">
+          <label>内容</label>
+          <textarea rows="3" placeholder="写下你想说的话...">很喜欢你的博客，设计很优雅！</textarea>
+        </div>
+        <div class="field radio-group">
+          <label><input type="radio" name="privacy" checked /> 公开</label>
+          <label><input type="radio" name="privacy" /> 私密</label>
+        </div>
+        <button class="btn btn-primary" style="border:none;">发布留言</button>
+      </div>
+      <div style="margin:12px 0;">
+        <div style="background:var(--card);border-radius:var(--radius-md);padding:16px;border:1px solid var(--border);margin-bottom:12px;">
+          <strong>小张</strong> <span style="color:var(--text-secondary);font-size:0.8rem;">2026.08.13</span>
+          <p style="margin-top:4px;">你好，很喜欢你的博客，会常来！</p>
+        </div>
+        <div style="background:var(--card);border-radius:var(--radius-md);padding:16px;border:1px solid var(--border);">
+          <strong>阿杰</strong> <span style="color:var(--text-secondary);font-size:0.8rem;">2026.08.12</span>
+          <p style="margin-top:4px;">这个数字花园的概念太棒了 👏</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 仪表盘示意 ===== -->
+    <div class="container" style="margin-top:40px;">
+      <h2 style="font-weight:600;font-size:1.8rem;">📊 仪表盘概览</h2>
+      <div class="dashboard-stats">
+        <div class="stat-card"><div class="number">23</div>文章</div>
+        <div class="stat-card"><div class="number">14</div>朋友圈</div>
+        <div class="stat-card"><div class="number">47</div>留言</div>
+        <div class="stat-card"><div class="number">1.2k</div>访问</div>
+        <div class="stat-card"><div class="number">56</div>点赞</div>
+        <div class="stat-card"><div class="number">18</div>评论</div>
+      </div>
+    </div>
+
+    <footer class="footer container">
+      <p>© 2026 Tnine · 数字花园 · 用 ❤️ 与 ☕️ 构建</p>
+      <p style="margin-top:4px;font-size:0.8rem;">Elegant · Personal · Readable</p>
+    </footer>
+  </main>
+
+  <script>
+    // 主题切换
+    const toggle = document.getElementById('themeToggle');
+    const root = document.documentElement;
+    let dark = false;
+    toggle.addEventListener('click', () => {
+      dark = !dark;
+      root.setAttribute('data-theme', dark ? 'dark' : 'light');
+      toggle.textContent = dark ? '☀️' : '🌓';
+    });
+
+    // 简单的滚动淡入 (额外)
+    const items = document.querySelectorAll('.timeline-item');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, { threshold: 0.2 });
+    items.forEach(item => observer.observe(item));
+
+    // 模拟评论发送
+    document.querySelectorAll('.comment-input button').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        const textarea = this.previousElementSibling;
+        if (textarea.value.trim()) {
+          const area = this.closest('.comment-area');
+          const newComment = document.createElement('div');
+          newComment.className = 'comment-item';
+          newComment.innerHTML = `<span style="font-weight:500;">我</span> ${textarea.value}`;
+          area.insertBefore(newComment, area.querySelector('.comment-input'));
+          textarea.value = '';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

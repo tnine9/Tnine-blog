@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文章详情 · Tnine</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235B8DEF'/%3E%3Ctext x='32' y='42' font-family='Inter,sans-serif' font-size='26' font-weight='700' fill='%23fff' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<div class="read-progress-bar"><div id="read-progress"></div></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">Tnine</a>
+    <nav class="nav-links">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="articles.html" class="nav-link">文章</a>
+      <a href="moments.html" class="nav-link">朋友圈</a>
+      <a href="messages.html" class="nav-link">留言</a>
+    </nav>
+    <div class="nav-right">
+      <button class="theme-toggle" title="切换主题">🌙</button>
+      <div id="nav-auth"></div>
+    </div>
+  </div>
+</header>
+
+<section class="article-detail-section">
+  <div class="container detail-layout">
+    <div class="detail-main">
+      <div id="article-detail"></div>
+    </div>
+    <aside class="detail-side">
+      <div class="toc-card">
+        <div class="toc-title">目录</div>
+        <div id="toc-list"></div>
+      </div>
+      <div class="side-card">
+        <div class="side-avatar-wrap"><img class="side-avatar" id="side-avatar" src="" alt=""></div>
+        <div class="side-name" id="side-name">Tnine</div>
+        <div class="side-desc" id="side-desc">记录技术、生活和思考</div>
+        <a class="btn btn-ghost btn-sm" href="messages.html" style="width:100%;justify-content:center;margin-top:14px">💬 给我留言</a>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="section related-section">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-title">相关文章</div>
+      <div class="section-sub">可能你也感兴趣</div>
+    </div>
+    <div class="article-grid" id="related-grid"></div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-logo">Tnine</div>
+    <div class="footer-text">© 2026 Tnine · 用爱与代码浇灌的数字花园</div>
+  </div>
+</footer>
+
+<nav class="bottom-nav">
+  <a href="index.html"><span class="bn-icon">🏠</span><span>首页</span></a>
+  <a href="articles.html"><span class="bn-icon">📄</span><span>文章</span></a>
+  <a href="moments.html"><span class="bn-icon">🕐</span><span>朋友圈</span></a>
+  <a href="messages.html"><span class="bn-icon">💬</span><span>留言</span></a>
+</nav>
+
+<script src="js/data.js"></script>
+<script src="js/markdown.js"></script>
+<script src="js/main.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const s = Tnine.load().settings;
+    if (s.avatar) document.getElementById("side-avatar").src = s.avatar;
+    document.getElementById("side-name").textContent = s.siteTitle || "Tnine";
+    document.getElementById("side-desc").textContent = s.description || "记录技术、生活和思考";
+    var ft = document.querySelector(".footer-text");
+    if (ft) ft.textContent = s.footer;
+  });
+</script>
+</body>
+</html>
