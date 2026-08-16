@@ -290,3 +290,35 @@ class MomentComment(Base):
         "Moment",
         back_populates="comments"
     )
+
+# ===========================
+# 留言
+# ===========================
+
+class Message(Base):
+
+    __tablename__ = "message"
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    nickname = Column(
+        String(50),
+        default="匿名用户"
+    )
+
+
+    content = Column(
+        Text,
+        nullable=False
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )

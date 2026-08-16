@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}
+
+朋友圈 - Tnine
+
+{% endblock %}
+
+
+
+
+
+{% block content %}
+
+
+
+<header class="section-header">
+
+
+<div class="section-header-top">
+
+
+
+<h1 class="section-title">
+
+朋友圈
+
+</h1>
+
+
+
+
+{% if is_admin %}
+
+
+<a
+href="/admin/moment/new"
+class="action-button"
+>
+
+＋ 发布动态
+
+</a>
+
+
+{% endif %}
+
+
+
+</div>
+
+
+
+<p class="text-secondary">
+
+记录一些生活碎片
+
+</p>
+
+
+
+</header>
+
+
+
+
+
+<div class="moment-page-list">
+
+
+
+{% for moment in moments %}
+
+
+
+<article class="content-card">
+
+
+
+    <div class="moment-header">
+
+
+        <strong>
+
+            {{ moment.nickname }}
+
+        </strong>
+
+
+
+        <span>
+
+            {{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+        </span>
+
+
+    </div>
+
+
+
+
+
+    <div class="moment-content">
+
+
+        {{ moment.content }}
+
+
+    </div>
+
+
+
+</article>
+
+
+
+
+
+{% else %}
+
+
+
+
+
+<div class="empty-state">
+
+
+    <div class="empty-state-title">
+
+        还没有动态
+
+    </div>
+
+
+
+    <div class="empty-state-text">
+
+        暂时没有发布任何朋友圈
+
+    </div>
+
+
+</div>
+
+
+
+
+
+{% endfor %}
+
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+{% endblock %}

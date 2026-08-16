@@ -2,125 +2,345 @@
 <html lang="zh-CN">
 
 <head>
+
     <meta charset="UTF-8">
+
 
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
 
+
     <title>
+
         {% block title %}
         Tnine
         {% endblock %}
+
     </title>
 
-<link rel="stylesheet"
-      href="{{ url_for('static', path='css/style.css') }}?v=5">
 
-<link rel="stylesheet"
-      href="{{ url_for('static', path='css/article.css') }}?v=1">
 
-<link rel="stylesheet"
-      href="{{ url_for('static', path='css/admin.css') }}">
+    <!-- 基础变量 -->
 
-<link rel="stylesheet"
-      href="{{ url_for('static', path='css/editor.css') }}?v=1">
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/variables.css') }}?v=1">
 
-<link rel="stylesheet"
-      href="{{ url_for('static', path='css/moment.css') }}">
 
-<link rel="stylesheet"
-      href="{{ url_for('static', path='css/modal.css') }}">
 
-      
+    <!-- 基础样式 -->
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/base.css') }}?v=1">
+
+
+
+    <!-- 布局 -->
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/layout.css') }}?v=1">
+
+
+
+    <!-- 组件 -->
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/components.css') }}?v=1">
+
+
+
+    <!-- 页面 -->
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/article.css') }}?v=1">
+
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/moment.css') }}">
+
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/admin.css') }}">
+
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/editor.css') }}?v=1">
+
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/modal.css') }}">
+
+
+
     {% block extra_head %}
     {% endblock %}
+
+
 </head>
+
+
 
 <body>
 
-<header class="site-header">
+
+
+<header class="site-header glass-header">
+
 
     <div class="container header-inner">
 
+
+
+        <!-- Logo -->
+
+
         <a href="/" class="logo">
-            Tnine
+
+
+            <span class="logo-main">
+
+                Tnine
+
+            </span>
+
+
+            <span class="logo-sub">
+
+                archive
+
+            </span>
+
+
         </a>
 
-        <nav>
 
-            <a href="/">
-                首页
+
+
+
+        <!-- 导航 -->
+
+<nav class="site-nav">
+
+
+    <a href="/" class="active">
+        首页
+    </a>
+
+
+    <a href="/articles">
+        文章
+    </a>
+
+
+    <a href="/moments">
+        朋友圈
+    </a>
+
+
+    <a href="/messages">
+        留言
+    </a>
+
+
+
+
+    {% if is_admin %}
+
+
+    <!-- 用户头像菜单 -->
+
+
+    <div class="user-menu">
+
+
+        <button
+            class="user-avatar"
+            id="userMenuButton"
+        >
+
+            {{ admin_username[0] }}
+
+        </button>
+
+
+
+        <div
+            class="user-dropdown"
+            id="userDropdown"
+        >
+
+
+            <div class="dropdown-user">
+
+
+                <div class="dropdown-avatar">
+
+                    {{ admin_username[0] }}
+
+                </div>
+
+
+                <div>
+
+                    <div class="dropdown-name">
+
+                        {{ admin_username }}
+
+                    </div>
+
+
+                    <div class="dropdown-role">
+
+                        Administrator
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+
+
+
+            <a href="/admin/profile">
+
+                个人资料
+
             </a>
 
-            <a href="#">
-                记录
+
+
+            <a href="/admin/password">
+
+                修改密码
+
             </a>
 
-            <a href="#">
-                朋友圈
+
+
+            <a href="/admin">
+
+                进入后台
+
             </a>
 
-            {% if is_admin %}
 
-                <span class="user-status">
-                    👤 {{ admin_username }}
-                </span>
 
-                <a href="/admin">
-                    管理后台
-                </a>
 
-                <a href="/admin/new">
-                    写文章
-                </a>
+            <div class="dropdown-divider"></div>
 
-                <a href="/admin/logout">
-                    退出登录
-                </a>
 
-            {% else %}
 
-                <a
-                    href="/admin/login"
-                    class="login-link"
-                >
-                    登录
-                </a>
+            <a 
+                href="/admin/logout"
+                class="logout-link"
+            >
 
-            {% endif %}
+                退出登录
 
-        </nav>
+            </a>
+
+
+
+        </div>
+
 
     </div>
+
+
+
+
+    {% else %}
+
+
+
+    <a href="/admin/login">
+
+        登录
+
+    </a>
+
+
+
+    {% endif %}
+
+
+
+</nav>
+
+
+
+
+    </div>
+
+
 
 </header>
 
 
-<main>
 
-    {% block content %}
-    {% endblock %}
+
+
+
+<main class="main-layout">
+
+
+
+    <div class="page-container">
+
+
+        {% block content %}
+
+        {% endblock %}
+
+
+
+    </div>
+
+
 
     {% include "nickname_modal.html" %}
+
+
 
 </main>
 
 
-<footer class="site-footer">
+
+
+
+
+
+<footer class="site-footer container">
+
 
     <p>
+
         © 2026 Tnine
+
     </p>
+
 
 </footer>
 
+
+
+
+
+
+
 <script src="{{ url_for('static', path='js/moment.js') }}?v=2"></script>
+
 
 <script src="{{ url_for('static', path='js/main.js') }}?v=2"></script>
 
 
+
 </body>
+
 
 </html>

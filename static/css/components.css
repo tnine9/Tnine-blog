@@ -1,0 +1,269 @@
+/* =========================================================
+   Tnine Components CSS
+
+   通用组件
+   ========================================================= */
+
+
+
+/* =========================================================
+   内容卡片系统
+   ========================================================= */
+
+
+.content-card {
+
+
+    background:
+        var(--color-surface);
+
+
+
+    border:
+
+        1px solid
+        var(--color-border);
+
+
+
+    border-radius:
+
+        var(--radius-lg);
+
+
+
+    box-shadow:
+
+        var(--shadow-sm);
+
+
+
+    transition:
+
+        transform .25s ease,
+        box-shadow .25s ease;
+
+
+
+    cursor:pointer;
+
+
+
+    overflow:hidden;
+
+}
+
+
+
+
+.content-card:hover {
+
+
+    transform:
+
+        translateY(-6px);
+
+
+
+    box-shadow:
+
+        var(--shadow-md);
+
+}
+
+
+/* =========================
+   Message
+========================= */
+
+
+.message-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+
+
+
+.message-card{
+
+
+    padding:24px;
+
+
+}
+
+
+
+
+
+.message-header{
+
+
+    display:flex;
+
+
+    justify-content:space-between;
+
+
+    margin-bottom:12px;
+
+
+}
+
+
+
+
+.message-header span{
+
+
+    color:
+
+    var(--color-text-muted);
+
+
+    font-size:13px;
+
+
+}
+
+
+
+
+.message-content{
+
+
+    color:
+
+    var(--color-text-secondary);
+
+
+    line-height:1.8;
+
+
+}
+
+
+
+
+/* =========================================================
+   通用空状态
+========================================================= */
+
+.empty-state {
+
+    padding:
+        80px 20px;
+
+
+    text-align:center;
+
+
+    color:
+        var(--color-text-secondary);
+
+}
+
+
+.empty-state-title {
+
+    font-size:20px;
+
+    font-weight:700;
+
+    margin-bottom:12px;
+
+}
+
+
+.empty-state-text {
+
+    font-size:14px;
+
+    color:
+        var(--color-text-muted);
+
+}
+
+/* =========================================================
+   页面新增按钮
+========================================================= */
+
+
+.section-header-top {
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:20px;
+
+}
+
+
+
+.action-button {
+
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+
+    padding:
+
+        8px 16px;
+
+
+    border-radius:
+
+        var(--radius-md);
+
+
+    background:
+
+        var(--color-text);
+
+
+    color:
+
+        var(--color-background);
+
+
+    font-size:14px;
+
+
+    text-decoration:none;
+
+
+    transition:
+
+        transform .2s ease,
+        opacity .2s ease;
+
+
+}
+
+
+
+.action-button:hover {
+
+
+    transform:
+
+        translateY(-2px);
+
+
+    opacity:.85;
+
+
+}

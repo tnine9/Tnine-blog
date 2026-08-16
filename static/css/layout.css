@@ -1,33 +1,444 @@
-/* =========================================================
-   Tnine Layout CSS
-   Header / Footer / Container
-   ========================================================= */
+/* =================================
+   Tnine v2 Layout System
+   Inspired by mvrvis01
+================================= */
 
 
-
-/* =========================================================
-   容器
-   ========================================================= */
+/* ---------- Global Container ---------- */
 
 
 .container {
 
-    width:min(
-        var(--container-width),
-        calc(100% - 40px)
-    );
+    width:100%;
 
+    max-width:
+        var(--container-width);
 
     margin:
         0 auto;
+
+    padding-left:
+        32px;
+
+    padding-right:
+        32px;
+
+}
+
+
+
+/* ---------- Main Layout ---------- */
+
+
+.main-layout {
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-height:
+        100vh;
+
+}
+
+
+
+/* ---------- Page Content ---------- */
+
+
+.page-content {
+
+
+    width:100%;
+
+
+    max-width:
+        var(--content-width);
+
+
+    margin:
+
+        0 auto;
+
+
+
+}
+
+
+
+/* ---------- Section ---------- */
+
+
+.section {
+
+
+    margin-top:
+        72px;
+
+
+    margin-bottom:
+        72px;
+
+
+}
+
+
+
+.section-header {
+
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+
+    margin-bottom:
+        32px;
+
+
+}
+
+
+
+.section-title {
+
+
+    font-size:
+        28px;
+
+
+    font-weight:
+        700;
+
+
+    letter-spacing:
+        -.02em;
+
+
+}
+
+
+
+/* ---------- Grid System ---------- */
+
+
+.grid {
+
+
+    display:grid;
+
+
+    gap:
+        24px;
+
+
+}
+
+
+
+.grid-2 {
+
+
+    grid-template-columns:
+
+        repeat(
+            2,
+            minmax(0,1fr)
+        );
+
+
+}
+
+
+
+.grid-3 {
+
+
+    grid-template-columns:
+
+        repeat(
+            3,
+            minmax(0,1fr)
+        );
+
+
+}
+
+
+
+/* ---------- Card ---------- */
+
+
+.card {
+
+
+    background:
+
+        var(--color-card);
+
+
+
+    border:
+
+        1px solid
+        var(--color-border);
+
+
+
+    border-radius:
+
+        var(--radius-lg);
+
+
+
+    box-shadow:
+
+        var(--shadow-sm);
+
+
+
+    transition:
+
+        var(--transition);
+
+
+
+}
+
+
+
+.card:hover {
+
+
+    transform:
+
+        translateY(-4px);
+
+
+    box-shadow:
+
+        var(--shadow-md);
+
+
+
+}
+
+
+
+/* ---------- Responsive ---------- */
+
+
+@media(max-width:900px){
+
+
+    .container {
+
+
+        padding-left:
+            20px;
+
+
+        padding-right:
+            20px;
+
+
+    }
+
+
+
+    .grid-2,
+    .grid-3 {
+
+
+        grid-template-columns:
+
+            1fr;
+
+
+    }
+
+
+}
+
+/* ==========================
+   Timeline
+========================== */
+
+
+.timeline {
+
+
+    display:flex;
+
+
+    flex-direction:column;
+
+
+    gap:40px;
+
+
+}
+
+
+
+.timeline-item {
+
+
+    display:grid;
+
+
+    grid-template-columns:
+
+        140px
+        1fr;
+
+
+
+    gap:40px;
+
+
+
+    position:relative;
+
+
 
 }
 
 
 
 
+.timeline-side {
+
+
+    position:relative;
+
+
+
+    text-align:right;
+
+
+
+}
+
+
+
+
+.timeline-side::after {
+
+
+    content:"";
+
+
+    position:absolute;
+
+
+    right:-21px;
+
+
+    top:0;
+
+
+    bottom:-40px;
+
+
+
+    width:2px;
+
+
+
+    background:
+
+        var(--color-border);
+
+
+
+}
+
+
+
+
+
+.timeline-dot {
+
+
+    position:absolute;
+
+
+
+    right:-30px;
+
+
+    top:10px;
+
+
+
+    width:18px;
+
+
+    height:18px;
+
+
+
+    border-radius:50%;
+
+
+
+    background:
+
+        var(--color-primary);
+
+
+
+    border:
+
+        4px solid white;
+
+
+
+    box-shadow:
+
+        var(--shadow-sm);
+
+
+
+}
+
+
+
+
+
+.timeline-date {
+
+
+    font-size:14px;
+
+
+
+    color:
+
+        var(--color-text-muted);
+
+
+
+}
+
+
+
+
+
+.timeline-content {
+
+
+    min-width:0;
+
+
+
+}
+
 /* =========================================================
-   顶部导航
+   Header 导航
    ========================================================= */
 
 
@@ -37,32 +448,36 @@
 
     top:0;
 
-
     z-index:100;
+
+
+    height:68px;
 
 
     background:
 
-        rgba(255,255,255,.96);
+        rgba(255,255,255,.72);
+
+
+    backdrop-filter:
+
+        blur(18px);
 
 
     border-bottom:
 
         1px solid
-        var(--color-border);
-
-
-    backdrop-filter:
-        blur(10px);
+        rgba(229,231,235,.7);
 
 }
 
 
 
 
+
 .header-inner {
 
-    min-height:70px;
+    height:100%;
 
 
     display:flex;
@@ -73,27 +488,58 @@
 
     justify-content:space-between;
 
-
-    gap:20px;
-
 }
+
 
 
 
 
 .logo {
 
+    display:flex;
+
+
+    align-items:baseline;
+
+
+    gap:8px;
+
+
     color:
+
         var(--color-text);
 
-
-    font-size:24px;
-
-
-    font-weight:700;
+}
 
 
-    line-height:1;
+
+.logo-main {
+
+
+    font-size:28px;
+
+
+    font-weight:800;
+
+
+    letter-spacing:-.04em;
+
+}
+
+
+
+.logo-sub {
+
+
+    font-size:11px;
+
+
+    color:
+
+        var(--color-text-muted);
+
+
+    letter-spacing:.16em;
 
 
 }
@@ -101,7 +547,8 @@
 
 
 
-nav {
+.site-nav {
+
 
     display:flex;
 
@@ -109,43 +556,21 @@ nav {
     align-items:center;
 
 
-    justify-content:flex-end;
-
-
-    flex-wrap:wrap;
-
-
-    gap:20px;
+    gap:22px;
 
 }
 
 
 
-nav a {
+
+.site-nav a {
+
+
+    position:relative;
+
 
     color:
-        #4b5563;
 
-
-    transition:
-        var(--transition);
-
-}
-
-
-
-nav a:hover {
-
-    color:
-        var(--color-text);
-
-}
-
-
-
-.user-status {
-
-    color:
         var(--color-text-secondary);
 
 
@@ -154,43 +579,354 @@ nav a:hover {
 
     font-weight:600;
 
+
 }
 
 
 
-.login-link {
+.site-nav a:hover {
+
 
     color:
+
+        var(--color-primary);
+
+}
+
+
+
+.site-nav a::after {
+
+
+    content:"";
+
+
+    position:absolute;
+
+
+    left:50%;
+
+
+    bottom:-10px;
+
+
+    width:0;
+
+
+    height:2px;
+
+
+    border-radius:99px;
+
+
+    background:
+
         var(--color-primary);
 
 
-    font-weight:600;
+    transform:
+
+        translateX(-50%);
+
+
+    transition:.25s ease;
 
 }
 
 
 
-/* =========================================================
-   Footer
-   ========================================================= */
+.site-nav a:hover::after {
 
 
-.site-footer {
+    width:100%;
+
+}
 
 
-    padding:
-
-        50px 20px;
 
 
-    text-align:center;
+
+/* ==========================
+   用户头像
+========================== */
+
+
+.user-menu {
+
+
+    position:relative;
+
+}
+
+
+
+
+.user-avatar {
+
+
+    width:40px;
+
+
+    height:40px;
+
+
+    border-radius:50%;
+
+
+    border:none;
+
+
+    background:
+
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #60a5fa
+        );
+
+
+    color:white;
+
+
+    font-weight:700;
+
+
+    cursor:pointer;
+
+
+    box-shadow:
+
+        0 8px 20px
+        rgba(37,99,235,.25);
+
+
+}
+
+
+
+
+
+.user-dropdown {
+
+
+    position:absolute;
+
+
+    right:0;
+
+
+    top:52px;
+
+
+    width:230px;
+
+
+    padding:12px;
+
+
+    background:
+
+        rgba(255,255,255,.92);
+
+
+    backdrop-filter:
+
+        blur(18px);
+
+
+
+    border:
+
+        1px solid
+        var(--color-border);
+
+
+    border-radius:
+
+        18px;
+
+
+    box-shadow:
+
+        0 20px 60px
+        rgba(0,0,0,.12);
+
+
+
+    opacity:0;
+
+
+    visibility:hidden;
+
+
+    transform:
+
+        translateY(-8px);
+
+
+    transition:.25s ease;
+
+}
+
+
+
+.user-dropdown.is-open {
+
+
+    opacity:1;
+
+
+    visibility:visible;
+
+
+    transform:
+
+        translateY(0);
+
+}
+
+
+
+
+
+.dropdown-user {
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    gap:12px;
+
+
+    padding:10px;
+
+}
+
+
+
+
+
+.dropdown-avatar {
+
+
+    width:44px;
+
+
+    height:44px;
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    justify-content:center;
+
+
+    border-radius:50%;
+
+
+    background:#eff6ff;
+
+
+    color:
+
+        var(--color-primary);
+
+
+    font-weight:700;
+
+}
+
+
+
+
+.dropdown-name {
+
+
+    font-weight:700;
+
+}
+
+
+
+
+.dropdown-role {
+
+
+    font-size:12px;
 
 
     color:
 
         var(--color-text-muted);
 
+}
 
-    font-size:14px;
+
+
+
+
+.user-dropdown a {
+
+
+    display:block;
+
+
+    padding:
+
+        10px 12px;
+
+
+    border-radius:10px;
+
+
+}
+
+
+
+.user-dropdown a:hover {
+
+
+    background:
+
+        #f3f4f6;
+
+}
+
+
+
+
+
+.dropdown-divider {
+
+
+    height:1px;
+
+
+    margin:
+
+        8px 0;
+
+
+    background:
+
+        var(--color-border);
+
+}
+
+
+
+
+.logout-link {
+
+
+    color:
+
+        var(--color-danger)!important;
 
 }

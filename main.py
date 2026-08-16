@@ -15,6 +15,7 @@ from models import (
     MomentImage,
     MomentLike,
     MomentComment,
+    Message,
 )
 
 from fastapi import UploadFile, File
@@ -279,10 +280,10 @@ def home(request: Request):
 
         db.close()
 
+
 # ============================================================
 # PUBLIC：文章详情
 # ============================================================
-
 @app.get("/article/{article_id}")
 def article_detail(
     request: Request,
@@ -401,6 +402,139 @@ def admin_login_page(
 
         db.close()
 
+# ============================================================
+# PUBLIC：文章页面
+# ============================================================
+
+@app.get("/articles")
+def articles(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        articles = (
+            db.query(Article)
+            .filter(
+                Article.status == "published"
+            )
+            .order_by(
+                Article.created_at.desc()
+            )
+            .all()
+        )
+
+
+        context = get_common_context(request)
+
+        context["articles"] = articles
+
+
+        return templates.TemplateResponse(
+            request=request,
+            name="articles.html",
+            context=context,
+        )
+
+
+    finally:
+
+        db.close()
+
+
+
+# ============================================================
+# PUBLIC：朋友圈页面
+# ============================================================
+
+@app.get("/moments")
+def moments(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        moments = (
+            db.query(Moment)
+            .options(
+                selectinload(Moment.images),
+                selectinload(Moment.likes),
+                selectinload(Moment.comments),
+            )
+            .order_by(
+                Moment.created_at.desc()
+            )
+            .all()
+        )
+
+
+        context = get_common_context(request)
+
+
+        context["moments"] = moments
+
+
+        context["liked_moment_ids"] = request.session.get(
+            "liked_moment_ids",
+            []
+        )
+
+
+        return templates.TemplateResponse(
+            request=request,
+            name="moments.html",
+            context=context,
+        )
+
+
+    finally:
+
+        db.close()
+
+
+
+# ============================================================
+# PUBLIC：留言页面
+# ============================================================
+
+# ============================================================
+# PUBLIC：留言页面
+# ============================================================
+
+@app.get("/messages")
+def messages(
+    request: Request,
+):
+
+    db = SessionLocal()
+
+    try:
+
+        messages = (
+            db.query(Message)
+            .order_by(
+                Message.created_at.desc()
+            )
+            .all()
+        )
+
+
+        context = get_common_context(request)
+
+
+        context["messages"] = messages
+
+
+        return templates.TemplateResponse(
+            request=request,
+            name="messages.html",
+            context=context,
+        )
+
+
+    finally:
+
+        db.close()
 
 # ============================================================
 # GUEST：登录

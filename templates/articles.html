@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+文章 - Tnine
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<section class="page-content">
+
+
+<header class="section-header">
+
+
+<div class="section-header-top">
+
+
+<h1 class="section-title">
+文章
+</h1>
+
+
+
+{% if is_admin %}
+
+<a 
+href="/admin/new"
+class="action-button"
+>
+
+＋ 新建文章
+
+</a>
+
+{% endif %}
+
+
+
+</div>
+
+
+</header>
+
+
+
+<div class="timeline">
+
+
+{% if articles %}
+
+
+
+{% for article in articles %}
+
+
+
+<article
+class="content-card article-card"
+data-url="/article/{{ article.id }}"
+>
+
+
+<div class="article-date">
+
+{{article.created_at.strftime("%Y-%m-%d")}}
+
+</div>
+
+
+<h2>
+
+{{article.title}}
+
+</h2>
+
+
+<p>
+
+{{article.summary}}
+
+</p>
+
+
+<a href="/article/{{article.id}}">
+
+阅读全文 →
+
+</a>
+
+
+</article>
+
+
+
+{% endfor %}
+
+
+
+{% else %}
+
+
+
+<div class="empty-state">
+
+
+<div class="empty-state-title">
+
+还没有文章
+
+</div>
+
+
+<div class="empty-state-text">
+
+这里暂时还没有发布任何内容
+
+</div>
+
+
+</div>
+
+
+
+{% endif %}
+
+
+
+</div>
+
+
+</section>
+
+
+
+{% endblock %}

@@ -7,72 +7,154 @@ Tnine
 
 
 
+
 {% block content %}
 
 
-<main class="container">
+
+<div class="container">
 
 
-    <!-- ==============================
-         首页介绍
-         ============================== -->
+
+    <!-- 首页介绍 -->
+
 
     <section class="hero">
+
 
         <h2>
             天涯里自会相逢
         </h2>
 
 
+
         <p>
             只是重逢，就不必了。
         </p>
+
 
     </section>
 
 
 
 
-    <!-- ==============================
-         时间线
-         ============================== -->
+
+
+
+    <!-- 时间线 -->
+
 
     <section class="timeline">
+
 
 
         {% for item in timeline %}
 
 
-            {% if item.type == "moment" %}
 
-
-                {% include "components/moment_card.html" %}
-
-
-
-            {% elif item.type == "article" %}
-
-
-                {% include "components/article_card.html" %}
+        <div class="timeline-item">
 
 
 
-            {% endif %}
+            <!-- 左侧时间 -->
+
+
+            <div class="timeline-side">
+
+
+                <div class="timeline-date">
+
+
+                    {{ 
+                    item.data.created_at.strftime("%Y-%m-%d")
+                    }}
+
+
+
+                </div>
+
+
+
+                <div class="timeline-dot"></div>
+
+
+
+            </div>
+
+
+
+
+
+
+
+            <!-- 右侧内容 -->
+
+
+            <div class="timeline-content">
+
+
+
+                {% if item.type == "moment" %}
+
+
+
+                    {% include "components/moment_card.html" %}
+
+
+
+
+
+                {% elif item.type == "article" %}
+
+
+
+                    {% include "components/article_card.html" %}
+
+
+
+
+
+                {% endif %}
+
+
+
+            </div>
+
+
+
+        </div>
+
+
 
 
 
         {% else %}
 
 
-            <div class="admin-empty">
+
+        <!-- 空状态 -->
 
 
-                <p>
-                    目前还没有内容。
-                </p>
+        <div class="empty-state">
 
+
+            <div class="empty-state-title">
+
+                这里还没有内容
 
             </div>
+
+
+
+            <div class="empty-state-text">
+
+                第一篇文章或第一条动态，等待你的记录
+
+            </div>
+
+
+        </div>
+
 
 
         {% endfor %}
@@ -83,7 +165,14 @@ Tnine
 
 
 
-</main>
+
+
+
+
+</div>
+
+
+
 
 
 {% endblock %}

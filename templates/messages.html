@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+
+
+
+{% block title %}
+
+留言 - Tnine
+
+{% endblock %}
+
+
+
+
+
+
+{% block content %}
+
+
+
+<section class="page-content">
+
+
+
+<header class="section-header">
+
+
+<div class="section-header-top">
+
+
+
+<h1 class="section-title">
+
+留言
+
+</h1>
+
+
+
+
+{% if is_admin %}
+
+
+<a
+href="/admin/messages"
+class="action-button"
+>
+
+＋ 管理留言
+
+</a>
+
+
+{% endif %}
+
+
+
+
+</div>
+
+
+
+<p class="text-secondary">
+
+留下你的想法
+
+</p>
+
+
+
+</header>
+
+
+
+
+
+
+
+<div class="message-list">
+
+
+
+
+
+{% for message in messages %}
+
+
+
+<article class="content-card message-card">
+
+
+
+<div class="message-header">
+
+
+<strong>
+
+{{ message.nickname }}
+
+</strong>
+
+
+<span>
+
+{{ message.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+</span>
+
+
+</div>
+
+
+
+
+<div class="message-content">
+
+{{ message.content }}
+
+</div>
+
+
+
+</article>
+
+
+
+{% else %}
+
+<div class="empty-state">
+
+<div class="empty-state-title">
+还没有留言
+</div>
+
+<div class="empty-state-text">
+欢迎留下第一条消息
+</div>
+
+</div>
+
+
+{% endfor %}
+
+
+
+
+</div>
+
+
+</section>
+
+
+
+{% endblock %}

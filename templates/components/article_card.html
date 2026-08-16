@@ -1,41 +1,67 @@
-<article class="article-card">
-
-
-<div class="article-date">
-
-{{ 
-item.data.created_at.strftime("%Y-%m-%d")
-}}
-
-</div>
-
-
-
-<h2>
-
-{{ item.data.title }}
-
-</h2>
-
-
-
-
-<p>
-
-{{ item.data.summary }}
-
-</p>
-
-
-
-<a
-href="/article/{{ item.data.id }}"
-class="read-more"
+<article 
+    class="content-card article-card"
+    data-url="/article/{{ item.data.id }}"
 >
 
-阅读全文 →
 
-</a>
+
+    <!-- 日期 -->
+
+
+    <div class="article-date">
+
+        {{ 
+        item.data.created_at.strftime("%Y-%m-%d")
+        }}
+
+    </div>
+
+
+
+
+
+    <!-- 标题 -->
+
+
+    <h2 class="article-title">
+
+        {{ item.data.title }}
+
+    </h2>
+
+
+
+
+
+    <!-- 摘要 -->
+
+
+    {% if item.data.summary %}
+
+    <p class="article-summary">
+
+        {{ item.data.summary }}
+
+    </p>
+
+
+    {% endif %}
+
+
+
+
+
+    <!-- 阅读 -->
+
+
+    <a
+        href="/article/{{ item.data.id }}"
+        class="read-more"
+    >
+
+        阅读全文 →
+
+    </a>
 
 
 
