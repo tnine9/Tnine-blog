@@ -15,11 +15,14 @@ from models import (
     ArticleLike,
     ArticleComment,
     Admin,
+    Setting,
     Moment,
     MomentImage,
     MomentLike,
     MomentComment,
     Message,
+    MessageThread,
+    Visitor,
 )
 
 from fastapi import UploadFile, File
@@ -64,6 +67,49 @@ password_hasher = PasswordHash.recommended()
 
 
 # ============================================================
+# 管理员初始化
+# 需求：固定账号 admin，取消注册页
+# 若 admins 表为空且设置了 TNINE_ADMIN_INITIAL_PASSWORD，
+# 启动时自动创建初始管理员（昵称默认"成哥"）
+# ============================================================
+
+def ensure_initial_admin():
+    db = SessionLocal()
+    try:
+        admin_count = db.query(Admin).count()
+        if admin_count > 0:
+            return
+        initial_password = os.environ.get(
+            "TNINE_ADMIN_INITIAL_PASSWORD"
+        )
+        if not initial_password:
+            return
+        if len(initial_password) < 6:
+            print(
+                "[Tnine] TNINE_ADMIN_INITIAL_PASSWORD 至少 6 位，"
+                "跳过初始管理员创建"
+            )
+            return
+        admin = Admin(
+            username="admin",
+            password_hash=password_hasher.hash(
+                initial_password
+            ),
+            nickname="成哥",
+        )
+        db.add(admin)
+        db.commit()
+        print(
+            "[Tnine] 已通过环境变量创建初始管理员 admin"
+        )
+    finally:
+        db.close()
+
+
+ensure_initial_admin()
+
+
+# ============================================================
 # 权限
 # ============================================================
 
@@ -75,12 +121,90 @@ def require_admin(request: Request):
     return get_current_admin(request)
 
 
-def require_guest(request: Request):
-    return get_current_admin(request) is None
-
-
 def is_admin(request: Request):
     return get_current_admin(request) is not None
+
+
+# ============================================================
+# 全站主题
+# 需求：
+# - 主题为全站设置（存 Setting 表），已选主题对所有访客生效
+# - 仅管理员可切换主题，访客无权切换
+# ============================================================
+
+SITE_THEME_KEY = "site_theme"
+
+VALID_THEMES = ("light", "dark")
+
+
+def get_site_theme():
+    """
+    读取全站主题，默认 light。
+    """
+
+    db = SessionLocal()
+
+    try:
+
+        setting = (
+            db.query(Setting)
+            .filter(Setting.key == SITE_THEME_KEY)
+            .first()
+        )
+
+        if (
+            setting
+            and setting.value in VALID_THEMES
+        ):
+
+            return setting.value
+
+        return "light"
+
+    finally:
+
+        db.close()
+
+
+def set_site_theme(theme: str):
+    """
+    写入全站主题（仅管理员调用）。
+    """
+
+    if theme not in VALID_THEMES:
+
+        return False
+
+    db = SessionLocal()
+
+    try:
+
+        setting = (
+            db.query(Setting)
+            .filter(Setting.key == SITE_THEME_KEY)
+            .first()
+        )
+
+        if setting is None:
+
+            setting = Setting(
+                key=SITE_THEME_KEY,
+                value=theme,
+            )
+
+            db.add(setting)
+
+        else:
+
+            setting.value = theme
+
+        db.commit()
+
+        return True
+
+    finally:
+
+        db.close()
 
 
 def get_common_context(request: Request):
@@ -89,11 +213,21 @@ def get_common_context(request: Request):
         "admin_username": request.session.get(
             "admin_username"
         ),
+        "admin_nickname": request.session.get(
+            "admin_nickname",
+            "成哥",
+        ),
+        "visitor_id": get_visitor_id(request),
+        "theme": get_site_theme(),
     }
 
 
 # ============================================================
-# 访客昵称
+# 访客身份
+# 需求：
+# - visitor_id：UUID Cookie，365 天，HttpOnly，SameSite=Lax
+# - 昵称首次设置机制保留（nickname_modal）
+# - 访客身份与管理员身份分离
 # ============================================================
 
 VISITOR_NICKNAME_COOKIE = "tnine_nickname"
@@ -101,6 +235,14 @@ VISITOR_NICKNAME_COOKIE = "tnine_nickname"
 VISITOR_ID_COOKIE = "tnine_visitor_id"
 
 ANONYMOUS_GUEST_NAME = "匿名访客"
+
+# 生产环境（HTTPS）下开启 Secure Cookie
+SECURE_COOKIES = (
+    os.environ.get("TNINE_ENV") == "production"
+)
+
+# 访客 ID Cookie 有效期：365 天
+VISITOR_ID_MAX_AGE = 60 * 60 * 24 * 365
 
 
 def get_visitor_nickname(request: Request):
@@ -139,42 +281,88 @@ def set_visitor_id_cookie(
     visitor_id: str,
 ):
     """
-    把访客 ID 写入响应 Cookie（180 天）。
+    把访客 ID 写入响应 Cookie（365 天）。
     """
 
     response.set_cookie(
         key=VISITOR_ID_COOKIE,
         value=visitor_id,
-        max_age=60 * 60 * 24 * 180,
+        max_age=VISITOR_ID_MAX_AGE,
         httponly=True,
         samesite="lax",
+        secure=SECURE_COOKIES,
         path="/",
     )
 
 
-def get_actor_name(
+def ensure_visitor(
+    db,
+    visitor_id: str,
+    nickname: str | None = None,
+):
+    """
+    确保 Visitor 档案存在（首次互动时自动建档）。
+
+    已存在则更新昵称快照与最后活动时间。
+    """
+
+    if not visitor_id:
+        return None
+
+    visitor = (
+        db.query(Visitor)
+        .filter(
+            Visitor.visitor_id == visitor_id
+        )
+        .first()
+    )
+
+    if visitor is None:
+
+        visitor = Visitor(
+            visitor_id=visitor_id,
+            nickname=(
+                (nickname or "").strip()[:50]
+                or ANONYMOUS_GUEST_NAME
+            ),
+        )
+
+        db.add(visitor)
+
+    else:
+
+        # 管理员身份互动时昵称快照用管理员昵称，
+        # 但不覆盖访客自己设置的昵称
+        visitor.updated_at = datetime.now()
+
+    return visitor
+
+
+def get_actor_identity(
     request: Request,
     fallback_nickname: str | None = None,
 ):
     """
-    获取当前互动用户名称。
+    获取当前互动用户身份。
 
-    管理员：
-        使用管理员账号
+    返回 (display_name, visitor_id)：
+    - display_name：展示昵称（管理员返回管理员昵称，访客返回昵称）
+    - visitor_id：浏览器访客 ID（管理员也拥有，用于互动数据归属）
 
-    游客：
-        优先使用本次操作传入的昵称
-        没有则使用 Cookie
-        都没有则返回 None
+    访客没有昵称时 display_name 为 None（需要先设置昵称）。
     """
 
-    # 管理员
+    visitor_id = get_visitor_id(request)
+
+    # 管理员：使用管理员昵称（成哥）
     if is_admin(request):
 
-        return request.session.get(
-            "admin_username"
+        nickname = request.session.get(
+            "admin_nickname",
+            "成哥",
         )
 
+        return nickname, visitor_id
 
     # 本次操作明确指定昵称
     if fallback_nickname is not None:
@@ -183,20 +371,54 @@ def get_actor_name(
 
         if nickname:
 
-            return nickname[:50]
+            return nickname[:50], visitor_id
 
-        return None
+        return None, visitor_id
 
-
-    # Cookie
+    # Cookie 昵称
     nickname = get_visitor_nickname(request)
 
     if nickname:
 
-        return nickname.strip()[:50]
+        return nickname.strip()[:50], visitor_id
+
+    return None, visitor_id
 
 
-    return None
+def get_liked_moment_ids(
+    db,
+    visitor_id: str,
+):
+    """
+    查询当前访客已点赞的朋友圈 ID 列表。
+    """
+
+    if not visitor_id:
+        return []
+
+    rows = (
+        db.query(MomentLike.moment_id)
+        .filter(
+            MomentLike.visitor_id == visitor_id
+        )
+        .all()
+    )
+
+    return [r[0] for r in rows]
+
+
+# ============================================================
+# 访客 ID 中间件
+# 首次访问任意页面即签发 365 天访客 Cookie
+# ============================================================
+
+@app.middleware("http")
+async def ensure_visitor_id_middleware(request: Request, call_next):
+    response = await call_next(request)
+    if not request.cookies.get(VISITOR_ID_COOKIE):
+        visitor_id = uuid.uuid4().hex
+        set_visitor_id_cookie(response, visitor_id)
+    return response
 
 
 # ============================================================
@@ -224,7 +446,7 @@ MOMENT_IMAGE_DIR = "static/uploads/moments"
 if not os.path.exists(MOMENT_IMAGE_DIR):
     os.makedirs(MOMENT_IMAGE_DIR)
 
-    
+
 # ============================================================
 # PUBLIC：博客首页
 # ============================================================
@@ -247,7 +469,7 @@ def home(request: Request):
             )
             .options(
                 selectinload(Article.likes),
-                selectinload(Article.comments),
+                selectinload(Article.comments).selectinload(ArticleComment.reply_to),
             )
             .order_by(
                 Article.created_at.desc()
@@ -265,13 +487,48 @@ def home(request: Request):
             .options(
                selectinload(Moment.images),
                selectinload(Moment.likes),
-               selectinload(Moment.comments),
+               selectinload(Moment.comments).selectinload(MomentComment.reply_to),
             )
             .order_by(
                Moment.created_at.desc()
-            ) 
+            )
             .all()
         )
+
+
+        # ==========================
+        # 获取留言（按身份可见性过滤）
+        # 公开留言所有人可见；私密留言仅发布者本人与管理员可见
+        # ==========================
+
+        visitor_id = get_visitor_id(request)
+
+        is_admin_flag = is_admin(request)
+
+        message_threads = (
+            db.query(MessageThread)
+            .options(
+                selectinload(MessageThread.messages),
+            )
+            .order_by(
+                MessageThread.updated_at.desc()
+            )
+            .all()
+        )
+
+        visible_threads = []
+
+        for thread in message_threads:
+
+            if (
+                thread.is_private
+                and not is_admin_flag
+                and thread.visitor_id != visitor_id
+            ):
+
+                continue
+
+            visible_threads.append(thread)
 
 
         # ==========================
@@ -301,6 +558,16 @@ def home(request: Request):
             )
 
 
+        for thread in visible_threads:
+
+            timeline.append(
+                {
+                    "type": "message",
+                    "data": thread,
+                }
+            )
+
+
         # 按时间倒序
 
         timeline.sort(
@@ -313,9 +580,11 @@ def home(request: Request):
 
         context["timeline"] = timeline
 
-        context["liked_moment_ids"] = request.session.get(
-            "liked_moment_ids",
-            []
+        context["threads"] = visible_threads
+
+        context["liked_moment_ids"] = get_liked_moment_ids(
+            db,
+            get_visitor_id(request),
         )
 
 
@@ -348,7 +617,7 @@ def article_detail(
             db.query(Article)
             .options(
                 selectinload(Article.likes),
-                selectinload(Article.comments),
+                selectinload(Article.comments).selectinload(ArticleComment.reply_to),
             )
             .filter(
                 Article.id == article_id
@@ -398,50 +667,53 @@ def article_detail(
             markdown.markdown(
                 article.content,
                 extensions=[
-                    "extra",
-                    "sane_lists",
+                    "fenced_code",
+                    "tables",
                     "toc",
                 ],
             ),
+            tags={
+                "a", "img", "h1", "h2", "h3", "h4",
+                "p", "br", "hr", "ul", "ol", "li",
+                "strong", "em", "code", "pre", "blockquote",
+                "table", "thead", "tbody", "tr", "th", "td",
+                "span", "div", "input",
+            },
             attributes={
-                "a": {"href", "title", "class"},
-                "img": {"src", "alt", "title"},
+                "a": {"href", "title", "target", "rel"},
+                "img": {"src", "alt", "title", "width", "height"},
+                "code": {"class"},
+                "pre": {"class"},
                 "h1": {"id"},
                 "h2": {"id"},
                 "h3": {"id"},
                 "h4": {"id"},
-                "code": {"class"},
-                "pre": {"class"},
+                "span": {"class"},
+                "div": {"class"},
+                "input": {"type", "checked", "disabled"},
+                "table": {"class"},
+                "th": {"align"},
+                "td": {"align"},
             },
+            url_schemes={
+                "http", "https", "mailto",
+                "tel", "data",
+            },
+            link_rel=None,
         )
 
-
-        # ====================================================
-        # 当前用户是否已点赞
-        # ====================================================
-
-        actor_name = get_actor_name(request)
-
-        liked_article = False
-
-        if actor_name:
-
-            liked_article = (
-                db.query(ArticleLike)
-                .filter(
-                    ArticleLike.article_id == article.id,
-                    ArticleLike.nickname == actor_name,
-                )
-                .first()
-                is not None
-            )
-
+        # 生成目录（toc 扩展会注入 div.toc，这里只取标题锚点）
+        toc_html = ""
+        if hasattr(article, "toc_html"):
+            toc_html = article.toc_html
 
         context = get_common_context(request)
 
         context["article"] = article
+
         context["article_html"] = article_html
-        context["liked_article"] = liked_article
+
+        context["liked_moment_ids"] = []
 
         return templates.TemplateResponse(
             request=request,
@@ -449,12 +721,14 @@ def article_detail(
             context=context,
         )
 
+
     finally:
+
         db.close()
 
 
 # ============================================================
-# GUEST：管理员登录页面
+# GUEST：管理员登录页
 # ============================================================
 
 @app.get("/admin/login")
@@ -463,222 +737,43 @@ def admin_login_page(
 ):
 
     # 已经登录
-    if not require_guest(request):
+    if not is_admin(request):
 
-        return RedirectResponse(
-            url="/admin",
-            status_code=303,
-        )
+        db = SessionLocal()
 
+        try:
 
-    db = SessionLocal()
-
-    try:
-
-        # ====================================================
-        # 检查系统是否已经存在管理员
-        # ====================================================
-
-        admin_count = (
-            db.query(Admin)
-            .count()
-        )
-
-
-        # 没有任何管理员
-        # 自动进入首次创建管理员页面
-
-        if admin_count == 0:
-
-            return RedirectResponse(
-                url="/admin/register",
-                status_code=303,
+            admin_count = (
+                db.query(Admin)
+                .count()
             )
 
+            context = get_common_context(request)
 
-        context = get_common_context(request)
+            context["error"] = None
 
-        context["error"] = None
-
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_login.html",
-            context=context,
-        )
-
-    finally:
-
-        db.close()
-
-# ============================================================
-# PUBLIC：文章页面
-# ============================================================
-
-@app.get("/articles")
-def articles(request: Request):
-
-    db = SessionLocal()
-
-    try:
-
-        articles = (
-            db.query(Article)
-            .filter(
-                Article.status == "published"
+            context["need_initial_password"] = (
+                admin_count == 0
             )
-            .options(
-                selectinload(Article.likes),
-                selectinload(Article.comments),
+
+            return templates.TemplateResponse(
+                request=request,
+                name="admin_login.html",
+                context=context,
             )
-            .order_by(
-                Article.created_at.desc()
-            )
-            .all()
-        )
 
+        finally:
 
-        context = get_common_context(request)
+            db.close()
 
-        context["articles"] = articles
-
-
-        return templates.TemplateResponse(
-            request=request,
-            name="articles.html",
-            context=context,
-        )
-
-
-    finally:
-
-        db.close()
-
+    return RedirectResponse(
+        url="/admin",
+        status_code=303,
+    )
 
 
 # ============================================================
-# PUBLIC：朋友圈页面
-# ============================================================
-
-@app.get("/moments")
-def moments(request: Request):
-
-    db = SessionLocal()
-
-    try:
-
-        moments = (
-            db.query(Moment)
-            .options(
-                selectinload(Moment.images),
-                selectinload(Moment.likes),
-                selectinload(Moment.comments),
-            )
-            .order_by(
-                Moment.created_at.desc()
-            )
-            .all()
-        )
-
-
-        context = get_common_context(request)
-
-
-        context["moments"] = moments
-
-
-        context["liked_moment_ids"] = request.session.get(
-            "liked_moment_ids",
-            []
-        )
-
-
-        return templates.TemplateResponse(
-            request=request,
-            name="moments.html",
-            context=context,
-        )
-
-
-    finally:
-
-        db.close()
-
-
-
-# ============================================================
-# PUBLIC：留言页面
-# ============================================================
-
-@app.get("/messages")
-def messages(
-    request: Request,
-):
-
-    db = SessionLocal()
-
-    try:
-
-        # 非管理员只能看到非私密留言
-        query = (
-            db.query(Message)
-            .filter(
-                Message.parent_id.is_(None)
-            )
-        )
-
-        if not is_admin(request):
-
-            visitor_id = get_visitor_id(
-                request
-            )
-
-            query = query.filter(
-                or_(
-                    Message.is_private.is_(False),
-                    Message.visitor_id == visitor_id,
-                )
-            )
-
-        messages = (
-            query
-            .order_by(
-                Message.created_at.desc()
-            )
-            .all()
-        )
-
-
-        # 预加载回复（详情页展示使用）
-        for message in messages:
-
-            message.replies
-
-
-        context = get_common_context(request)
-
-
-        context["messages"] = messages
-
-        # 当前访客 ID（用于判断"发布者本人"权限）
-        context["visitor_id"] = get_visitor_id(
-            request
-        )
-
-
-        return templates.TemplateResponse(
-            request=request,
-            name="messages.html",
-            context=context,
-        )
-
-
-    finally:
-
-        db.close()
-
-# ============================================================
-# GUEST：登录
+# GUEST：管理员登录
 # ============================================================
 
 @app.post("/admin/login")
@@ -688,278 +783,78 @@ def admin_login(
     password: str = Form(...),
 ):
 
-    if not require_guest(request):
-        return RedirectResponse(
-            url="/admin",
-            status_code=303,
-        )
+    if not is_admin(request):
 
-    db = SessionLocal()
+        username = username.strip()
 
-    try:
+        db = SessionLocal()
 
-        admin = (
-            db.query(Admin)
-            .filter(
-                Admin.username == username
-            )
-            .first()
-        )
+        try:
 
-        if admin is None:
-
-            context = get_common_context(request)
-
-            context["error"] = (
-                "用户名或密码错误"
+            admin = (
+                db.query(Admin)
+                .filter(
+                    Admin.username == username
+                )
+                .first()
             )
 
-            return templates.TemplateResponse(
-                request=request,
-                name="admin_login.html",
-                context=context,
+            if admin is None:
+
+                context = get_common_context(request)
+
+                context["error"] = "用户名或密码错误"
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="admin_login.html",
+                    context=context,
+                )
+
+            password_valid = (
+                password_hasher.verify(
+                    password,
+                    admin.password_hash,
+                )
             )
 
+            if not password_valid:
 
-        password_valid = (
-            password_hasher.verify(
-                password,
-                admin.password_hash,
-            )
-        )
+                context = get_common_context(request)
 
+                context["error"] = "用户名或密码错误"
 
-        if not password_valid:
+                return templates.TemplateResponse(
+                    request=request,
+                    name="admin_login.html",
+                    context=context,
+                )
 
-            context = get_common_context(request)
+            request.session["admin_id"] = admin.id
 
-            context["error"] = (
-                "用户名或密码错误"
-            )
+            request.session[
+                "admin_username"
+            ] = admin.username
 
-            return templates.TemplateResponse(
-                request=request,
-                name="admin_login.html",
-                context=context,
-            )
-
-
-        request.session["admin_id"] = admin.id
-
-        request.session[
-            "admin_username"
-        ] = admin.username
-
-
-        return RedirectResponse(
-            url="/admin",
-            status_code=303,
-        )
-
-    finally:
-        db.close()
-
-
-# ============================================================
-# GUEST：首次创建管理员页面
-# ============================================================
-
-@app.get("/admin/register")
-def admin_register_page(
-    request: Request,
-):
-
-    # 已经登录
-    if not require_guest(request):
-
-        return RedirectResponse(
-            url="/admin",
-            status_code=303,
-        )
-
-
-    db = SessionLocal()
-
-    try:
-
-        # 如果已经存在管理员，
-        # 就不能再通过这个页面创建
-
-        admin_count = (
-            db.query(Admin)
-            .count()
-        )
-
-
-        if admin_count > 0:
+            request.session[
+                "admin_nickname"
+            ] = admin.nickname or "成哥"
 
             return RedirectResponse(
-                url="/admin/login",
+                url="/admin",
                 status_code=303,
             )
 
+        finally:
 
-        context = get_common_context(request)
+            db.close()
 
-        context["error"] = None
-
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_register.html",
-            context=context,
-        )
-
-    finally:
-
-        db.close()
+    return RedirectResponse(
+        url="/admin",
+        status_code=303,
+    )
 
 
-
-# ============================================================
-# GUEST：创建第一个管理员
-# ============================================================
-
-@app.post("/admin/register")
-def admin_register(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    confirm_password: str = Form(...),
-):
-
-    if not require_guest(request):
-
-        return RedirectResponse(
-            url="/admin",
-            status_code=303,
-        )
-
-
-    username = username.strip()
-
-
-    db = SessionLocal()
-
-    try:
-
-        # ====================================================
-        # 再次检查
-        # 防止已经存在管理员时绕过前端访问
-        # ====================================================
-
-        admin_count = (
-            db.query(Admin)
-            .count()
-        )
-
-
-        if admin_count > 0:
-
-            return RedirectResponse(
-                url="/admin/login",
-                status_code=303,
-            )
-
-
-        # ====================================================
-        # 基础验证
-        # ====================================================
-
-        if not username:
-
-            context = get_common_context(request)
-
-            context["error"] = "用户名不能为空"
-
-            return templates.TemplateResponse(
-                request=request,
-                name="admin_register.html",
-                context=context,
-            )
-
-
-        if not password:
-
-            context = get_common_context(request)
-
-            context["error"] = "密码不能为空"
-
-            return templates.TemplateResponse(
-                request=request,
-                name="admin_register.html",
-                context=context,
-            )
-
-
-        if len(password) < 6:
-
-            context = get_common_context(request)
-
-            context["error"] = "密码至少需要 6 位"
-
-            return templates.TemplateResponse(
-                request=request,
-                name="admin_register.html",
-                context=context,
-            )
-
-
-        if password != confirm_password:
-
-            context = get_common_context(request)
-
-            context["error"] = "两次输入的密码不一致"
-
-            return templates.TemplateResponse(
-                request=request,
-                name="admin_register.html",
-                context=context,
-            )
-
-
-        # ====================================================
-        # 创建管理员
-        # ====================================================
-
-        password_hash = (
-            password_hasher.hash(password)
-        )
-
-
-        admin = Admin(
-            username=username,
-            password_hash=password_hash,
-        )
-
-
-        db.add(admin)
-
-        db.commit()
-
-        db.refresh(admin)
-
-
-        # ====================================================
-        # 创建成功后直接登录
-        # ====================================================
-
-        request.session["admin_id"] = admin.id
-
-        request.session[
-            "admin_username"
-        ] = admin.username
-
-
-        return RedirectResponse(
-            url="/admin",
-            status_code=303,
-        )
-
-    finally:
-
-        db.close()
-        
 # ============================================================
 # AUTHENTICATED：管理员主页
 # ============================================================
@@ -999,6 +894,17 @@ def admin_home(
             articles
         )
 
+        # 访客数量与留言会话数
+        context["visitor_count"] = (
+            db.query(Visitor)
+            .count()
+        )
+
+        context["thread_count"] = (
+            db.query(MessageThread)
+            .count()
+        )
+
 
         return templates.TemplateResponse(
             request=request,
@@ -1007,6 +913,278 @@ def admin_home(
         )
 
     finally:
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：管理员个人资料（修改昵称）
+# ============================================================
+
+@app.get("/admin/profile")
+def admin_profile_page(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        admin = (
+            db.query(Admin)
+            .filter(
+                Admin.id == request.session["admin_id"]
+            )
+            .first()
+        )
+
+        if admin is None:
+
+            return RedirectResponse(
+                url="/admin/login",
+                status_code=303,
+            )
+
+
+        context = get_common_context(request)
+
+        context["admin"] = admin
+
+        context["error"] = None
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_profile.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：保存管理员昵称
+# ============================================================
+
+@app.post("/admin/profile")
+def admin_profile_save(
+    request: Request,
+    nickname: str = Form(""),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        admin = (
+            db.query(Admin)
+            .filter(
+                Admin.id == request.session["admin_id"]
+            )
+            .first()
+        )
+
+        if admin is None:
+
+            return RedirectResponse(
+                url="/admin/login",
+                status_code=303,
+            )
+
+        nickname = nickname.strip()[:50]
+
+        if not nickname:
+
+            context = get_common_context(request)
+
+            context["admin"] = admin
+
+            context["error"] = "昵称不能为空"
+
+            return templates.TemplateResponse(
+                request=request,
+                name="admin_profile.html",
+                context=context,
+            )
+
+        admin.nickname = nickname
+
+        db.commit()
+
+        # 同步会话昵称
+        request.session["admin_nickname"] = nickname
+
+        return RedirectResponse(
+            url="/admin/profile",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：访客管理
+# ============================================================
+
+@app.get("/admin/visitors")
+def admin_visitors(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        visitors = (
+            db.query(Visitor)
+            .order_by(
+                Visitor.updated_at.desc()
+            )
+            .all()
+        )
+
+        # 每个访客的互动统计
+        visitor_stats = []
+
+        for visitor in visitors:
+
+            vid = visitor.visitor_id
+
+            article_likes = (
+                db.query(ArticleLike)
+                .filter(ArticleLike.visitor_id == vid)
+                .count()
+            )
+
+            moment_likes = (
+                db.query(MomentLike)
+                .filter(MomentLike.visitor_id == vid)
+                .count()
+            )
+
+            article_comments = (
+                db.query(ArticleComment)
+                .filter(ArticleComment.visitor_id == vid)
+                .count()
+            )
+
+            moment_comments = (
+                db.query(MomentComment)
+                .filter(MomentComment.visitor_id == vid)
+                .count()
+            )
+
+            threads = (
+                db.query(MessageThread)
+                .filter(MessageThread.visitor_id == vid)
+                .count()
+            )
+
+            visitor_stats.append(
+                {
+                    "visitor": visitor,
+                    "interaction_count": (
+                        article_likes
+                        + moment_likes
+                        + article_comments
+                        + moment_comments
+                        + threads
+                    ),
+                    "detail": {
+                        "article_likes": article_likes,
+                        "moment_likes": moment_likes,
+                        "article_comments": article_comments,
+                        "moment_comments": moment_comments,
+                        "threads": threads,
+                    },
+                }
+            )
+
+        context = get_common_context(request)
+
+        context["visitor_stats"] = visitor_stats
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_visitors.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：删除访客档案
+# 需求：只删 Visitor 档案，不删历史互动（评论/点赞/留言保留）
+# ============================================================
+
+@app.post("/admin/visitors/{visitor_id}/delete")
+def admin_delete_visitor(
+    request: Request,
+    visitor_id: str,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        visitor = (
+            db.query(Visitor)
+            .filter(
+                Visitor.visitor_id == visitor_id
+            )
+            .first()
+        )
+
+        if visitor is not None:
+
+            db.delete(visitor)
+
+            db.commit()
+
+        return RedirectResponse(
+            url="/admin/visitors",
+            status_code=303,
+        )
+
+    finally:
+
         db.close()
 
 
@@ -1339,6 +1517,42 @@ def admin_logout(
         status_code=303,
     )
 
+
+# ============================================================
+# AUTHENTICATED：切换全站主题
+# 仅管理员可切换；已选主题全站生效（存 Setting 表）
+# ============================================================
+
+@app.post("/admin/theme")
+def admin_set_theme(
+    request: Request,
+    theme: str = Form(...),
+):
+
+    if require_admin(request) is None:
+
+        return JSONResponse(
+            status_code=403,
+            content={"ok": False, "detail": "无权操作"},
+        )
+
+
+    if theme not in VALID_THEMES:
+
+        return JSONResponse(
+            status_code=400,
+            content={"ok": False, "detail": "无效主题"},
+        )
+
+
+    set_site_theme(theme)
+
+
+    return JSONResponse(
+        content={"ok": True, "theme": theme},
+    )
+
+
 # ============================================================
 # AUTHENTICATED：发布朋友圈页面
 # ============================================================
@@ -1395,8 +1609,8 @@ def create_moment(
 
         moment = Moment(
             nickname=request.session.get(
-                "admin_username",
-                "管理员"
+                "admin_nickname",
+                "成哥",
             ),
             content=content,
         )
@@ -1524,7 +1738,7 @@ def save_visitor_nickname(
     保存游客昵称。
 
     输入昵称：
-        保存 180 天 Cookie
+        保存 365 天 Cookie
 
     留空：
         删除昵称 Cookie
@@ -1547,9 +1761,10 @@ def save_visitor_nickname(
         response.set_cookie(
             key=VISITOR_NICKNAME_COOKIE,
             value=nickname,
-            max_age=60 * 60 * 24 * 180,
+            max_age=60 * 60 * 24 * 365,
             httponly=True,
             samesite="lax",
+            secure=SECURE_COOKIES,
             path="/",
         )
 
@@ -1561,11 +1776,32 @@ def save_visitor_nickname(
         )
 
 
+    # 同步访客档案昵称
+    visitor_id = get_visitor_id(request)
+
+    if visitor_id:
+
+        db = SessionLocal()
+
+        try:
+
+            ensure_visitor(db, visitor_id, nickname)
+
+            db.commit()
+
+        finally:
+
+            db.close()
+
+
+    set_visitor_id_cookie(response, visitor_id)
+
     return response
 
 
 # ============================================================
 # PUBLIC：朋友圈点赞 / 取消点赞
+# 需求：同一访客仅可点赞一次，UNIQUE(moment_id, visitor_id)
 # ============================================================
 
 @app.post("/moment/{moment_id}/like")
@@ -1602,7 +1838,7 @@ def like_moment(
         # 获取当前身份
         # ====================================================
 
-        actor_name = get_actor_name(
+        actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
         )
@@ -1621,14 +1857,23 @@ def like_moment(
 
 
         # ====================================================
-        # 查询当前昵称是否已经点赞
+        # 访客档案建档
+        # ====================================================
+
+        ensure_visitor(db, visitor_id, actor_name)
+
+        db.flush()
+
+
+        # ====================================================
+        # 查询当前访客是否已经点赞（按 visitor_id）
         # ====================================================
 
         existing_like = (
             db.query(MomentLike)
             .filter(
                 MomentLike.moment_id == moment_id,
-                MomentLike.nickname == actor_name,
+                MomentLike.visitor_id == visitor_id,
             )
             .first()
         )
@@ -1641,20 +1886,6 @@ def like_moment(
         if existing_like:
 
             db.commit()
-
-
-            # 记录会话已赞状态（刷新后仍显示"已赞"）
-
-            liked_ids = request.session.get(
-                "liked_moment_ids",
-                []
-            )
-
-            if moment_id not in liked_ids:
-
-                liked_ids.append(moment_id)
-
-                request.session["liked_moment_ids"] = liked_ids
 
             like_count = (
                 db.query(MomentLike)
@@ -1681,6 +1912,7 @@ def like_moment(
 
         like = MomentLike(
             moment_id=moment_id,
+            visitor_id=visitor_id,
             nickname=actor_name,
         )
 
@@ -1690,20 +1922,6 @@ def like_moment(
 
 
         db.commit()
-
-
-        # 记录会话已赞状态（刷新后仍显示"已赞"）
-
-        liked_ids = request.session.get(
-            "liked_moment_ids",
-            []
-        )
-
-        if moment_id not in liked_ids:
-
-            liked_ids.append(moment_id)
-
-            request.session["liked_moment_ids"] = liked_ids
 
 
         # ====================================================
@@ -1736,6 +1954,7 @@ def like_moment(
 
 # ============================================================
 # PUBLIC：朋友圈评论
+# 需求：平级评论 + reply_to_id（回复引用）
 # ============================================================
 
 @app.post("/moment/{moment_id}/comment")
@@ -1744,6 +1963,7 @@ def comment_moment(
     moment_id: int,
     content: str = Form(...),
     nickname: str | None = Form(None),
+    reply_to_id: int | None = Form(None),
 ):
     db = SessionLocal()
 
@@ -1798,7 +2018,7 @@ def comment_moment(
         # 获取当前身份
         # ====================================================
 
-        actor_name = get_actor_name(
+        actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
         )
@@ -1816,13 +2036,50 @@ def comment_moment(
 
 
         # ====================================================
+        # 校验回复引用（可选）
+        # ====================================================
+
+        if reply_to_id is not None:
+
+            reply_target = (
+                db.query(MomentComment)
+                .filter(
+                    MomentComment.id == reply_to_id,
+                    MomentComment.moment_id == moment_id,
+                )
+                .first()
+            )
+
+            if reply_target is None:
+
+                return JSONResponse(
+                    {
+                        "success": False,
+                        "error": "回复的评论不存在",
+                    },
+                    status_code=400,
+                )
+
+
+        # ====================================================
+        # 访客档案建档
+        # ====================================================
+
+        ensure_visitor(db, visitor_id, actor_name)
+
+        db.flush()
+
+
+        # ====================================================
         # 保存评论
         # ====================================================
 
         comment = MomentComment(
             moment_id=moment.id,
+            visitor_id=visitor_id,
             nickname=actor_name,
             content=content,
+            reply_to_id=reply_to_id,
         )
 
 
@@ -1842,12 +2099,26 @@ def comment_moment(
         )
 
 
+        reply_to_nickname = None
+
+        if (
+            reply_to_id is not None
+            and reply_target is not None
+        ):
+
+            reply_to_nickname = reply_target.nickname
+
+
         return JSONResponse(
             {
                 "success": True,
+                "comment_id": comment.id,
                 "nickname": actor_name,
                 "content": comment.content,
                 "comment_count": comment_count,
+                "reply_to_id": reply_to_id,
+                "reply_to_nickname": reply_to_nickname,
+                "created_at": comment.created_at.strftime("%Y-%m-%d %H:%M"),
             }
         )
 
@@ -1859,6 +2130,7 @@ def comment_moment(
 
 # ============================================================
 # PUBLIC：文章点赞
+# 需求：每次点击 +1，允许重复点赞，不做访客去重
 # ============================================================
 
 @app.post("/article/{article_id}/like")
@@ -1891,11 +2163,23 @@ def like_article(
             )
 
 
+        # 草稿/未发布文章禁止互动
+        if article.status != "published":
+
+            return JSONResponse(
+                {
+                    "success": False,
+                    "error": "文章尚未发布，无法点赞",
+                },
+                status_code=400,
+            )
+
+
         # ====================================================
         # 获取当前身份
         # ====================================================
 
-        actor_name = get_actor_name(
+        actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
         )
@@ -1913,54 +2197,25 @@ def like_article(
 
 
         # ====================================================
-        # 已点赞 → 保持点赞（不支持取消）
+        # 访客档案建档
         # ====================================================
 
-        existing_like = (
-            db.query(ArticleLike)
-            .filter(
-                ArticleLike.article_id == article_id,
-                ArticleLike.nickname == actor_name,
-            )
-            .first()
-        )
+        ensure_visitor(db, visitor_id, actor_name)
 
-
-        if existing_like:
-
-            db.commit()
-
-            like_count = (
-                db.query(ArticleLike)
-                .filter(
-                    ArticleLike.article_id == article_id
-                )
-                .count()
-            )
-
-            return JSONResponse(
-                {
-                    "success": True,
-                    "liked": True,
-                    "already_liked": True,
-                    "like_count": like_count,
-                    "nickname": actor_name,
-                }
-            )
+        db.flush()
 
 
         # ====================================================
-        # 未点赞 → 新增
+        # 文章点赞：不查重，每次点击新增一条
         # ====================================================
 
         like = ArticleLike(
             article_id=article_id,
+            visitor_id=visitor_id,
             nickname=actor_name,
         )
 
         db.add(like)
-
-        liked = True
 
         db.commit()
 
@@ -1977,7 +2232,7 @@ def like_article(
         return JSONResponse(
             {
                 "success": True,
-                "liked": liked,
+                "liked": True,
                 "like_count": like_count,
                 "nickname": actor_name,
             }
@@ -1991,6 +2246,7 @@ def like_article(
 
 # ============================================================
 # PUBLIC：文章评论
+# 需求：平级评论 + reply_to_id（回复引用）
 # ============================================================
 
 @app.post("/article/{article_id}/comment")
@@ -1999,6 +2255,7 @@ def comment_article(
     article_id: int,
     content: str = Form(...),
     nickname: str | None = Form(None),
+    reply_to_id: int | None = Form(None),
 ):
     db = SessionLocal()
 
@@ -2021,6 +2278,18 @@ def comment_article(
                     "error": "文章不存在",
                 },
                 status_code=404,
+            )
+
+
+        # 草稿/未发布文章禁止互动
+        if article.status != "published":
+
+            return JSONResponse(
+                {
+                    "success": False,
+                    "error": "文章尚未发布，无法评论",
+                },
+                status_code=400,
             )
 
 
@@ -2049,7 +2318,7 @@ def comment_article(
             )
 
 
-        actor_name = get_actor_name(
+        actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
         )
@@ -2066,10 +2335,47 @@ def comment_article(
             )
 
 
+        # ====================================================
+        # 校验回复引用（可选）
+        # ====================================================
+
+        if reply_to_id is not None:
+
+            reply_target = (
+                db.query(ArticleComment)
+                .filter(
+                    ArticleComment.id == reply_to_id,
+                    ArticleComment.article_id == article_id,
+                )
+                .first()
+            )
+
+            if reply_target is None:
+
+                return JSONResponse(
+                    {
+                        "success": False,
+                        "error": "回复的评论不存在",
+                    },
+                    status_code=400,
+                )
+
+
+        # ====================================================
+        # 访客档案建档
+        # ====================================================
+
+        ensure_visitor(db, visitor_id, actor_name)
+
+        db.flush()
+
+
         comment = ArticleComment(
             article_id=article.id,
+            visitor_id=visitor_id,
             nickname=actor_name,
             content=content,
+            reply_to_id=reply_to_id,
         )
 
         db.add(comment)
@@ -2088,15 +2394,122 @@ def comment_article(
         )
 
 
+        reply_to_nickname = None
+
+        if (
+            reply_to_id is not None
+            and reply_target is not None
+        ):
+
+            reply_to_nickname = reply_target.nickname
+
+
         return JSONResponse(
             {
                 "success": True,
+                "comment_id": comment.id,
                 "nickname": actor_name,
                 "content": comment.content,
                 "comment_count": comment_count,
+                "reply_to_id": reply_to_id,
+                "reply_to_nickname": reply_to_nickname,
+                "created_at": comment.created_at.strftime("%Y-%m-%d %H:%M"),
             }
         )
 
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# PUBLIC：文章列表
+# ============================================================
+
+@app.get("/articles")
+def articles_page(
+    request: Request,
+):
+
+    db = SessionLocal()
+
+    try:
+
+        query = (
+            db.query(Article)
+            .options(
+                selectinload(Article.likes),
+                selectinload(Article.comments).selectinload(ArticleComment.reply_to),
+            )
+            .order_by(
+                Article.created_at.desc()
+            )
+        )
+
+        if not is_admin(request):
+
+            query = query.filter(
+                Article.status == "published"
+            )
+
+        articles = query.all()
+
+        context = get_common_context(request)
+
+        context["articles"] = articles
+
+        return templates.TemplateResponse(
+            request=request,
+            name="articles.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# PUBLIC：朋友圈列表
+# ============================================================
+
+@app.get("/moments")
+def moments_page(
+    request: Request,
+):
+
+    db = SessionLocal()
+
+    try:
+
+        moments = (
+            db.query(Moment)
+            .options(
+                selectinload(Moment.images),
+                selectinload(Moment.likes),
+                selectinload(Moment.comments).selectinload(MomentComment.reply_to),
+            )
+            .order_by(
+                Moment.created_at.desc()
+            )
+            .all()
+        )
+
+        context = get_common_context(request)
+
+        context["moments"] = moments
+
+        context["liked_moment_ids"] = get_liked_moment_ids(
+            db,
+            get_visitor_id(request),
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="moments.html",
+            context=context,
+        )
 
     finally:
 
@@ -2122,7 +2535,7 @@ def moment_detail(
             .options(
                 selectinload(Moment.images),
                 selectinload(Moment.likes),
-                selectinload(Moment.comments),
+                selectinload(Moment.comments).selectinload(MomentComment.reply_to),
             )
             .filter(
                 Moment.id == moment_id
@@ -2143,9 +2556,9 @@ def moment_detail(
 
         context["moment"] = moment
 
-        context["liked_moment_ids"] = request.session.get(
-            "liked_moment_ids",
-            []
+        context["liked_moment_ids"] = get_liked_moment_ids(
+            db,
+            get_visitor_id(request),
         )
 
 
@@ -2161,32 +2574,88 @@ def moment_detail(
 
 
 # ============================================================
-# PUBLIC：留言详情页
+# PUBLIC：留言列表
+# 需求：MessageThread 多轮会话，公开/私密
 # ============================================================
 
-@app.get("/message/{message_id}")
-def message_detail(
+@app.get("/messages")
+def messages_page(
     request: Request,
-    message_id: int,
 ):
 
     db = SessionLocal()
 
     try:
 
-        message = (
-            db.query(Message)
+        visitor_id = get_visitor_id(request)
+
+        threads = (
+            db.query(MessageThread)
             .options(
-                selectinload(Message.replies),
+                selectinload(MessageThread.messages),
+            )
+            .order_by(
+                MessageThread.updated_at.desc()
+            )
+            .all()
+        )
+
+        # 过滤：私密会话仅管理员或发布者本人可见
+        visible_threads = []
+
+        for thread in threads:
+
+            if thread.is_private and not is_admin(request):
+
+                if thread.visitor_id != visitor_id:
+
+                    continue
+
+            visible_threads.append(thread)
+
+
+        context = get_common_context(request)
+
+        context["threads"] = visible_threads
+
+        return templates.TemplateResponse(
+            request=request,
+            name="messages.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# PUBLIC：留言详情页（会话）
+# ============================================================
+
+@app.get("/message/{thread_id}")
+def message_detail(
+    request: Request,
+    thread_id: int,
+):
+
+    db = SessionLocal()
+
+    try:
+
+        thread = (
+            db.query(MessageThread)
+            .options(
+                selectinload(MessageThread.messages),
             )
             .filter(
-                Message.id == message_id
+                MessageThread.id == thread_id
             )
             .first()
         )
 
 
-        if message is None:
+        if thread is None:
 
             raise HTTPException(
                 status_code=404,
@@ -2196,7 +2665,7 @@ def message_detail(
 
         # 私密留言仅管理员或发布者本人可见
         if (
-            message.is_private
+            thread.is_private
             and not is_admin(request)
         ):
 
@@ -2205,8 +2674,8 @@ def message_detail(
             )
 
             is_owner = (
-                message.visitor_id
-                and message.visitor_id == visitor_id
+                thread.visitor_id
+                and thread.visitor_id == visitor_id
             )
 
             if not is_owner:
@@ -2219,12 +2688,7 @@ def message_detail(
 
         context = get_common_context(request)
 
-        context["message"] = message
-
-        context["visitor_id"] = get_visitor_id(
-            request
-        )
-
+        context["thread"] = thread
 
         return templates.TemplateResponse(
             request=request,
@@ -2238,7 +2702,7 @@ def message_detail(
 
 
 # ============================================================
-# PUBLIC：发布留言
+# PUBLIC：发布留言（新建会话）
 # ============================================================
 
 @app.post("/messages")
@@ -2277,7 +2741,7 @@ def create_message(
             )
 
 
-        actor_name = get_actor_name(
+        actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
         )
@@ -2294,14 +2758,36 @@ def create_message(
             )
 
 
-        # 访客唯一标识（发布者本人识别）
-        visitor_id = get_visitor_id(request)
+        # 访客档案建档
+        ensure_visitor(db, visitor_id, actor_name)
 
+        db.flush()
+
+
+        # 管理员创建时标记为管理员发送
+        sender_type = (
+            "admin"
+            if is_admin(request)
+            else "visitor"
+        )
+
+        # 创建会话（Thread）
+        thread = MessageThread(
+            visitor_id=visitor_id,
+            is_private=bool(is_private == "true"),
+        )
+
+        db.add(thread)
+
+        db.flush()
+
+
+        # 首条留言
         message = Message(
+            thread_id=thread.id,
+            sender_type=sender_type,
             nickname=actor_name,
             content=content,
-            is_private=bool(is_private == "true"),
-            visitor_id=visitor_id,
         )
 
         db.add(message)
@@ -2316,7 +2802,7 @@ def create_message(
                 "success": True,
                 "nickname": actor_name,
                 "content": message.content,
-                "message_id": message.id,
+                "thread_id": thread.id,
             }
         )
 
@@ -2331,13 +2817,14 @@ def create_message(
 
 
 # ============================================================
-# PUBLIC：回复留言
+# PUBLIC：回复留言（追加到会话）
+# 权限：只有发布者本人或管理员可以回复
 # ============================================================
 
-@app.post("/message/{message_id}/reply")
+@app.post("/message/{thread_id}/reply")
 def reply_message(
     request: Request,
-    message_id: int,
+    thread_id: int,
     content: str = Form(...),
     nickname: str | None = Form(None),
 ):
@@ -2345,16 +2832,16 @@ def reply_message(
 
     try:
 
-        message = (
-            db.query(Message)
+        thread = (
+            db.query(MessageThread)
             .filter(
-                Message.id == message_id
+                MessageThread.id == thread_id
             )
             .first()
         )
 
 
-        if message is None:
+        if thread is None:
 
             return JSONResponse(
                 {
@@ -2362,18 +2849,6 @@ def reply_message(
                     "error": "留言不存在",
                 },
                 status_code=404,
-            )
-
-
-        # 只有顶层留言可以回复
-        if message.parent_id is not None:
-
-            return JSONResponse(
-                {
-                    "success": False,
-                    "error": "只能回复顶层留言",
-                },
-                status_code=400,
             )
 
 
@@ -2402,7 +2877,7 @@ def reply_message(
             )
 
 
-        actor_name = get_actor_name(
+        actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
         )
@@ -2423,11 +2898,9 @@ def reply_message(
         # 权限：只有发布者本人或管理员可以回复
         # ====================================================
 
-        visitor_id = get_visitor_id(request)
-
         is_owner = (
-            message.visitor_id
-            and message.visitor_id == visitor_id
+            thread.visitor_id
+            and thread.visitor_id == visitor_id
         )
 
         if not (is_admin(request) or is_owner):
@@ -2441,12 +2914,23 @@ def reply_message(
             )
 
 
+        # 访客档案建档
+        ensure_visitor(db, visitor_id, actor_name)
+
+        db.flush()
+
+
+        sender_type = (
+            "admin"
+            if is_admin(request)
+            else "visitor"
+        )
+
         reply = Message(
+            thread_id=thread.id,
+            sender_type=sender_type,
             nickname=actor_name,
             content=content,
-            is_private=False,
-            visitor_id=visitor_id,
-            parent_id=message.id,
         )
 
         db.add(reply)
@@ -2518,18 +3002,53 @@ def delete_moment(
 
 
         # 收集图片磁盘路径，删除记录后一并清理文件，避免孤儿文件
+        # 路径安全：仅允许清理 static/uploads/moments 目录下的物理文件，
+        # 通过 realpath 解析后二次校验，防止路径穿越（../）越权删除
+        base_dir = os.path.dirname(
+            os.path.abspath(__file__)
+        )
+
+        moments_dir = os.path.realpath(
+            os.path.join(
+                base_dir,
+                "static",
+                "uploads",
+                "moments",
+            )
+        )
+
         image_files = []
 
         for image in moment.images:
 
-            if (
-                image.image_path
-                and image.image_path.startswith("/static/uploads/")
-            ):
+            if not image.image_path:
+                continue
 
-                image_files.append(
-                    image.image_path[len("/static/"):]
+            # 仅接受 /static/uploads/moments/ 前缀的图片，且不允许 .. 穿越
+            if (
+                not image.image_path.startswith(
+                    "/static/uploads/moments/"
                 )
+                or ".." in image.image_path
+            ):
+                continue
+
+            rel_path = image.image_path[len("/static/"):]
+
+            file_path = os.path.realpath(
+                os.path.join(base_dir, rel_path)
+            )
+
+            # 解析后必须仍位于 moments 目录内（含其子目录）
+            if (
+                file_path == moments_dir
+                or not file_path.startswith(
+                    moments_dir + os.sep
+                )
+            ):
+                continue
+
+            image_files.append(file_path)
 
 
         db.delete(moment)
@@ -2537,24 +3056,12 @@ def delete_moment(
         db.commit()
 
 
-        for rel_path in image_files:
+        for file_path in image_files:
 
             try:
 
-                file_path = os.path.join(
-                    os.path.dirname(
-                        os.path.abspath(__file__)
-                    ),
-                    rel_path,
-                )
-
-
-                if (
-                    os.path.isfile(file_path)
-                    and os.path.dirname(file_path).endswith(
-                        os.path.join("static", "uploads")
-                    )
-                ):
+                # 文件不存在时不报错（FileNotFoundError 属于 OSError）
+                if os.path.isfile(file_path):
 
                     os.remove(file_path)
 
@@ -2686,11 +3193,65 @@ def delete_article_comment(
 
 
 # ============================================================
-# AUTHENTICATED：删除留言
+# AUTHENTICATED：删除留言会话
 # ============================================================
 
-@app.post("/admin/message/{message_id}/delete")
-def delete_message(
+@app.post("/admin/message/{thread_id}/delete")
+def delete_message_thread(
+    request: Request,
+    thread_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        thread = (
+            db.query(MessageThread)
+            .filter(
+                MessageThread.id == thread_id
+            )
+            .first()
+        )
+
+
+        if thread is None:
+
+            return RedirectResponse(
+                url="/messages",
+                status_code=303,
+            )
+
+
+        db.delete(thread)
+
+        db.commit()
+
+
+        return RedirectResponse(
+            url="/messages",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：删除留言会话中的单条消息
+# ============================================================
+
+@app.post("/admin/message/message/{message_id}/delete")
+def delete_message_item(
     request: Request,
     message_id: int,
 ):
@@ -2724,69 +3285,15 @@ def delete_message(
             )
 
 
+        thread_id = message.thread_id
+
         db.delete(message)
 
         db.commit()
 
 
         return RedirectResponse(
-            url="/messages",
-            status_code=303,
-        )
-
-    finally:
-
-        db.close()
-
-
-# ============================================================
-# AUTHENTICATED：删除留言回复
-# ============================================================
-
-@app.post("/admin/message/reply/{reply_id}/delete")
-def delete_message_reply(
-    request: Request,
-    reply_id: int,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-
-    db = SessionLocal()
-
-    try:
-
-        reply = (
-            db.query(Message)
-            .filter(
-                Message.id == reply_id
-            )
-            .first()
-        )
-
-
-        if reply is None:
-
-            return RedirectResponse(
-                url="/messages",
-                status_code=303,
-            )
-
-
-        parent_id = reply.parent_id
-
-        db.delete(reply)
-
-        db.commit()
-
-
-        return RedirectResponse(
-            url=f"/message/{parent_id}",
+            url=f"/message/{thread_id}",
             status_code=303,
         )
 

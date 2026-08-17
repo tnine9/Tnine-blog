@@ -339,6 +339,115 @@ document.addEventListener(
 
 
 
+        /* ==========================================
+        点赞成功后就地更新（不刷新页面）
+        ========================================== */
+
+        function updateMomentLikeUI(form, result){
+
+            const card =
+                form.closest(".moment-card");
+
+            if(!card){
+                return;
+            }
+
+
+            const button =
+                form.querySelector(
+                    "button[type='submit']"
+                );
+
+
+            if(button){
+
+                button.classList.add(
+                    "is-liked"
+                );
+
+
+                const label =
+                    button.querySelector(
+                        ".moment-action-label"
+                    );
+
+
+                if(label){
+
+                    label.textContent =
+                        "已赞";
+
+                }
+
+
+                const countValue =
+                    Number(
+                        result.like_count || 0
+                    );
+
+
+                let count =
+                    button.querySelector(
+                        ".moment-action-count"
+                    );
+
+
+                if(countValue > 0){
+
+                    if(!count){
+
+                        count =
+                            document.createElement("span");
+
+                        count.className =
+                            "moment-action-count";
+
+                        button.appendChild(count);
+
+                    }
+
+
+                    count.textContent =
+                        countValue;
+
+                }else if(count){
+
+                    count.remove();
+
+                }
+
+            }
+
+
+            /* 赞过行 */
+            const likeList =
+                card.querySelector(
+                    ".moment-like-list"
+                );
+
+
+            if(likeList){
+
+                const likeCountSpan =
+                    likeList.querySelector(
+                        ".moment-like-count, .like-section-title"
+                    );
+
+
+                if(likeCountSpan){
+
+                    likeCountSpan.textContent =
+                        "❤️ " +
+                        result.like_count +
+                        " 人赞过";
+
+                }
+
+            }
+
+        }
+
+
         /*
         ==========================================
         点赞
@@ -435,11 +544,12 @@ document.addEventListener(
 
 
 
-                        /*
-                        刷新同步状态
-                        */
+                        /* 就地更新点赞状态，不刷新页面 */
 
-                        window.location.reload();
+                        updateMomentLikeUI(
+                            form,
+                            result
+                        );
 
 
 
@@ -493,6 +603,216 @@ document
     }
 );
 
+        /* ==========================================
+        评论成功后就地插入（不刷新页面）
+        ========================================== */
+
+        function appendMomentComment(form, result, input){
+
+            const card =
+                form.closest(".moment-card");
+
+            if(!card){
+                return;
+            }
+
+
+            const list =
+                card.querySelector(
+                    ".moment-comment-list"
+                );
+
+
+            const newComment =
+                document.createElement("div");
+
+            newComment.className =
+                "moment-comment";
+
+
+            const userSpan =
+                document.createElement("span");
+
+            userSpan.className =
+                "moment-comment-user";
+
+            userSpan.textContent =
+                result.nickname;
+
+            newComment.appendChild(userSpan);
+
+
+            if(result.reply_to_nickname){
+
+                const replySpan =
+                    document.createElement("span");
+
+                replySpan.className =
+                    "moment-comment-replyto";
+
+                replySpan.textContent =
+                    "回复 @" +
+                    result.reply_to_nickname;
+
+                newComment.appendChild(replySpan);
+
+            }
+
+
+            const contentSpan =
+                document.createElement("span");
+
+            contentSpan.className =
+                "moment-comment-content";
+
+            contentSpan.textContent =
+                result.content;
+
+            newComment.appendChild(contentSpan);
+
+
+            if(list){
+
+                /* 有"查看更多"时插到其之前 */
+                const more =
+                    list.querySelector(
+                        "[data-comment-more]"
+                    );
+
+                if(more){
+
+                    list.insertBefore(
+                        newComment,
+                        more
+                    );
+
+                }else{
+
+                    list.appendChild(
+                        newComment
+                    );
+
+                }
+
+            }else{
+
+                /* 无评论列表则新建 */
+                const newList =
+                    document.createElement("div");
+
+                newList.className =
+                    "moment-comment-list moment-interactive";
+
+                newList.appendChild(newComment);
+
+
+                const panel =
+                    card.querySelector(
+                        ".moment-comment-panel"
+                    );
+
+
+                if(panel){
+
+                    card.insertBefore(
+                        newList,
+                        panel
+                    );
+
+                }else{
+
+                    card.appendChild(newList);
+
+                }
+
+            }
+
+
+            /* 更新评论数 */
+            const toggleCount =
+                card.querySelector(
+                    ".moment-comment-toggle .moment-action-count"
+                );
+
+            if(toggleCount){
+
+                toggleCount.textContent =
+                    result.comment_count;
+
+            }
+
+
+            /* 更新"查看全部"按钮 */
+            const moreButton =
+                card.querySelector(
+                    "[data-comment-more]"
+                );
+
+            if(moreButton){
+
+                moreButton.dataset.text =
+                    "查看全部" +
+                    result.comment_count +
+                    "条评论";
+
+                moreButton.textContent =
+                    "查看全部 " +
+                    result.comment_count +
+                    " 条评论";
+
+            }
+
+
+            /* 清空输入框 */
+            if(input){
+
+                input.value = "";
+
+            }
+
+
+            /* 关闭评论面板 */
+            const panel =
+                card.querySelector(
+                    ".moment-comment-panel"
+                );
+
+            if(panel){
+
+                panel.classList.remove(
+                    "is-open"
+                );
+
+            }
+
+
+            /* 重置详情页回复目标 */
+            const replyTarget =
+                document.getElementById(
+                    "momentReplyTarget"
+                );
+
+            if(replyTarget){
+
+                replyTarget.hidden = true;
+
+            }
+
+
+            const replyToId =
+                document.getElementById(
+                    "momentReplyToId"
+                );
+
+            if(replyToId){
+
+                replyToId.value = "";
+
+            }
+
+        }
+
+
         /*
         ==========================================
         提交评论
@@ -544,14 +864,7 @@ document
 
 
                             const data =
-                                new FormData();
-
-
-
-                            data.append(
-                                "content",
-                                content
-                            );
+                                new FormData(form);
 
 
 
@@ -609,7 +922,13 @@ document
 
 
 
-                        window.location.reload();
+                        /* 就地插入评论，不刷新页面 */
+
+                        appendMomentComment(
+                            form,
+                            result,
+                            input
+                        );
 
 
 

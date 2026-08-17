@@ -80,7 +80,7 @@ function renderToc(
         empty.className = "toc-empty";
 
         empty.textContent =
-            "暂无文章导航";
+            "暂无目录";
 
         container.appendChild(empty);
 
@@ -96,7 +96,7 @@ function renderToc(
     title.className = "toc-title";
 
     title.textContent =
-        "文章导航";
+        "文章目录";
 
     container.appendChild(title);
 

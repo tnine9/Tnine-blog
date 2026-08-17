@@ -172,6 +172,80 @@ Tnine · 记录文字与生活
 
                         {% include "components/article_card.html" %}
 
+                    {% elif item.type == "message" %}
+
+                    <article
+                        class="content-card message-card"
+                        data-url="/message/{{ item.data.id }}"
+                    >
+
+
+
+                        <div class="message-header">
+
+
+                            <strong>
+
+                                {% if item.data.messages %}
+
+                                {{ item.data.messages[0].nickname or "匿名访客" }}
+
+                                {% else %}
+
+                                匿名访客
+
+                                {% endif %}
+
+                            </strong>
+
+
+                            {% if item.data.is_private %}
+
+                            <span class="message-private-badge">
+
+                                🔒 私密
+
+                            </span>
+
+                            {% endif %}
+
+
+                            <span class="message-time">
+
+                                {{ item.data.updated_at.strftime("%Y-%m-%d %H:%M") }}
+
+                            </span>
+
+                        </div>
+
+
+
+
+                        <div class="message-content">
+
+                            {% if item.data.messages %}
+
+                            {{ item.data.messages[0].content }}
+
+                            {% endif %}
+
+                        </div>
+
+
+
+
+                        <div class="message-meta">
+
+                            <span>
+                                💬 {{ item.data.messages|length }} 条消息
+                            </span>
+
+                        </div>
+
+
+
+                    </article>
+
                     {% endif %}
 
                 </div>
@@ -243,6 +317,21 @@ document.addEventListener(
         }
 
 
+        /* 首页导航（/?view=timeline）：跳过全屏 hero，直接展示时间线内容 */
+
+        const urlParams = new URLSearchParams(window.location.search);
+
+        if (urlParams.get("view") === "timeline") {
+
+            hero.classList.add("is-hidden");
+
+            const contentTop = content.getBoundingClientRect().top + window.scrollY;
+
+            window.scrollTo({ top: contentTop, behavior: "auto" });
+
+        }
+
+
         /* 滚轮下滑平滑过渡到内容区 */
 
         function scrollToContent() {
@@ -273,25 +362,77 @@ document.addEventListener(
         }
 
 
-        /* 轻滑即隐藏：滚动超过阈值后 hero 完全收起 */
+        /* 轻划吸附：向下滚动超过阈值时，平滑吸附到内容区；
+           回到顶部附近时恢复 hero */
 
-        const hideThreshold = 24;
+        let lastY = window.scrollY;
 
-        let heroHidden = false;
+        let snapped = false;
+
+        let snapping = false;
+
+        const snapThreshold = 120;
+
 
         function onScroll() {
 
             const y = window.scrollY;
 
-            if (y > hideThreshold && !heroHidden) {
+            const delta = y - lastY;
 
-                heroHidden = true;
+            lastY = y;
+
+
+            if (snapping) {
+
+                return;
+
+            }
+
+
+            /* 向下轻划，越过阈值即吸附到内容区 */
+
+            if (
+
+                delta > 4 &&
+
+                y > snapThreshold &&
+
+                !snapped
+
+            ) {
+
+                snapped = true;
+
+                snapping = true;
 
                 hero.classList.add("is-hidden");
 
-            } else if (y <= 0 && heroHidden) {
+                scrollToContent();
 
-                heroHidden = false;
+                setTimeout(
+
+                    function () {
+
+                        snapping = false;
+
+                    },
+
+                    800
+
+                );
+
+            } else if (
+
+                y <= snapThreshold &&
+
+                snapped
+
+            ) {
+
+                /* 回到顶部时恢复 hero */
+
+                snapped = false;
 
                 hero.classList.remove("is-hidden");
 

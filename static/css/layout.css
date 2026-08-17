@@ -106,6 +106,17 @@
 }
 
 
+/* 标题+副标题纵向堆叠（副标题位于标题正下方） */
+
+.section-header-stack {
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+}
+
+
 
 
 
@@ -123,6 +134,32 @@
     letter-spacing:
         -.02em;
 
+
+}
+
+
+/* 副标题：细体灰色小字，位于标题正下方，留白丰富 */
+
+.section-subtitle {
+
+    margin-top:
+        14px;
+
+
+    font-size:
+        14px;
+
+
+    font-weight:
+        300;
+
+
+    line-height:
+        1.7;
+
+
+    color:
+        var(--color-text-muted);
 
 }
 
@@ -570,6 +607,107 @@
 
 
     gap:22px;
+
+}
+
+
+/* ---------- Tnine 站标 ---------- */
+
+.site-logo {
+
+
+    font-size:24px;
+
+
+    font-weight:800;
+
+
+    letter-spacing:-.03em;
+
+
+    color:
+        var(--color-text);
+
+
+    margin-right:6px;
+
+
+    transition:
+        color .25s ease,
+        transform .25s ease;
+
+
+}
+
+
+.site-logo:hover {
+
+
+    color:
+        var(--color-primary);
+
+
+    transform:
+        translateY(-1px);
+
+
+}
+
+
+/* ---------- 右侧登录/头像推至最右 ---------- */
+
+.site-nav .user-menu {
+
+
+    margin-left:auto;
+
+}
+
+
+.site-nav .nav-login {
+
+
+    margin-left:auto;
+
+
+    padding:8px 18px;
+
+
+    border-radius:99px;
+
+
+    border:1px solid
+        var(--color-border);
+
+
+    color:
+        var(--color-text-secondary);
+
+
+    font-weight:600;
+
+
+    transition:
+        var(--transition);
+
+
+}
+
+
+.site-nav .nav-login:hover {
+
+
+    color:
+        var(--color-primary);
+
+
+    border-color:
+        var(--color-primary-light);
+
+
+    background:
+        var(--color-focus-ring);
+
 
 }
 

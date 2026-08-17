@@ -200,7 +200,24 @@ data-url="/article/{{ article.id }}"
 </div>
 
 
+
 </section>
+
+
+
+{% if is_admin %}
+
+<a
+href="/admin/new"
+class="moment-fab"
+title="新建文章"
+>
+
+＋ 新建文章
+
+</a>
+
+{% endif %}
 
 
 

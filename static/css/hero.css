@@ -260,7 +260,7 @@ html[data-theme="dark"] .home-hero-bg {
 
     color: var(--color-text);
 
-    margin: 0 0 12px;
+    margin: 0 0 18px;
 
 }
 
@@ -268,13 +268,13 @@ html[data-theme="dark"] .home-hero-bg {
 
 .home-hero-slogan {
 
-    font-size: 20px;
+    font-size: 14px;
 
-    font-weight: 600;
+    font-weight: 300;
 
     color: var(--color-text-secondary);
 
-    margin: 0 0 8px;
+    margin: 0 0 10px;
 
 }
 
@@ -282,11 +282,13 @@ html[data-theme="dark"] .home-hero-bg {
 
 .home-hero-sub {
 
-    font-size: 15px;
+    font-size: 14px;
+
+    font-weight: 300;
 
     color: var(--color-text-muted);
 
-    margin: 0 0 32px;
+    margin: 0 0 40px;
 
 }
 

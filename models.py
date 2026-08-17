@@ -8,11 +8,77 @@ from sqlalchemy import (
     DateTime,
     Boolean,
     ForeignKey,
+    UniqueConstraint,
 )
 
 from sqlalchemy.orm import relationship
 
 from database import Base
+
+
+# ===========================
+# 全站配置（Setting）
+# ===========================
+
+class Setting(Base):
+
+    __tablename__ = "settings"
+
+
+    key = Column(
+        String(50),
+        primary_key=True
+    )
+
+
+    value = Column(
+        String(500),
+        default="",
+        nullable=False
+    )
+
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now
+    )
+
+
+# ===========================
+# 访客
+# ===========================
+
+class Visitor(Base):
+
+    __tablename__ = "visitors"
+
+
+    visitor_id = Column(
+        String(64),
+        primary_key=True
+    )
+
+
+    nickname = Column(
+        String(50),
+        default="匿名访客",
+        nullable=False
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )
+
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now
+    )
+
 
 
 # ===========================
@@ -105,6 +171,7 @@ class Article(Base):
 
 # ===========================
 # 文章点赞
+# 规则：每次点击 +1，允许重复点赞，不做访客去重
 # ===========================
 
 class ArticleLike(Base):
@@ -125,6 +192,13 @@ class ArticleLike(Base):
             ondelete="CASCADE"
         ),
         nullable=False
+    )
+
+
+    visitor_id = Column(
+        String(64),
+        default="",
+        index=True
     )
 
 
@@ -149,6 +223,7 @@ class ArticleLike(Base):
 
 # ===========================
 # 文章评论
+# 平级评论 + reply_to_id（回复引用，非嵌套）
 # ===========================
 
 class ArticleComment(Base):
@@ -172,6 +247,13 @@ class ArticleComment(Base):
     )
 
 
+    visitor_id = Column(
+        String(64),
+        default="",
+        index=True
+    )
+
+
     nickname = Column(
         String(50),
         default="匿名用户"
@@ -184,6 +266,17 @@ class ArticleComment(Base):
     )
 
 
+    # 被回复评论 ID；NULL 表示普通评论
+    reply_to_id = Column(
+        Integer,
+        ForeignKey(
+            "article_comments.id",
+            ondelete="SET NULL"
+        ),
+        nullable=True
+    )
+
+
     created_at = Column(
         DateTime,
         default=datetime.now
@@ -193,6 +286,12 @@ class ArticleComment(Base):
     article = relationship(
         "Article",
         back_populates="comments"
+    )
+
+
+    reply_to = relationship(
+        "ArticleComment",
+        remote_side=[id]
     )
 
 
@@ -221,6 +320,13 @@ class Admin(Base):
 
     password_hash = Column(
         String(255),
+        nullable=False
+    )
+
+
+    nickname = Column(
+        String(50),
+        default="成哥",
         nullable=False
     )
 
@@ -340,11 +446,20 @@ class MomentImage(Base):
 
 # ===========================
 # 朋友圈点赞
+# 规则：同一访客只能点赞一次，UNIQUE(moment_id, visitor_id)
 # ===========================
 
 class MomentLike(Base):
 
     __tablename__ = "moment_likes"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "moment_id",
+            "visitor_id",
+            name="uq_moment_like_visitor"
+        ),
+    )
 
 
     id = Column(
@@ -361,6 +476,13 @@ class MomentLike(Base):
     ),
     nullable=False
    )
+
+
+    visitor_id = Column(
+        String(64),
+        default="",
+        nullable=False
+    )
 
 
     nickname = Column(
@@ -384,6 +506,7 @@ class MomentLike(Base):
 
 # ===========================
 # 朋友圈评论
+# 平级评论 + reply_to_id（回复引用，非嵌套）
 # ===========================
 
 class MomentComment(Base):
@@ -407,6 +530,13 @@ class MomentComment(Base):
     )
 
 
+    visitor_id = Column(
+        String(64),
+        default="",
+        index=True
+    )
+
+
     nickname = Column(
         String(50),
         default="匿名用户"
@@ -416,6 +546,17 @@ class MomentComment(Base):
     content = Column(
         Text,
         nullable=False
+    )
+
+
+    # 被回复评论 ID；NULL 表示普通评论
+    reply_to_id = Column(
+        Integer,
+        ForeignKey(
+            "moment_comments.id",
+            ondelete="SET NULL"
+        ),
+        nullable=True
     )
 
 
@@ -431,9 +572,70 @@ class MomentComment(Base):
     )
 
 
+    reply_to = relationship(
+        "MomentComment",
+        remote_side=[id]
+    )
+
+
 
 # ===========================
-# 留言
+# 留言会话（Thread）
+# is_private 属于整个 Thread
+# ===========================
+
+class MessageThread(Base):
+
+    __tablename__ = "message_threads"
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    visitor_id = Column(
+        String(64),
+        default="",
+        index=True,
+        nullable=False
+    )
+
+
+    is_private = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )
+
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now
+    )
+
+
+    messages = relationship(
+        "Message",
+        back_populates="thread",
+        cascade="all, delete",
+        order_by="Message.created_at"
+    )
+
+
+
+# ===========================
+# 留言消息
+# sender_type: visitor / admin
+# nickname 保存发送时昵称快照，保证删除 Visitor 后历史展示不丢失
 # ===========================
 
 class Message(Base):
@@ -447,9 +649,27 @@ class Message(Base):
     )
 
 
+    thread_id = Column(
+        Integer,
+        ForeignKey(
+            "message_threads.id",
+            ondelete="CASCADE"
+        ),
+        nullable=False,
+        index=True
+    )
+
+
+    sender_type = Column(
+        String(20),
+        default="visitor",
+        nullable=False
+    )
+
+
     nickname = Column(
         String(50),
-        default="匿名用户"
+        default="匿名访客"
     )
 
 
@@ -459,50 +679,13 @@ class Message(Base):
     )
 
 
-    # 是否私密（仅管理员可见）
-    is_private = Column(
-        Boolean,
-        default=False,
-        nullable=False
-    )
-
-
-    # 发布者标识（访客 cookie 中的访客 ID）
-    # 用于识别"发布者本人"以允许其回复
-    visitor_id = Column(
-        String(64),
-        default=""
-    )
-
-
-    # 回复父留言 ID（NULL 表示顶层留言）
-    parent_id = Column(
-        Integer,
-        ForeignKey(
-            "message.id",
-            ondelete="CASCADE"
-        ),
-        nullable=True
-    )
-
-
     created_at = Column(
         DateTime,
         default=datetime.now
     )
 
 
-    # 该留言下的回复
-    replies = relationship(
-        "Message",
-        back_populates="parent",
-        cascade="all, delete",
-        order_by="Message.created_at"
-    )
-
-
-    parent = relationship(
-        "Message",
-        back_populates="replies",
-        remote_side=[id]
+    thread = relationship(
+        "MessageThread",
+        back_populates="messages"
     )

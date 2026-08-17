@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}
+访客管理 - Tnine
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container admin-home">
+
+    <!-- ==================================================
+         欢迎区域
+         ================================================== -->
+
+    <section class="admin-welcome">
+
+        <h1>
+            访客管理
+        </h1>
+
+        <p>
+            查看访客档案与互动统计。删除档案不会删除历史互动数据。
+        </p>
+
+    </section>
+
+
+    <!-- ==================================================
+         访客列表
+         ================================================== -->
+
+    <section class="admin-articles">
+
+        <div class="admin-section-header">
+
+            <h2>
+                全部访客（{{ visitor_stats|length }}）
+            </h2>
+
+        </div>
+
+
+        {% if visitor_stats %}
+
+        <div class="admin-article-list">
+
+            {% for item in visitor_stats %}
+
+            <div class="admin-article-item">
+
+                <!-- ==================================================
+                     访客信息
+                     ================================================== -->
+
+                <div class="admin-article-info">
+
+                    <h3>
+
+                        {{ item.visitor.nickname or "匿名访客" }}
+
+                    </h3>
+
+                    <p>
+                        ID：<code>{{ item.visitor.visitor_id }}</code>
+                    </p>
+
+                    <p>
+                        首次创建：{{ item.visitor.created_at.strftime("%Y-%m-%d %H:%M") }}
+                    </p>
+
+                    <p>
+                        最后活动：{{ item.visitor.updated_at.strftime("%Y-%m-%d %H:%M") }}
+                    </p>
+
+                    <p>
+                        互动数量：{{ item.interaction_count }}
+                        （文章赞 {{ item.detail.article_likes }} /
+                        朋友圈赞 {{ item.detail.moment_likes }} /
+                        文章评论 {{ item.detail.article_comments }} /
+                        朋友圈评论 {{ item.detail.moment_comments }} /
+                        留言会话 {{ item.detail.threads }}）
+                    </p>
+
+                </div>
+
+
+                <!-- ==================================================
+                     操作
+                     ================================================== -->
+
+                <div class="admin-article-actions">
+
+                    <form
+                        method="post"
+                        action="/admin/visitors/{{ item.visitor.visitor_id }}/delete"
+                        class="admin-delete-form"
+                        onsubmit="return confirm('确定删除该访客档案吗？其历史点赞、评论、留言将全部保留。');"
+                    >
+
+                        <button
+                            type="submit"
+                            class="admin-delete-link"
+                        >
+                            删除档案
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        {% else %}
+
+        <!-- ==================================================
+             没有访客
+             ================================================== -->
+
+        <div class="admin-empty">
+
+            <p>
+                目前还没有访客档案。
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+</main>
+
+{% endblock %}

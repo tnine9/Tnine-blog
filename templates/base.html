@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="{{ theme }}">
 
 <head>
 
@@ -12,47 +12,7 @@
     >
 
 
-    <!-- 明暗主题：优先用户手动选择，否则跟随系统（在样式加载前执行，避免闪烁） -->
-
-    <script>
-
-        (function () {
-
-            try {
-
-                var saved =
-                    localStorage.getItem(
-                        "tnine-theme"
-                    );
-
-
-                var dark =
-                    saved === "dark" ||
-                    (
-                        !saved &&
-                        window.matchMedia &&
-                        window.matchMedia(
-                            "(prefers-color-scheme: dark)"
-                        ).matches
-                    );
-
-
-                if (dark) {
-
-                    document.documentElement.setAttribute(
-                        "data-theme",
-                        "dark"
-                    );
-
-                }
-
-            } catch (e) { }
-
-        })();
-
-    </script>
-
-
+    <!-- 全站主题由服务端注入（data-theme），已选主题对所有访客生效 -->
 
     <title>
 
@@ -81,7 +41,7 @@
     <!-- 布局 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/layout.css') }}?v=4">
+          href="{{ url_for('static', path='css/layout.css') }}?v=5">
 
 
 
@@ -103,7 +63,7 @@
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/admin.css') }}?v=3">
+          href="{{ url_for('static', path='css/admin.css') }}?v=4">
 
 
     <link rel="stylesheet"
@@ -137,12 +97,29 @@
 
 
 
-        <!-- 导航 -->
+        <!-- 导航：站标 + 导航项 + 登录/头像 -->
 
 <nav class="site-nav">
 
+    <!-- Tnine 站标：悬停变色，点击进入首页展示全屏 hero -->
 
-    <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">
+    <a
+        href="/"
+        class="site-logo"
+        title="回到首页"
+        aria-label="Tnine 首页"
+    >
+
+        Tnine
+
+    </a>
+
+
+    <a
+        href="/?view=timeline"
+        class="{% if request.url.path == '/' %}active{% endif %}"
+        title="进入首页时间线"
+    >
         首页
     </a>
 
@@ -162,73 +139,6 @@
     </a>
 
 
-
-
-    <!-- 主题切换按钮 -->
-
-
-    <button
-        class="theme-toggle"
-        id="themeToggle"
-        type="button"
-        aria-label="切换明暗主题"
-        title="切换明暗主题"
-    >
-
-        <svg
-            class="icon-moon"
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-        >
-
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-
-        </svg>
-
-
-        <svg
-            class="icon-sun"
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-        >
-
-            <circle cx="12" cy="12" r="5"></circle>
-
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-
-        </svg>
-
-    </button>
-
-
-
-
     {% if is_admin %}
 
 
@@ -243,7 +153,7 @@
             id="userMenuButton"
         >
 
-            {{ admin_username[0] }}
+            {{ (admin_nickname or admin_username or "管")[0] }}
 
         </button>
 
@@ -260,7 +170,7 @@
 
                 <div class="dropdown-avatar">
 
-                    {{ admin_username[0] }}
+                    {{ (admin_nickname or admin_username or "管")[0] }}
 
                 </div>
 
@@ -269,7 +179,7 @@
 
                     <div class="dropdown-name">
 
-                        {{ admin_username }}
+                        {{ admin_nickname or admin_username }}
 
                     </div>
 
@@ -292,6 +202,24 @@
             <a href="/admin">
 
                 进入后台
+
+            </a>
+
+
+
+
+            <a href="/admin/visitors">
+
+                访客管理
+
+            </a>
+
+
+
+
+            <a href="/admin/profile">
+
+                修改昵称
 
             </a>
 
@@ -325,7 +253,7 @@
 
 
 
-    <a href="/admin/login">
+    <a href="/admin/login" class="nav-login">
 
         登录
 
@@ -468,7 +396,7 @@ onclick="showNextImage()"
 <script src="{{ url_for('static', path='js/moment.js') }}?v=3"></script>
 
 
-<script src="{{ url_for('static', path='js/main.js') }}?v=4"></script>
+<script src="{{ url_for('static', path='js/main.js') }}?v=5"></script>
 
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>

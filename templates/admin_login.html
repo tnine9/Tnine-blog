@@ -35,6 +35,20 @@
             {% endif %}
 
 
+            {% if need_initial_password %}
+
+            <div class="login-error">
+
+                系统尚未初始化管理员账号。请先设置环境变量
+                <code>TNINE_ADMIN_INITIAL_PASSWORD</code>
+                并重启服务，将自动创建固定管理员
+                <strong>admin</strong>。
+
+            </div>
+
+            {% endif %}
+
+
             <form
                 method="post"
                 action="/admin/login"

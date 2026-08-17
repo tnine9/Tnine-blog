@@ -143,7 +143,7 @@
     var(--color-text-secondary);
 
 
-    line-height:1.8;
+    line-height:1.45;
 
 
 }
@@ -926,7 +926,7 @@ right:30px;
 
     align-items: center;
 
-    gap: 10px;
+    gap: 20px;
 
     margin-left: auto;
 
@@ -942,19 +942,21 @@ right:30px;
 
     align-items: center;
 
-    gap: 6px;
+    justify-content: center;
 
-    padding: 6px 14px;
+    width: 36px;
 
-    border-radius: 8px;
+    height: 36px;
 
-    border: 1px solid var(--color-primary-light);
+    padding: 0;
 
-    background: transparent;
+    border: none;
 
-    color: var(--color-primary);
+    border-radius: 50%;
 
-    font-size: 13px;
+    background: #f5f5f5;
+
+    color: #666;
 
     text-decoration: none;
 
@@ -968,11 +970,9 @@ right:30px;
 
 .detail-edit-button:hover {
 
-    background: var(--color-primary);
+    background: #e6e6e6;
 
-    color: #fff;
-
-    border-color: var(--color-primary);
+    color: #333;
 
 }
 
@@ -1048,7 +1048,7 @@ right:30px;
 
 .detail-delete-form {
 
-    margin-left: auto;
+    margin-left: 0;
 
 }
 
@@ -1056,17 +1056,25 @@ right:30px;
 
 .detail-delete-button {
 
-    padding: 6px 14px;
+    display: inline-flex;
 
-    border-radius: 8px;
+    align-items: center;
 
-    border: 1px solid var(--color-danger);
+    justify-content: center;
 
-    background: transparent;
+    width: 36px;
 
-    color: var(--color-danger);
+    height: 36px;
 
-    font-size: 13px;
+    padding: 0;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: #f5f5f5;
+
+    color: #666;
 
     cursor: pointer;
 
@@ -1078,9 +1086,9 @@ right:30px;
 
 .detail-delete-button:hover {
 
-    background: var(--color-danger);
+    background: #f0e6e6;
 
-    color: #fff;
+    color: #333;
 
 }
 
@@ -1123,6 +1131,31 @@ right:30px;
     border-color: var(--color-danger);
 
     color: var(--color-danger);
+
+}
+
+
+/* 评论操作按钮悬停展示：鼠标悬停该条评论时才显示 删除/回复，移出隐藏 */
+@media (hover: hover) {
+
+    .article-comment-item .inline-reply-button,
+    .article-comment-item .inline-delete-form,
+    .moment-comment.detail-comment .inline-reply-button,
+    .moment-comment.detail-comment .inline-delete-form,
+    .message-reply-item .inline-delete-form {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity .15s ease, visibility .15s ease;
+    }
+
+    .article-comment-item:hover .inline-reply-button,
+    .article-comment-item:hover .inline-delete-form,
+    .moment-comment.detail-comment:hover .inline-reply-button,
+    .moment-comment.detail-comment:hover .inline-delete-form,
+    .message-reply-item:hover .inline-delete-form {
+        opacity: 1;
+        visibility: visible;
+    }
 
 }
 
@@ -1584,7 +1617,7 @@ right:30px;
 
     font-size: 14px;
 
-    line-height: 1.7;
+    line-height: 1.45;
 
     padding-left: 38px;
 
@@ -1629,3 +1662,214 @@ right:30px;
     }
 
 }
+
+
+
+/* =========================================================
+   评论回复（平级评论 + reply_to_id 引用展示）
+   ========================================================= */
+
+.moment-comment-replyto {
+
+    display: inline-block;
+
+    font-size: 12px;
+
+    color: var(--color-text-muted);
+
+    margin-right: 6px;
+
+    padding: 1px 8px;
+
+    border-left: 3px solid var(--color-primary);
+
+    background: var(--color-bg);
+
+    border-radius: 4px;
+
+    vertical-align: middle;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    max-width: 100%;
+
+    line-height: 1.6;
+
+}
+
+
+
+.inline-reply-button {
+
+    display: inline-block;
+
+    margin-left: 8px;
+
+    padding: 1px 8px;
+
+    font-size: 12px;
+
+    color: var(--color-text-secondary);
+
+    background: transparent;
+
+    border: 1px solid var(--color-border);
+
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    transition: var(--transition);
+
+}
+
+
+
+.inline-reply-button:hover {
+
+    color: var(--color-primary);
+
+    border-color: var(--color-primary);
+
+}
+
+
+
+/* 回复目标提示条 */
+
+.moment-reply-target {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 6px 12px;
+
+    margin-bottom: 8px;
+
+    font-size: 13px;
+
+    color: var(--color-primary);
+
+    background: var(--color-bg);
+
+    border: 1px dashed var(--color-primary);
+
+    border-radius: var(--radius-sm);
+
+}
+
+
+
+.moment-reply-target[hidden] {
+
+    display: none;
+
+}
+
+
+
+.moment-reply-cancel {
+
+    margin-left: auto;
+
+    padding: 1px 10px;
+
+    font-size: 12px;
+
+    color: var(--color-text-secondary);
+
+    background: transparent;
+
+    border: 1px solid var(--color-border);
+
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    transition: var(--transition);
+
+}
+
+
+
+.moment-reply-cancel:hover {
+
+    color: #e5484d;
+
+    border-color: #e5484d;
+
+}
+
+
+
+/* =========================================================
+   留言会话
+   ========================================================= */
+
+.message-meta {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-top: 10px;
+
+    padding-top: 10px;
+
+    border-top: 1px solid var(--color-border);
+
+    font-size: 12px;
+
+    color: var(--color-text-muted);
+
+}
+
+
+
+.message-detail-hint {
+
+    color: var(--color-primary);
+
+}
+
+
+
+.message-admin-badge {
+
+    display: inline-block;
+
+    margin-left: 6px;
+
+    padding: 0 6px;
+
+    font-size: 11px;
+
+    color: var(--color-primary);
+
+    border: 1px solid var(--color-primary);
+
+    border-radius: 999px;
+
+    vertical-align: middle;
+
+}
+
+
+
+.message-reply-item.is-admin .message-reply-avatar {
+
+    background: var(--color-primary);
+
+    color: #fff;
+
+}
+

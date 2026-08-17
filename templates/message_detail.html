@@ -2,7 +2,7 @@
 
 
 {% block title %}
-留言详情 - Tnine
+留言会话 - Tnine
 {% endblock %}
 
 
@@ -15,9 +15,9 @@
 
     <header class="detail-page-head">
 
-        <a href="/messages" class="detail-back">
+        <a href="javascript:history.back()" class="detail-back">
 
-            ← 返回留言
+            ← 返回上一页
 
         </a>
 
@@ -31,13 +31,35 @@
 
         <h1 class="detail-title">
 
-            留言详情
+            留言会话
 
         </h1>
 
         <p class="detail-subtitle">
 
-            {{ message.nickname }} 留言于 {{ message.created_at.strftime("%Y-%m-%d %H:%M") }}
+            {% if thread.messages %}
+
+            {{ thread.messages[0].nickname or "匿名访客" }}
+
+            留言于
+
+            {{ thread.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+            {% else %}
+
+            匿名访客留言
+
+            {% endif %}
+
+            {% if thread.is_private %}
+
+            <span class="message-private-badge">
+
+                🔒 私密
+
+            </span>
+
+            {% endif %}
 
         </p>
 
@@ -45,7 +67,7 @@
 
 
 
-    <!-- 留言详情卡片 -->
+    <!-- 留言会话卡片 -->
 
     <article class="content-card message-card message-detail-card">
 
@@ -56,7 +78,15 @@
 
                 <span class="detail-avatar">
 
-                    {{ (message.nickname or "匿")[0] }}
+                    {% if thread.messages %}
+
+                    {{ (thread.messages[0].nickname or "匿")[0] }}
+
+                    {% else %}
+
+                    匿
+
+                    {% endif %}
 
                 </span>
 
@@ -64,15 +94,13 @@
 
                     <div class="detail-author-name">
 
-                        {{ message.nickname }}
+                        {% if thread.messages %}
 
-                        {% if message.is_private %}
+                        {{ thread.messages[0].nickname or "匿名访客" }}
 
-                        <span class="message-private-badge">
+                        {% else %}
 
-                            🔒 私密
-
-                        </span>
+                        匿名访客
 
                         {% endif %}
 
@@ -80,7 +108,7 @@
 
                     <div class="detail-author-time">
 
-                        {{ message.created_at.strftime("%Y-%m-%d %H:%M") }}
+                        {{ thread.created_at.strftime("%Y-%m-%d %H:%M") }}
 
                     </div>
 
@@ -95,17 +123,18 @@
 
                 <form
                     method="post"
-                    action="/admin/message/{{ message.id }}/delete"
+                    action="/admin/message/{{ thread.id }}/delete"
                     class="detail-delete-form"
-                    onsubmit="return confirm('确定删除这条留言吗？其回复将一并删除。');"
+                    onsubmit="return confirm('确定删除这个留言会话吗？全部消息将一并删除。');"
                 >
 
                     <button
                         type="submit"
                         class="detail-delete-button"
+                        title="删除会话"
                     >
 
-                        🗑️ 删除
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 
                     </button>
 
@@ -114,14 +143,6 @@
             </div>
 
             {% endif %}
-
-        </div>
-
-
-
-        <div class="message-content">
-
-            {{ message.content }}
 
         </div>
 
@@ -138,9 +159,9 @@
 
                 <span>💬</span>
 
-                <strong>{{ message.replies|length }}</strong>
+                <strong>{{ thread.messages|length }}</strong>
 
-                回复
+                条消息
 
             </span>
 
@@ -150,14 +171,14 @@
         <!-- 回复入口（仅发布者或管理员） -->
 
         {% if is_admin or
-            (message.visitor_id and
-             message.visitor_id == visitor_id) %}
+            (thread.visitor_id and
+             thread.visitor_id == visitor_id) %}
 
         <div class="message-reply-form-wrap">
 
             <form
                 method="post"
-                action="/message/{{ message.id }}/reply"
+                action="/message/{{ thread.id }}/reply"
                 class="message-reply-form"
             >
 
@@ -191,47 +212,61 @@
 
 
 
-        <!-- 全部回复 -->
+        <!-- 会话全部消息 -->
 
         <div class="message-reply-list">
 
-            {% set sorted_replies =
-                message.replies|sort(attribute="created_at")
+            {% set sorted_messages =
+                thread.messages|sort(attribute="created_at")
             %}
 
 
-            {% for reply in sorted_replies %}
+            {% for message in sorted_messages %}
 
-            <div class="message-reply-item">
+            <div class="message-reply-item {% if message.sender_type == 'admin' %}is-admin{% endif %}">
 
                 <div class="message-reply-header">
 
                     <span class="message-reply-avatar">
 
-                        {{ (reply.nickname or "匿")[0] }}
+                        {{ (message.nickname or "匿")[0] }}
 
                     </span>
 
                     <span class="message-reply-user">
 
-                        {{ reply.nickname }}
+                        {% if message.sender_type == "admin" %}
+
+                        {{ message.nickname or admin_nickname or admin_username }}
+
+                        <span class="message-admin-badge">
+
+                            管理员
+
+                        </span>
+
+                        {% else %}
+
+                        {{ message.nickname or "匿名访客" }}
+
+                        {% endif %}
 
                     </span>
 
                     <span class="message-reply-time">
 
-                        {{ reply.created_at.strftime("%Y-%m-%d %H:%M") }}
+                        {{ message.created_at.strftime("%Y-%m-%d %H:%M") }}
 
                     </span>
 
 
-                    {% if is_admin %}
+                    {% if is_admin and message.sender_type != "admin" %}
 
                     <form
                         method="post"
-                        action="/admin/message/reply/{{ reply.id }}/delete"
+                        action="/admin/message/message/{{ message.id }}/delete"
                         class="inline-delete-form"
-                        onsubmit="return confirm('确定删除这条回复吗？');"
+                        onsubmit="return confirm('确定删除这条消息吗？');"
                     >
 
                         <button
@@ -251,7 +286,7 @@
 
                 <div class="message-reply-content">
 
-                    {{ reply.content }}
+                    {{ message.content }}
 
                 </div>
 

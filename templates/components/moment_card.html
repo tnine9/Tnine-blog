@@ -1,6 +1,5 @@
-<article  
+<article
     class="content-card moment-card"
-    data-url="/moment/{{ item.data.id }}"
 >
 
 
@@ -134,26 +133,6 @@
 
 
 
-        <a
-            href="/moment/{{ item.data.id }}"
-            class="moment-action-button moment-detail-link"
-        >
-
-
-            📄
-
-
-            <span>
-
-                详情
-
-            </span>
-
-
-        </a>
-
-
-
         <button
             type="button"
             class="
@@ -201,7 +180,7 @@
 
 
 
-    <!-- 点赞列表 -->
+    <!-- 点赞数（只显示次数，不显示点赞人员） -->
 
 
     {% if item.data.likes %}
@@ -210,28 +189,11 @@
     <div class="moment-like-list moment-interactive">
 
 
-        ❤️
+        <span class="moment-like-count">
 
-
-        {% for like in item.data.likes %}
-
-
-        <span class="moment-like-name">
-
-            {{ like.nickname }}
+            ❤️ {{ item.data.likes|length }} 人赞过
 
         </span>
-
-
-        {% if not loop.last %}
-
-        、
-
-
-        {% endif %}
-
-
-        {% endfor %}
 
 
     </div>
@@ -272,6 +234,26 @@
                 {{ comment.nickname }}
 
             </span>
+
+
+
+            {% if comment.reply_to_id %}
+
+            <span class="moment-comment-replyto">
+
+                {% if comment.reply_to %}
+
+                    回复 @{{ comment.reply_to.nickname }}
+
+                {% else %}
+
+                    回复 @该评论已删除
+
+                {% endif %}
+
+            </span>
+
+            {% endif %}
 
 
 
@@ -316,6 +298,26 @@
                     {{ comment.nickname }}
 
                 </span>
+
+
+
+                {% if comment.reply_to_id %}
+
+                <span class="moment-comment-replyto">
+
+                    {% if comment.reply_to %}
+
+                        回复 @{{ comment.reply_to.nickname }}
+
+                    {% else %}
+
+                        回复 @该评论已删除
+
+                    {% endif %}
+
+                </span>
+
+                {% endif %}
 
 
 

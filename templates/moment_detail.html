@@ -15,9 +15,9 @@
 
     <header class="detail-page-head">
 
-        <a href="/moments" class="detail-back">
+        <a href="javascript:history.back()" class="detail-back">
 
-            ← 返回朋友圈
+            ← 返回上一页
 
         </a>
 
@@ -95,9 +95,10 @@
                     <button
                         type="submit"
                         class="detail-delete-button"
+                        title="删除"
                     >
 
-                        🗑️ 删除
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 
                     </button>
 
@@ -233,7 +234,7 @@
         </div>
 
 
-        <!-- 点赞列表 -->
+        <!-- 点赞列表（只显示次数，不显示点赞人员） -->
 
         {% if moment.likes %}
 
@@ -246,27 +247,6 @@
 
             </span>
 
-
-            <div class="moment-like-names">
-
-                {% for like in moment.likes %}
-
-                <span class="moment-like-name">
-
-                    {{ like.nickname }}
-
-                </span>
-
-                {% if not loop.last %}
-
-                、
-
-                {% endif %}
-
-                {% endfor %}
-
-            </div>
-
         </div>
 
         {% endif %}
@@ -278,12 +258,27 @@
 
         <div class="moment-comment-panel moment-interactive">
 
+            <div class="moment-reply-target" id="momentReplyTarget" hidden>
+                回复 <span id="momentReplyName"></span>
+                <button type="button" class="moment-reply-cancel" id="momentReplyCancel">取消</button>
+            </div>
+
 
             <form
                 method="post"
                 action="/moment/{{ moment.id }}/comment"
                 class="moment-comment-form"
+                id="momentCommentForm"
             >
+
+
+
+                <input
+                    type="hidden"
+                    name="reply_to_id"
+                    id="momentReplyToId"
+                    value=""
+                >
 
 
 
@@ -353,11 +348,44 @@
 
 
 
+                {% if comment.reply_to_id %}
+
+                <span class="moment-comment-replyto">
+
+                    {% if comment.reply_to %}
+
+                        回复 @{{ comment.reply_to.nickname }}
+
+                    {% else %}
+
+                        回复 @该评论已删除
+
+                    {% endif %}
+
+                </span>
+
+                {% endif %}
+
+
+
                 <span class="moment-comment-content">
 
                     {{ comment.content }}
 
                 </span>
+
+
+
+                <button
+                    type="button"
+                    class="inline-reply-button"
+                    data-reply-to="{{ comment.id }}"
+                    data-reply-nickname="{{ comment.nickname }}"
+                >
+
+                    回复
+
+                </button>
 
 
 
@@ -416,6 +444,39 @@
 
 
 </div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const replyToId = document.getElementById("momentReplyToId");
+    const replyTarget = document.getElementById("momentReplyTarget");
+    const replyName = document.getElementById("momentReplyName");
+    const replyCancel = document.getElementById("momentReplyCancel");
+    const commentForm = document.getElementById("momentCommentForm");
+
+    if (!replyToId || !replyTarget) {
+        return;
+    }
+
+    document.querySelectorAll(".inline-reply-button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            replyToId.value = btn.dataset.replyTo;
+            replyName.textContent = "@" + btn.dataset.replyNickname;
+            replyTarget.hidden = false;
+            const ta = commentForm.querySelector(".moment-comment-input");
+            if (ta) {
+                ta.focus();
+            }
+        });
+    });
+
+    replyCancel.addEventListener("click", function () {
+        replyToId.value = "";
+        replyName.textContent = "";
+        replyTarget.hidden = true;
+    });
+});
+</script>
 
 
 {% endblock %}

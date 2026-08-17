@@ -166,7 +166,7 @@
 
     padding:
 
-        16px 20px;
+        16px 20px 14px;
 
 
     margin-bottom:20px;
@@ -189,6 +189,31 @@
 
     backdrop-filter:
         blur(10px);
+
+
+    cursor:pointer;
+
+
+    user-select:none;
+
+
+    transition:
+        .25s ease;
+
+}
+
+
+
+
+.editor-sticky-main {
+
+    max-height:120px;
+
+    overflow:hidden;
+
+    opacity:1;
+
+    transition:.25s ease;
 
 }
 
@@ -215,6 +240,9 @@
 
     font-weight:700;
 
+
+    line-height:1.35;
+
 }
 
 
@@ -233,6 +261,105 @@
 
     color:
         var(--color-text-secondary);
+
+
+    margin-top:4px;
+
+
+    overflow:hidden;
+
+
+    font-size:14px;
+
+
+    white-space:nowrap;
+
+
+    text-overflow:ellipsis;
+
+}
+
+
+
+.editor-sticky-meta {
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-top:6px;
+
+    color:var(--color-text-muted);
+
+    font-size:12px;
+
+}
+
+
+
+/* 收缩状态 */
+
+.editor-sticky-compact {
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:20px;
+
+    max-height:0;
+
+    overflow:hidden;
+
+    opacity:0;
+
+    transition:.25s ease;
+
+}
+
+
+
+.compact-status {
+
+    flex-shrink:0;
+
+    color:var(--color-text-muted);
+
+    font-size:12px;
+
+}
+
+
+
+.editor-sticky-header.is-compact {
+
+    padding:9px 16px;
+
+}
+
+
+
+.editor-sticky-header.is-compact
+.editor-sticky-main {
+
+    max-height:0;
+
+    opacity:0;
+
+}
+
+
+
+.editor-sticky-header.is-compact
+.editor-sticky-compact {
+
+    max-height:30px;
+
+    opacity:1;
 
 }
 

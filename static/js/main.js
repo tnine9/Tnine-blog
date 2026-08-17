@@ -17,7 +17,7 @@ document.addEventListener(
         initUserMenu();
 
 
-        initThemeToggle();
+        initAdminThemePanel();
 
 
     }
@@ -122,24 +122,32 @@ function initCardNavigation(){
 
 /*
 =========================================================
-明暗主题切换
-按钮图标由 CSS 根据 html[data-theme] 自动显隐，
-JS 只负责切换主题并持久化到 localStorage
+后台：切换主题面板
+- 仅管理员可见/可操作（按钮在后台页面）
+- 点击"切换主题"按钮展开所有主题选项
+- 点击选项后提交到 /admin/theme，成功后全站生效
 =========================================================
 */
 
 
-function initThemeToggle(){
+function initAdminThemePanel(){
 
 
-    const toggle =
+    const button =
         document.getElementById(
-            "themeToggle"
+            "adminThemeButton"
+        );
+
+
+    const panel =
+        document.getElementById(
+            "adminThemePanel"
         );
 
 
     if(
-        !toggle
+        !button
+        || !panel
     ){
 
         return;
@@ -147,40 +155,141 @@ function initThemeToggle(){
     }
 
 
+    /* 展开 / 收起 */
 
-
-    toggle.addEventListener(
+    button.addEventListener(
         "click",
-        function(){
+        function(e){
 
+            e.stopPropagation();
 
-            const root =
-                document.documentElement;
-
-
-            const next =
-                root.getAttribute(
-                    "data-theme"
-                ) === "dark"
-                    ? "light"
-                    : "dark";
-
-
-            root.setAttribute(
-                "data-theme",
-                next
+            panel.classList.toggle(
+                "is-open"
             );
 
+        }
+    );
 
-            try {
 
-                localStorage.setItem(
-                    "tnine-theme",
-                    next
+    /* 点击面板外收起 */
+
+    document.addEventListener(
+        "click",
+        function(e){
+
+            if (
+                !panel.contains(e.target)
+                && !button.contains(e.target)
+            ) {
+
+                panel.classList.remove(
+                    "is-open"
                 );
 
-            } catch (e) { }
+            }
 
+        }
+    );
+
+
+    /* 点击主题选项：提交并全局切换 */
+
+    const options =
+        panel.querySelectorAll(
+            ".theme-option"
+        );
+
+
+    options.forEach(
+        function(option){
+
+            option.addEventListener(
+                "click",
+                function(){
+
+                    const theme =
+                        option.getAttribute(
+                            "data-theme"
+                        );
+
+
+                    if (!theme) {
+
+                        return;
+
+                    }
+
+
+                    const form =
+                        new FormData();
+
+                    form.append(
+                        "theme",
+                        theme
+                    );
+
+
+                    fetch(
+                        "/admin/theme",
+                        {
+                            method: "POST",
+                            body: form,
+                            headers: {
+                                "X-Requested-With": "XMLHttpRequest"
+                            }
+                        }
+                    )
+                    .then(
+                        function(res){
+
+                            return res.json();
+
+                        }
+                    )
+                    .then(
+                        function(data){
+
+                            if (
+                                data
+                                && data.ok
+                            ) {
+
+                                document.documentElement.setAttribute(
+                                    "data-theme",
+                                    data.theme
+                                );
+
+
+                                /* 更新选中态 */
+
+                                options.forEach(
+                                    function(opt){
+
+                                        opt.classList.toggle(
+                                            "is-selected",
+                                            opt.getAttribute(
+                                                "data-theme"
+                                            ) === data.theme
+                                        );
+
+                                    }
+                                );
+
+
+                                panel.classList.remove(
+                                    "is-open"
+                                );
+
+                            }
+
+                        }
+                    )
+                    .catch(
+                        function(){ }
+                    );
+
+                }
+            );
 
         }
     );

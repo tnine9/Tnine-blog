@@ -230,6 +230,65 @@
 
 
 
+.admin-secondary-button {
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+
+    padding:
+        12px 20px;
+
+
+    border-radius:
+        var(--radius-sm);
+
+
+    background:
+        var(--color-surface);
+
+
+    color:
+        var(--color-text);
+
+
+    font-weight:600;
+
+    text-decoration:none;
+
+
+    border:
+        1px solid var(--color-border);
+
+
+    transition:
+        var(--transition);
+
+}
+
+
+
+.admin-secondary-button:hover {
+
+
+    border-color:
+        var(--color-primary);
+
+
+    color:
+        var(--color-primary);
+
+
+    transform:
+        translateY(-1px);
+
+}
+
+
+
 /* =========================================================
    文章列表
    ========================================================= */
@@ -383,8 +442,7 @@
 
 
 
-.admin-view-link,
-.admin-edit-link {
+.admin-view-link {
 
 
     color:
@@ -400,8 +458,7 @@
 
 
 
-.admin-view-link:hover,
-.admin-edit-link:hover {
+.admin-view-link:hover {
 
 
     color:
@@ -409,6 +466,46 @@
 
 
     text-decoration:underline;
+
+}
+
+
+
+/* 编辑：圆形浅色背景 + 铅笔图标 */
+
+.admin-edit-link {
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    width:30px;
+
+    height:30px;
+
+    border-radius:50%;
+
+    background:#f5f5f5;
+
+    color:#666;
+
+    text-decoration:none;
+
+    vertical-align:middle;
+
+    transition:var(--transition);
+
+}
+
+
+
+.admin-edit-link:hover {
+
+    background:#e6e6e6;
+
+    color:#333;
 
 }
 
@@ -428,7 +525,6 @@
 
 
 
-.admin-delete-link,
 .admin-publish-link {
 
 
@@ -457,10 +553,33 @@
 
 
 
+/* 删除：圆形浅色背景 + 垃圾桶图标 */
+
 .admin-delete-link {
 
-    color:
-        var(--color-danger);
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    width:30px;
+
+    height:30px;
+
+    border:none;
+
+    border-radius:50%;
+
+    background:#f5f5f5;
+
+    color:#666;
+
+    cursor:pointer;
+
+    vertical-align:middle;
+
+    transition:var(--transition);
 
 }
 
@@ -468,12 +587,9 @@
 
 .admin-delete-link:hover {
 
+    background:#f0e6e6;
 
-    color:
-        var(--color-danger-hover);
-
-
-    text-decoration:underline;
+    color:#333;
 
 }
 
@@ -784,5 +900,192 @@
 
     border-radius:
         var(--radius-sm);
+
+}
+/* ==========================
+   后台：切换主题
+========================== */
+
+.admin-theme-switch {
+
+    position:relative;
+
+    display:inline-block;
+
+    margin-top:18px;
+
+}
+
+.admin-theme-button {
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:9px 18px;
+
+    border:1px solid var(--color-border);
+
+    border-radius:99px;
+
+    background:var(--color-surface);
+
+    color:var(--color-text-secondary);
+
+    font-size:13px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:var(--transition);
+
+}
+
+.admin-theme-button:hover {
+
+    color:var(--color-primary);
+
+    border-color:var(--color-primary-light);
+
+    background:var(--color-focus-ring);
+
+}
+
+.admin-theme-panel {
+
+    position:absolute;
+
+    top:calc(100% + 8px);
+
+    left:0;
+
+    z-index:50;
+
+    min-width:220px;
+
+    padding:10px;
+
+    background:var(--color-card);
+
+    border:1px solid var(--color-border);
+
+    border-radius:16px;
+
+    box-shadow:0 12px 32px rgba(0,0,0,.14);
+
+    opacity:0;
+
+    visibility:hidden;
+
+    transform:translateY(-6px);
+
+    transition:opacity .2s ease, transform .2s ease, visibility .2s ease;
+
+}
+
+.admin-theme-panel.is-open {
+
+    opacity:1;
+
+    visibility:visible;
+
+    transform:translateY(0);
+
+}
+
+.admin-theme-panel-title {
+
+    padding:6px 10px 8px;
+
+    font-size:12px;
+
+    color:var(--color-text-muted);
+
+    letter-spacing:.08em;
+
+}
+
+.theme-option {
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    width:100%;
+
+    padding:9px 10px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:transparent;
+
+    color:var(--color-text-secondary);
+
+    font-size:14px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:background .2s ease, color .2s ease;
+
+}
+
+.theme-option:hover {
+
+    background:var(--color-soft);
+
+    color:var(--color-text);
+
+}
+
+.theme-option.is-selected {
+
+    color:var(--color-primary);
+
+    background:var(--color-focus-ring);
+
+}
+
+.theme-swatch {
+
+    width:16px;
+
+    height:16px;
+
+    border-radius:50%;
+
+    border:1px solid var(--color-border);
+
+    flex-shrink:0;
+
+}
+
+.theme-swatch-light {
+
+    background:#f7f8fa;
+
+}
+
+.theme-swatch-dark {
+
+    background:#16181d;
+
+}
+
+.theme-check {
+
+    margin-left:auto;
+
+    color:var(--color-primary);
+
+    font-weight:800;
 
 }

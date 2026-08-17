@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}
+修改昵称 - Tnine
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container admin-page">
+
+    <section class="login-page">
+
+        <div class="login-card">
+
+            <div class="login-header">
+
+                <h1>
+                    修改管理员昵称
+                </h1>
+
+                <p>
+                    账号固定为 <strong>admin</strong>，昵称可修改（公开页面显示昵称）。
+                </p>
+
+            </div>
+
+
+            {% if error %}
+
+            <div class="login-error">
+                {{ error }}
+            </div>
+
+            {% endif %}
+
+
+            <form
+                method="post"
+                action="/admin/profile"
+                class="article-form"
+            >
+
+                <div class="form-group">
+
+                    <label for="nickname">
+                        昵称
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nickname"
+                        name="nickname"
+                        value="{{ admin.nickname or '' }}"
+                        placeholder="请输入公开昵称"
+                        maxlength="50"
+                        required
+                    >
+
+                </div>
+
+
+                <button type="submit">
+                    保存昵称
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+</main>
+
+{% endblock %}

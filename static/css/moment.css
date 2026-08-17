@@ -170,7 +170,7 @@
     font-size:16px;
 
 
-    line-height:1.8;
+    line-height:1.45;
 
 
     white-space:pre-wrap;
@@ -560,7 +560,7 @@
     font-size:13px;
 
 
-    line-height:1.7;
+    line-height:1.45;
 
 
     word-break:break-word;
@@ -1219,7 +1219,7 @@ scale(1.05);
 
 .moment-content-flex {
 
-    line-height: 1.7;
+    line-height: 1.45;
 
     white-space: pre-wrap;
 

@@ -15,9 +15,9 @@
 
     <header class="detail-page-head">
 
-        <a href="/articles" class="detail-back">
+        <a href="javascript:history.back()" class="detail-back">
 
-            ← 返回文章
+            ← 返回上一页
 
         </a>
 
@@ -62,12 +62,12 @@
                 </span>
 
 
-                <span class="article-sticky-stat">
+                <span class="article-sticky-stat" data-like-count="{{ article.like_count }}">
                     ❤️ {{ article.like_count }}
                 </span>
 
 
-                <span class="article-sticky-stat">
+                <span class="article-sticky-stat" data-comment-count="{{ article.comment_count }}">
                     💬 {{ article.comment_count }}
                 </span>
 
@@ -101,8 +101,8 @@
 
             <span class="compact-stats">
                 <span>👁 {{ article.views }}</span>
-                <span>❤️ {{ article.like_count }}</span>
-                <span>💬 {{ article.comment_count }}</span>
+                <span data-like-count="{{ article.like_count }}">❤️ {{ article.like_count }}</span>
+                <span data-comment-count="{{ article.comment_count }}">💬 {{ article.comment_count }}</span>
             </span>
 
         </div>
@@ -124,7 +124,7 @@
 
                 <span class="detail-avatar">
 
-                    {{ admin_username[0] }}
+                    {{ (admin_nickname or admin_username or "管")[0] }}
 
                 </span>
 
@@ -132,7 +132,7 @@
 
                     <div class="detail-author-name">
 
-                        {{ admin_username }}
+                        {{ admin_nickname or admin_username }}
 
                     </div>
 
@@ -160,9 +160,10 @@
                 <a
                     href="/admin/edit/{{ article.id }}"
                     class="detail-edit-button"
+                    title="编辑"
                 >
 
-                    ✏️ 编辑
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
 
                 </a>
 
@@ -177,9 +178,10 @@
                     <button
                         type="submit"
                         class="detail-delete-button"
+                        title="删除"
                     >
 
-                        🗑️ 删除
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 
                     </button>
 
@@ -190,6 +192,25 @@
             {% endif %}
 
         </div>
+
+
+        <!-- 文章大标题 + 副标题 -->
+
+        <header class="article-detail-title-block">
+
+            <h1 class="article-detail-title">
+                {{ article.title }}
+            </h1>
+
+            {% if article.summary %}
+
+            <p class="article-detail-subtitle">
+                {{ article.summary }}
+            </p>
+
+            {% endif %}
+
+        </header>
 
 
         <!-- 正文 -->
@@ -217,13 +238,13 @@
 
             <span class="detail-stat">
                 <span>❤️</span>
-                <strong>{{ article.like_count }}</strong>
+                <strong data-like-count="{{ article.like_count }}">{{ article.like_count }}</strong>
                 点赞
             </span>
 
             <span class="detail-stat">
                 <span>💬</span>
-                <strong>{{ article.comment_count }}</strong>
+                <strong data-comment-count="{{ article.comment_count }}">{{ article.comment_count }}</strong>
                 评论
             </span>
 
@@ -277,11 +298,23 @@
 
         <div class="article-comment-form-wrap">
 
+            <div class="moment-reply-target" id="articleReplyTarget" hidden>
+                回复 <span id="articleReplyName"></span>
+                <button type="button" class="moment-reply-cancel" id="articleReplyCancel">取消</button>
+            </div>
+
             <form
                 method="post"
                 action="/article/{{ article.id }}/comment"
                 class="article-comment-form"
             >
+
+                <input
+                    type="hidden"
+                    name="reply_to_id"
+                    id="articleReplyToId"
+                    value=""
+                >
 
                 <textarea
                     name="content"
@@ -343,6 +376,18 @@
                     </span>
 
 
+                    <button
+                        type="button"
+                        class="inline-reply-button"
+                        data-reply-to="{{ comment.id }}"
+                        data-reply-nickname="{{ comment.nickname }}"
+                    >
+
+                        回复
+
+                    </button>
+
+
                     {% if is_admin %}
 
                     <form
@@ -368,6 +413,24 @@
                 </div>
 
                 <div class="article-comment-content">
+
+                    {% if comment.reply_to_id %}
+
+                    <div class="moment-comment-replyto">
+
+                        {% if comment.reply_to %}
+
+                            回复 @{{ comment.reply_to.nickname }}：
+
+                        {% else %}
+
+                            回复 @该评论已删除：
+
+                        {% endif %}
+
+                    </div>
+
+                    {% endif %}
 
                     {{ comment.content }}
 
@@ -399,11 +462,11 @@
     <aside class="toc-container">
 
         <div class="toc-title">
-            文章导航
+            文章目录
         </div>
 
         <div class="toc-empty">
-            暂无文章导航
+            暂无目录
         </div>
 
     </aside>
@@ -502,6 +565,95 @@ document.addEventListener(
 
 
         /*
+         * 评论回复（设置 reply_to_id）
+         */
+
+        const articleReplyToId =
+            document.getElementById(
+                "articleReplyToId"
+            );
+
+        const articleReplyTarget =
+            document.getElementById(
+                "articleReplyTarget"
+            );
+
+        const articleReplyName =
+            document.getElementById(
+                "articleReplyName"
+            );
+
+        const articleReplyCancel =
+            document.getElementById(
+                "articleReplyCancel"
+            );
+
+        const articleCommentFormWrap =
+            document.querySelector(
+                ".article-comment-form-wrap"
+            );
+
+
+        if (
+            articleReplyToId &&
+            articleReplyTarget
+        ) {
+
+            document.querySelectorAll(
+                ".article-comment-item .inline-reply-button"
+            ).forEach(
+                function (btn) {
+
+                    btn.addEventListener(
+                        "click",
+                        function () {
+
+                            articleReplyToId.value =
+                                btn.dataset.replyTo;
+
+                            articleReplyName.textContent =
+                                "@" +
+                                btn.dataset.replyNickname;
+
+                            articleReplyTarget.hidden =
+                                false;
+
+                            const ta =
+                                articleCommentFormWrap
+                                .querySelector(
+                                    "textarea"
+                                );
+
+                            if (ta) {
+
+                                ta.focus();
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+            articleReplyCancel.addEventListener(
+                "click",
+                function () {
+
+                    articleReplyToId.value = "";
+
+                    articleReplyName.textContent = "";
+
+                    articleReplyTarget.hidden = true;
+
+                }
+            );
+
+        }
+
+
+        /*
          * 文章点赞/评论（复用昵称弹窗逻辑）
          */
 
@@ -589,7 +741,52 @@ document.addEventListener(
                         }
 
 
-                        window.location.reload();
+                        /* 就地更新点赞状态，不刷新页面 */
+
+                        const likeButton =
+                            likeForm.querySelector(
+                                "button[type='submit']"
+                            );
+
+                        if (likeButton) {
+
+                            likeButton.classList.add(
+                                "is-liked"
+                            );
+
+                            const likeLabel =
+                                likeButton.querySelector(
+                                    ".article-like-label, .moment-action-label"
+                                );
+
+                            if (likeLabel) {
+
+                                likeLabel.textContent =
+                                    "已赞";
+
+                            }
+
+                        }
+
+
+                        document
+                            .querySelectorAll(
+                                "[data-like-count]"
+                            )
+                            .forEach(
+                                function (el) {
+
+                                    const prefix =
+                                        el.textContent.includes("❤️")
+                                            ? "❤️ "
+                                            : "";
+
+                                    el.textContent =
+                                        prefix +
+                                        result.like_count;
+
+                                }
+                            );
 
                     }
                 );
@@ -685,7 +882,198 @@ document.addEventListener(
                             }
 
 
-                            window.location.reload();
+                            /* 就地插入评论，不刷新页面 */
+
+                            const commentList =
+                                document.querySelector(
+                                    ".article-comment-list"
+                                );
+
+                            if (commentList) {
+
+                                const newItem =
+                                    document.createElement("div");
+
+                                newItem.className =
+                                    "article-comment-item";
+
+                                newItem.id =
+                                    "article-comment-" +
+                                    result.comment_id;
+
+
+                                /* 头部 */
+                                const head =
+                                    document.createElement("div");
+
+                                head.className =
+                                    "article-comment-header";
+
+
+                                const avatar =
+                                    document.createElement("span");
+
+                                avatar.className =
+                                    "article-comment-avatar";
+
+                                avatar.textContent =
+                                    (result.nickname || "匿")[0];
+
+                                head.appendChild(avatar);
+
+
+                                const user =
+                                    document.createElement("span");
+
+                                user.className =
+                                    "article-comment-user";
+
+                                user.textContent =
+                                    result.nickname;
+
+                                head.appendChild(user);
+
+
+                                const time =
+                                    document.createElement("span");
+
+                                time.className =
+                                    "article-comment-time";
+
+                                time.textContent =
+                                    result.created_at || "";
+
+                                head.appendChild(time);
+
+
+                                const replyBtn =
+                                    document.createElement("button");
+
+                                replyBtn.type = "button";
+
+                                replyBtn.className =
+                                    "inline-reply-button";
+
+                                replyBtn.dataset.replyTo =
+                                    result.comment_id;
+
+                                replyBtn.dataset.replyNickname =
+                                    result.nickname;
+
+                                replyBtn.textContent =
+                                    "回复";
+
+                                replyBtn.addEventListener(
+                                    "click",
+                                    function () {
+
+                                        articleReplyToId.value =
+                                            result.comment_id;
+
+                                        articleReplyName.textContent =
+                                            "@" +
+                                            result.nickname;
+
+                                        articleReplyTarget.hidden =
+                                            false;
+
+                                        const ta =
+                                            articleCommentFormWrap
+                                            .querySelector(
+                                                "textarea"
+                                            );
+
+                                        if (ta) {
+
+                                            ta.focus();
+
+                                        }
+
+                                    }
+                                );
+
+                                head.appendChild(replyBtn);
+
+
+                                newItem.appendChild(head);
+
+
+                                /* 内容 */
+                                const content =
+                                    document.createElement("div");
+
+                                content.className =
+                                    "article-comment-content";
+
+
+                                if (result.reply_to_nickname) {
+
+                                    const replyLine =
+                                        document.createElement("div");
+
+                                    replyLine.className =
+                                        "moment-comment-replyto";
+
+                                    replyLine.textContent =
+                                        "回复 @" +
+                                        result.reply_to_nickname +
+                                        "：";
+
+                                    content.appendChild(replyLine);
+
+                                }
+
+
+                                content.appendChild(
+                                    document.createTextNode(
+                                        result.content
+                                    )
+                                );
+
+
+                                newItem.appendChild(content);
+
+
+                                commentList.appendChild(newItem);
+
+                            }
+
+
+                            /* 更新评论计数 */
+
+                            document
+                                .querySelectorAll(
+                                    "[data-comment-count]"
+                                )
+                                .forEach(
+                                    function (el) {
+
+                                        const prefix =
+                                            el.textContent.includes("💬")
+                                                ? "💬 "
+                                                : "";
+
+                                        el.textContent =
+                                            prefix +
+                                            result.comment_count;
+
+                                    }
+                                );
+
+
+                            /* 清空输入框与回复目标 */
+
+                            input.value = "";
+
+                            if (articleReplyTarget) {
+
+                                articleReplyToId.value = "";
+
+                                articleReplyName.textContent = "";
+
+                                articleReplyTarget.hidden = true;
+
+                            }
 
                         }
                     );
