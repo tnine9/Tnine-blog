@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from pwdlib import PasswordHash
 import markdown
 import nh3
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import selectinload
 
 from database import SessionLocal, Base, engine
@@ -23,13 +23,26 @@ from models import (
     Message,
     MessageThread,
     Visitor,
+    Tag,
+    ArticleTag,
+    SocialLink,
+    HeroBackground,
 )
 
 from fastapi import UploadFile, File
 import os
 import shutil
 import uuid
+import secrets
+import random
+import smtplib
+import hashlib
+import hmac
+import base64
 from datetime import datetime
+from email.mime.text import MIMEText
+from email.utils import formataddr
+from urllib.parse import quote
 
 
 # ============================================================
@@ -46,8 +59,18 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 
+# 生产环境（HTTPS）下开启 Secure Cookie
+SECURE_COOKIES = (
+    os.environ.get("TNINE_ENV") == "production"
+)
+
+
 # ============================================================
 # Session
+# 安全要求：
+# - HttpOnly：Starlette SessionMiddleware 默认开启
+# - SameSite=lax：Starlette 默认
+# - 生产环境（TNINE_ENV=production，HTTPS）开启 Secure Cookie
 # ============================================================
 
 app.add_middleware(
@@ -56,6 +79,7 @@ app.add_middleware(
         "TNINE_SECRET_KEY",
         "Tnine-dev-secret-2026",
     ),
+    https_only=SECURE_COOKIES,
 )
 
 
@@ -67,62 +91,613 @@ password_hasher = PasswordHash.recommended()
 
 
 # ============================================================
-# 管理员初始化
-# 需求：固定账号 admin，取消注册页
-# 若 admins 表为空且设置了 TNINE_ADMIN_INITIAL_PASSWORD，
-# 启动时自动创建初始管理员（昵称默认"成哥"）
+# 管理员初始化状态
+# 需求：
+# - 账号固定 admin，不可注册
+# - admin 不存在时进入初始化状态：生成初始密码 + 一次性初始化验证码
+# - 初始密码高强度随机，不硬编码、不落库（仅存内存）
+# - 首次初始化登录成功后创建 admin 记录，初始密码即正式密码
+# 说明：
+# - 初始化状态保存在进程内存，不写入数据库
+# - 仅适用于「admins 表为空」的首次启动；已有管理员时不会触发
+# - 多 worker/多进程部署下请保证初始化在单进程完成（本地开发单进程即可）
 # ============================================================
 
-def ensure_initial_admin():
+INIT_PASSWORD_LENGTH = 10
+
+INIT_CODE_LENGTH = 6
+
+INIT_CODE_CHARS = "0123456789"
+
+INIT_PASSWORD_CHARS = (
+    "ABCDEFGHJKLMNPQRSTUVWXYZ"
+    "abcdefghjkmnpqrstuvwxyz"
+    "23456789"
+)
+
+
+def generate_random_password(length=INIT_PASSWORD_LENGTH):
+    """
+    生成高强度随机密码（示例格式：X8kP29mQ7a）。
+    """
+
+    return "".join(
+        secrets.choice(INIT_PASSWORD_CHARS)
+        for _ in range(length)
+    )
+
+
+def generate_init_code(length=INIT_CODE_LENGTH):
+    """
+    生成一次性初始化验证码（纯数字，示例格式：739214）。
+    """
+
+    return "".join(
+        secrets.choice(INIT_CODE_CHARS)
+        for _ in range(length)
+    )
+
+
+_admin_init_state = None
+
+
+def get_admin_init_state():
+    """
+    获取（必要时生成）管理员初始化状态。
+
+    返回 None 表示 admin 已存在、无需初始化；
+    否则返回 dict：
+    {
+        "password": 初始密码明文（仅内存，用于页面自动填充与校验）,
+        "password_hash": 初始密码哈希,
+        "code": 初始化验证码明文,
+        "code_hash": 初始化验证码哈希,
+    }
+    """
+
+    global _admin_init_state
+
     db = SessionLocal()
+
     try:
+
         admin_count = db.query(Admin).count()
+
         if admin_count > 0:
-            return
-        initial_password = os.environ.get(
-            "TNINE_ADMIN_INITIAL_PASSWORD"
-        )
-        if not initial_password:
-            return
-        if len(initial_password) < 6:
-            print(
-                "[Tnine] TNINE_ADMIN_INITIAL_PASSWORD 至少 6 位，"
-                "跳过初始管理员创建"
-            )
-            return
-        admin = Admin(
-            username="admin",
-            password_hash=password_hasher.hash(
-                initial_password
-            ),
-            nickname="成哥",
-        )
-        db.add(admin)
-        db.commit()
-        print(
-            "[Tnine] 已通过环境变量创建初始管理员 admin"
-        )
+
+            # 已存在管理员，清除残留初始化状态
+            _admin_init_state = None
+
+            return None
+
     finally:
+
         db.close()
 
+    if _admin_init_state is None:
 
-ensure_initial_admin()
+        password = generate_random_password()
+
+        code = generate_init_code()
+
+        _admin_init_state = {
+            "password": password,
+            "password_hash": password_hasher.hash(password),
+            "code": code,
+            "code_hash": password_hasher.hash(code),
+        }
+
+        print(
+            "[Tnine] 系统尚未初始化管理员账号，"
+            "已生成初始密码与一次性初始化验证码。"
+        )
+
+    return _admin_init_state
 
 
-# ============================================================
-# 权限
-# ============================================================
+def clear_admin_init_state():
+    """
+    首次初始化登录成功后清除初始化状态，
+    初始化验证码立即失效、不可再次使用。
+    """
 
-def get_current_admin(request: Request):
-    return request.session.get("admin_id")
+    global _admin_init_state
 
-
-def require_admin(request: Request):
-    return get_current_admin(request)
+    _admin_init_state = None
 
 
 def is_admin(request: Request):
-    return get_current_admin(request) is not None
+    """
+    判断当前请求是否为已登录的管理员（Session 登录态）。
+    """
+
+    return request.session.get("admin_id") is not None
+
+
+def require_admin(request: Request):
+    """
+    后台路由守卫：未登录返回 None（调用方跳转 /admin/login）；
+    已登录返回 admin 对象。
+    """
+
+    admin_id = request.session.get("admin_id")
+
+    if not admin_id:
+
+        return None
+
+    db = SessionLocal()
+
+    try:
+
+        return (
+            db.query(Admin)
+            .filter(Admin.id == admin_id)
+            .first()
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# 邮箱配置（后台可配置，存储于 Setting 表）
+# 需求：
+# - 支持发件邮箱（SMTP 登录）与管理员收件邮箱，可同可异
+# - 未单独配置收件邮箱时默认 收件邮箱 = 发件邮箱
+# - 邮箱密码禁止明文存储（使用轻量对称加密，密钥来自环境变量）
+# - 提供环境变量默认值：TNINE_SMTP_HOST / TNINE_SMTP_PORT /
+#   TNINE_SMTP_USERNAME / TNINE_MAIL_PASSWORD / TNINE_MAIL_FROM /
+#   TNINE_MAIL_TO；后台配置优先于环境变量
+# ============================================================
+
+EMAIL_SMTP_HOST_KEY = "admin_email_smtp_host"
+
+EMAIL_SMTP_PORT_KEY = "admin_email_smtp_port"
+
+EMAIL_SMTP_USERNAME_KEY = "admin_email_smtp_username"
+
+EMAIL_SMTP_PASSWORD_ENC_KEY = "admin_email_smtp_password_enc"
+
+EMAIL_FROM_KEY = "admin_email_from"
+
+EMAIL_TO_KEY = "admin_email_to"
+
+EMAIL_USE_TLS_KEY = "admin_email_use_tls"
+
+# 邮箱密码加密密钥：优先环境变量 TNINE_MAIL_SECRET_KEY，
+# 未设置时使用内置开发密钥（本地开发可用，生产请显式配置）
+MAIL_SECRET_KEY = os.environ.get(
+    "TNINE_MAIL_SECRET_KEY",
+    "Tnine-mail-secret-2026",
+)
+
+
+def _mail_derive_key(secret: str, salt: bytes):
+    """
+    从主密钥派生固定长度的加密密钥。
+    """
+
+    return hashlib.pbkdf2_hmac(
+        "sha256",
+        secret.encode("utf-8"),
+        salt,
+        iterations=100_000,
+        dklen=32,
+    )
+
+
+def _xor_stream(key: bytes, nonce: bytes, length: int) -> bytes:
+    """
+    使用 PBKDF2 派生的密钥流（计数器模式）加密/解密。
+    """
+
+    out = bytearray()
+
+    counter = 0
+
+    while len(out) < length:
+
+        block = hashlib.sha256(
+            key + nonce + counter.to_bytes(4, "big")
+        ).digest()
+
+        out.extend(block)
+
+        counter += 1
+
+    return bytes(out[:length])
+
+
+def encrypt_secret(plaintext: str) -> str:
+    """
+    轻量对称加密（PBKDF2 密钥流 + HMAC 完整性校验），
+    防止邮箱密码等敏感配置以明文落库。
+    返回格式：enc:v1:<salt_b64>:<nonce_b64>:<cipher_b64>:<mac_b64>
+    生产环境建议替换为更强制密方案（如 KMS / 独立 secrets 服务）。
+    """
+
+    if not plaintext:
+        return ""
+
+    salt = secrets.token_bytes(16)
+
+    nonce = secrets.token_bytes(8)
+
+    key = _mail_derive_key(MAIL_SECRET_KEY, salt)
+
+    stream = _xor_stream(key, nonce, len(plaintext.encode("utf-8")))
+
+    cipher = bytes(
+        a ^ b
+        for a, b in zip(
+            plaintext.encode("utf-8"),
+            stream,
+        )
+    )
+
+    mac = hmac.new(
+        key,
+        salt + nonce + cipher,
+        hashlib.sha256,
+    ).digest()
+
+    return "enc:v1:" + ":".join(
+        base64.b64encode(part).decode("ascii")
+        for part in (salt, nonce, cipher, mac)
+    )
+
+
+def decrypt_secret(stored: str) -> str:
+    """
+    解密 encrypt_secret 的密文；无法解析或校验失败时返回空字符串。
+    """
+
+    if not stored or not stored.startswith("enc:v1:"):
+        return ""
+
+    try:
+
+        parts = stored.split(":", 2)[2].split(":")
+
+        salt = base64.b64decode(parts[0])
+
+        nonce = base64.b64decode(parts[1])
+
+        cipher = base64.b64decode(parts[2])
+
+        mac = base64.b64decode(parts[3])
+
+        key = _mail_derive_key(MAIL_SECRET_KEY, salt)
+
+        expected = hmac.new(
+            key,
+            salt + nonce + cipher,
+            hashlib.sha256,
+        ).digest()
+
+        if not hmac.compare_digest(expected, mac):
+            return ""
+
+        stream = _xor_stream(key, nonce, len(cipher))
+
+        plaintext = bytes(
+            a ^ b
+            for a, b in zip(
+                cipher,
+                stream,
+            )
+        )
+
+        return plaintext.decode("utf-8")
+
+    except Exception:
+
+        return ""
+
+
+def _get_setting_value(db, key: str, default: str = "") -> str:
+    setting = (
+        db.query(Setting)
+        .filter(Setting.key == key)
+        .first()
+    )
+
+    if setting is None:
+        return default
+
+    return setting.value or default
+
+
+def _set_setting_value(db, key: str, value: str):
+    setting = (
+        db.query(Setting)
+        .filter(Setting.key == key)
+        .first()
+    )
+
+    if setting is None:
+        setting = Setting(key=key, value=value)
+        db.add(setting)
+    else:
+        setting.value = value
+
+
+def get_mail_config(db):
+    """
+    读取当前邮箱配置（后台配置优先，其次环境变量）。
+
+    返回 dict：
+    - host / port / username / from_addr / to_addr / use_tls / password
+    - configured：是否已有完整可用的发件配置
+    """
+
+    host = _get_setting_value(
+        db, EMAIL_SMTP_HOST_KEY,
+        os.environ.get("TNINE_SMTP_HOST", ""),
+    )
+
+    port_raw = _get_setting_value(
+        db, EMAIL_SMTP_PORT_KEY,
+        os.environ.get("TNINE_SMTP_PORT", "465"),
+    )
+
+    try:
+        port = int(port_raw)
+    except (TypeError, ValueError):
+        port = 465
+
+    username = _get_setting_value(
+        db, EMAIL_SMTP_USERNAME_KEY,
+        os.environ.get("TNINE_SMTP_USERNAME", ""),
+    )
+
+    from_addr = _get_setting_value(
+        db, EMAIL_FROM_KEY,
+        os.environ.get("TNINE_MAIL_FROM", username),
+    )
+
+    to_addr = _get_setting_value(
+        db, EMAIL_TO_KEY,
+        os.environ.get("TNINE_MAIL_TO", ""),
+    )
+
+    # 未单独配置收件邮箱时默认 收件邮箱 = 发件邮箱
+    if not to_addr:
+        to_addr = from_addr
+
+    use_tls = _get_setting_value(
+        db, EMAIL_USE_TLS_KEY,
+        os.environ.get("TNINE_SMTP_USE_TLS", "1"),
+    ).lower() in ("1", "true", "yes", "on")
+
+    stored_enc = _get_setting_value(
+        db, EMAIL_SMTP_PASSWORD_ENC_KEY, "",
+    )
+
+    password = decrypt_secret(stored_enc)
+
+    if not password:
+        password = os.environ.get("TNINE_MAIL_PASSWORD", "")
+
+    configured = bool(
+        host and port and username and from_addr and password
+    )
+
+    return {
+        "host": host,
+        "port": port,
+        "username": username,
+        "password": password,
+        "from_addr": from_addr,
+        "to_addr": to_addr,
+        "use_tls": use_tls,
+        "configured": configured,
+    }
+
+
+def send_login_code_mail(
+    db,
+    code: str,
+):
+    """
+    发送登录验证码邮件到管理员收件邮箱。
+
+    返回：
+    - ok: True 发送成功
+    - ok: False, reason: 失败原因（配置缺失 / SMTP 异常等）
+    - dev_code: 开发模式（非 production）下配置缺失时返回验证码，
+      便于本地联调；生产模式绝不返回验证码
+    """
+
+    config = get_mail_config(db)
+
+    dev_code = None
+
+    if not config["configured"]:
+
+        reason = (
+            "邮箱未配置（SMTP 主机/端口/发件邮箱/邮箱密码不完整），"
+            "请在后台「邮箱配置」中填写，或设置环境变量 "
+            "TNINE_SMTP_HOST / TNINE_SMTP_PORT / "
+            "TNINE_SMTP_USERNAME / TNINE_MAIL_PASSWORD / "
+            "TNINE_MAIL_FROM / TNINE_MAIL_TO。"
+        )
+
+        if not (os.environ.get("TNINE_ENV") == "production"):
+
+            dev_code = code
+
+            print(
+                "[Tnine][开发模式] 登录验证码未通过 SMTP 发送："
+                + reason
+            )
+
+            print(
+                "[Tnine][开发模式] 登录验证码："
+                + code
+                + "（收件邮箱："
+                + (config["to_addr"] or "未配置")
+                + "）"
+            )
+
+        return {
+            "ok": False,
+            "reason": reason,
+            "dev_code": dev_code,
+        }
+
+    subject = "【Tnine】管理员登录验证码"
+
+    body = (
+        "你的 Tnine 管理员登录验证码是："
+        + code
+        + "\n\n验证码 5 分钟内有效，请勿泄露给他人。"
+    )
+
+    try:
+
+        if config["use_tls"]:
+
+            server = smtplib.SMTP(
+                config["host"],
+                config["port"],
+                timeout=15,
+            )
+
+            server.starttls()
+
+        else:
+
+            server = smtplib.SMTP_SSL(
+                config["host"],
+                config["port"],
+                timeout=15,
+            )
+
+        server.login(
+            config["username"],
+            config["password"],
+        )
+
+        message = MIMEText(body, "plain", "utf-8")
+
+        message["Subject"] = Header(subject, "utf-8")
+
+        message["From"] = formataddr(
+            ("Tnine 管理员", config["from_addr"])
+        )
+
+        message["To"] = config["to_addr"]
+
+        server.sendmail(
+            config["from_addr"],
+            [config["to_addr"]],
+            message.as_string(),
+        )
+
+        server.quit()
+
+        return {
+            "ok": True,
+            "reason": "",
+            "dev_code": None,
+        }
+
+    except Exception as exc:
+
+        reason = "SMTP 发送失败：" + str(exc)
+
+        if not (os.environ.get("TNINE_ENV") == "production"):
+
+            dev_code = code
+
+            print("[Tnine][开发模式] " + reason)
+
+            print("[Tnine][开发模式] 登录验证码：" + code)
+
+        return {
+            "ok": False,
+            "reason": reason,
+            "dev_code": dev_code,
+        }
+
+
+# ============================================================
+# 邮箱登录验证码（内存态，5 分钟有效，一次性）
+# ============================================================
+
+LOGIN_CODE_TTL_SECONDS = 5 * 60
+
+_login_codes = {}
+
+
+def generate_login_code():
+    """
+    生成 6 位数字登录验证码，并记录其哈希与过期时间。
+    重新发送时旧验证码立即失效。
+    """
+
+    global _login_codes
+
+    code = "".join(
+        secrets.choice(INIT_CODE_CHARS)
+        for _ in range(6)
+    )
+
+    _login_codes = {
+        "hash": hashlib.sha256(
+            code.encode("utf-8")
+        ).hexdigest(),
+        "expires_at": (
+            datetime.now().timestamp()
+            + LOGIN_CODE_TTL_SECONDS
+        ),
+    }
+
+    return code
+
+
+def verify_login_code(code: str) -> bool:
+    """
+    校验登录验证码：命中且未过期则通过，并立即失效（一次性）。
+    """
+
+    global _login_codes
+
+    stored = _login_codes
+
+    if not stored:
+        return False
+
+    _login_codes = {}
+
+    if (
+        datetime.now().timestamp()
+        > stored["expires_at"]
+    ):
+        return False
+
+    candidate = hashlib.sha256(
+        code.strip().encode("utf-8")
+    ).hexdigest()
+
+    return hmac.compare_digest(
+        candidate,
+        stored["hash"],
+    )
+
+
+def send_admin_login_code(db):
+    """
+    生成并发送管理员登录验证码。
+    返回与 send_login_code_mail 相同的结构。
+    """
+
+    code = generate_login_code()
+
+    return send_login_code_mail(db, code)
 
 
 # ============================================================
@@ -207,6 +782,273 @@ def set_site_theme(theme: str):
         db.close()
 
 
+# ============================================================
+# 通用配置读取/写入（Setting 表）
+# ============================================================
+
+def get_setting_value(key: str, default: str = ""):
+    """
+    读取 Setting 配置，不存在时返回默认值。
+    """
+
+    db = SessionLocal()
+
+    try:
+
+        setting = (
+            db.query(Setting)
+            .filter(Setting.key == key)
+            .first()
+        )
+
+        if setting is None:
+
+            return default
+
+        return setting.value
+
+    finally:
+
+        db.close()
+
+
+def set_setting_value(key: str, value: str):
+    """
+    写入 Setting 配置（不存在则创建）。
+    """
+
+    db = SessionLocal()
+
+    try:
+
+        setting = (
+            db.query(Setting)
+            .filter(Setting.key == key)
+            .first()
+        )
+
+        if setting is None:
+
+            setting = Setting(
+                key=key,
+                value=value,
+            )
+
+            db.add(setting)
+
+        else:
+
+            setting.value = value
+
+        db.commit()
+
+        return True
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# Hero 首屏系统
+# 配置存储于 Setting 表，背景资源存储于 hero_backgrounds 表
+# ============================================================
+
+HERO_BG_MODES = ("theme", "upload", "auto", "network")
+
+HERO_AUTO_PERIODS = ("daily", "weekly", "random")
+
+HERO_NETWORK_SOURCES = ("unsplash",)
+
+HERO_UPLOAD_DIR = os.path.join(
+    os.path.dirname(__file__),
+    "static",
+    "uploads",
+    "hero",
+)
+
+HERO_ALLOWED_IMAGE = {".jpg", ".jpeg", ".png", ".webp"}
+
+HERO_ALLOWED_VIDEO = {".mp4", ".webm"}
+
+
+def get_hero_config():
+    """
+    读取 Hero 全部配置项。
+    """
+
+    return {
+        "name": get_setting_value("hero_name", "Tnine"),
+        "slogan": get_setting_value(
+            "hero_slogan",
+            "记录代码、生活和探索世界的过程",
+        ),
+        "avatar": get_setting_value("hero_avatar", ""),
+        "bg_mode": get_setting_value("hero_bg_mode", "theme"),
+        "auto_period": get_setting_value("hero_auto_period", "daily"),
+        "network_source": get_setting_value(
+            "hero_network_source",
+            "unsplash",
+        ),
+        "network_keyword": get_setting_value(
+            "hero_network_keyword",
+            "minimal",
+        ),
+        "network_period": get_setting_value(
+            "hero_network_period",
+            "24",
+        ),
+    }
+
+
+def get_hero_social_links(db):
+    """
+    获取 Hero 展示的社交链接（is_visible=True，按排序）。
+    """
+
+    return (
+        db.query(SocialLink)
+        .filter(SocialLink.is_visible.is_(True))
+        .order_by(
+            SocialLink.sort_order.asc(),
+            SocialLink.id.asc(),
+        )
+        .all()
+    )
+
+
+def get_hero_tags(db):
+    """
+    获取 Hero 展示的标签（show_on_home=True，按排序）。
+    """
+
+    return (
+        db.query(Tag)
+        .filter(Tag.show_on_home.is_(True))
+        .order_by(
+            Tag.sort_order.asc(),
+            Tag.id.asc(),
+        )
+        .all()
+    )
+
+
+def get_hero_background(db, cfg):
+    """
+    根据背景模式返回当前 Hero 背景渲染信息。
+
+    返回 dict：
+    - kind: none（跟随主题） / image / video / network
+    - url: 资源路径（image/video）
+    - title: 资源标题
+    - network_url: 网络图库接口地址（kind=network 时）
+    """
+
+    mode = cfg.get("bg_mode", "theme")
+
+    # 4.1 跟随网站主题：无需背景资源
+    if mode == "theme":
+
+        return {
+            "kind": "none",
+            "url": "",
+            "title": "",
+        }
+
+    # 4.2 自定义上传背景：使用 is_active 资源
+    if mode == "upload":
+
+        bg = (
+            db.query(HeroBackground)
+            .filter(HeroBackground.is_active.is_(True))
+            .first()
+        )
+
+        if bg:
+
+            return {
+                "kind": bg.kind,
+                "url": bg.file_path,
+                "title": bg.title,
+            }
+
+        return {
+            "kind": "none",
+            "url": "",
+            "title": "",
+        }
+
+    # 4.3 自动切换背景：按周期从图片资源中选取
+    if mode == "auto":
+
+        backgrounds = (
+            db.query(HeroBackground)
+            .filter(HeroBackground.kind == "image")
+            .order_by(
+                HeroBackground.sort_order.asc(),
+                HeroBackground.id.asc(),
+            )
+            .all()
+        )
+
+        if not backgrounds:
+
+            return {
+                "kind": "none",
+                "url": "",
+                "title": "",
+            }
+
+        period = cfg.get("auto_period", "daily") or "daily"
+
+        if period == "random":
+
+            bg = random.choice(backgrounds)
+
+        elif period == "weekly":
+
+            iso_year, iso_week, _ = datetime.now().isocalendar()
+
+            bg = backgrounds[
+                (iso_year * 100 + iso_week) % len(backgrounds)
+            ]
+
+        else:
+
+            bg = backgrounds[
+                datetime.now().toordinal() % len(backgrounds)
+            ]
+
+        return {
+            "kind": bg.kind,
+            "url": bg.file_path,
+            "title": bg.title,
+        }
+
+    # 4.4 网络图库背景：接口占位实现，前端加载失败回退主题默认背景
+    if mode == "network":
+
+        keyword = (
+            cfg.get("network_keyword", "minimal") or "minimal"
+        ).strip()
+
+        return {
+            "kind": "network",
+            "url": "",
+            "title": keyword,
+            "network_url": (
+                "/api/hero/network-image"
+                "?keyword=" + quote(keyword)
+            ),
+        }
+
+    return {
+        "kind": "none",
+        "url": "",
+        "title": "",
+    }
+
+
 def get_common_context(request: Request):
     return {
         "is_admin": is_admin(request),
@@ -219,6 +1061,7 @@ def get_common_context(request: Request):
         ),
         "visitor_id": get_visitor_id(request),
         "theme": get_site_theme(),
+        "site_avatar": get_setting_value("hero_avatar", ""),
     }
 
 
@@ -235,11 +1078,6 @@ VISITOR_NICKNAME_COOKIE = "tnine_nickname"
 VISITOR_ID_COOKIE = "tnine_visitor_id"
 
 ANONYMOUS_GUEST_NAME = "匿名访客"
-
-# 生产环境（HTTPS）下开启 Secure Cookie
-SECURE_COOKIES = (
-    os.environ.get("TNINE_ENV") == "production"
-)
 
 # 访客 ID Cookie 有效期：365 天
 VISITOR_ID_MAX_AGE = 60 * 60 * 24 * 365
@@ -470,6 +1308,7 @@ def home(request: Request):
             .options(
                 selectinload(Article.likes),
                 selectinload(Article.comments).selectinload(ArticleComment.reply_to),
+                selectinload(Article.tags),
             )
             .order_by(
                 Article.created_at.desc()
@@ -568,10 +1407,13 @@ def home(request: Request):
             )
 
 
-        # 按时间倒序
-
+        # 按时间倒序（文章优先使用首次发布时间 published_at）
         timeline.sort(
-            key=lambda x: x["data"].created_at,
+            key=lambda x: (
+                x["data"].published_at
+                if x["type"] == "article"
+                else x["data"].created_at
+            ) or x["data"].created_at,
             reverse=True
         )
 
@@ -586,6 +1428,22 @@ def home(request: Request):
             db,
             get_visitor_id(request),
         )
+
+        # ==========================
+        # Hero 首屏数据
+        # ==========================
+
+        hero_cfg = get_hero_config()
+
+        context["hero"] = {
+            "name": hero_cfg["name"],
+            "slogan": hero_cfg["slogan"],
+            "avatar": hero_cfg["avatar"],
+            "bg_mode": hero_cfg["bg_mode"],
+            "bg": get_hero_background(db, hero_cfg),
+            "tags": get_hero_tags(db),
+            "social_links": get_hero_social_links(db),
+        }
 
 
         return templates.TemplateResponse(
@@ -618,6 +1476,7 @@ def article_detail(
             .options(
                 selectinload(Article.likes),
                 selectinload(Article.comments).selectinload(ArticleComment.reply_to),
+                selectinload(Article.tags),
             )
             .filter(
                 Article.id == article_id
@@ -729,6 +1588,11 @@ def article_detail(
 
 # ============================================================
 # GUEST：管理员登录页
+# 需求：
+# - 账号固定 admin，无注册入口
+# - admin 不存在时进入初始化状态：生成初始密码 + 一次性初始化验证码，
+#   登录页自动填充，用户无需输入账号/邮箱
+# - admin 已存在时进入正常登录：密码 + 邮箱验证码
 # ============================================================
 
 @app.get("/admin/login")
@@ -743,18 +1607,33 @@ def admin_login_page(
 
         try:
 
-            admin_count = (
-                db.query(Admin)
-                .count()
-            )
-
             context = get_common_context(request)
 
             context["error"] = None
 
-            context["need_initial_password"] = (
-                admin_count == 0
-            )
+            init_state = get_admin_init_state()
+
+            if init_state is not None:
+
+                # 初始化模式：自动填充初始密码与初始化验证码
+                context["need_initialization"] = True
+
+                context["initial_password"] = (
+                    init_state["password"]
+                )
+
+                context["initial_code"] = (
+                    init_state["code"]
+                )
+
+            else:
+
+                # 正常登录模式
+                context["need_initialization"] = False
+
+                context["mail_to"] = get_mail_config(
+                    db
+                )["to_addr"]
 
             return templates.TemplateResponse(
                 request=request,
@@ -773,76 +1652,33 @@ def admin_login_page(
 
 
 # ============================================================
-# GUEST：管理员登录
+# GUEST：管理员登录提交
+# mode=init   ：首次初始化登录（初始密码 + 一次性初始化验证码）
+# mode=normal ：正常登录（正式密码 + 邮箱验证码）
 # ============================================================
 
 @app.post("/admin/login")
 def admin_login(
     request: Request,
-    username: str = Form(...),
+    mode: str = Form("normal"),
     password: str = Form(...),
+    code: str = Form(...),
 ):
 
     if not is_admin(request):
-
-        username = username.strip()
 
         db = SessionLocal()
 
         try:
 
-            admin = (
-                db.query(Admin)
-                .filter(
-                    Admin.username == username
-                )
-                .first()
-            )
+            if mode == "init":
 
-            if admin is None:
-
-                context = get_common_context(request)
-
-                context["error"] = "用户名或密码错误"
-
-                return templates.TemplateResponse(
-                    request=request,
-                    name="admin_login.html",
-                    context=context,
+                return _handle_init_login(
+                    request, db, password, code,
                 )
 
-            password_valid = (
-                password_hasher.verify(
-                    password,
-                    admin.password_hash,
-                )
-            )
-
-            if not password_valid:
-
-                context = get_common_context(request)
-
-                context["error"] = "用户名或密码错误"
-
-                return templates.TemplateResponse(
-                    request=request,
-                    name="admin_login.html",
-                    context=context,
-                )
-
-            request.session["admin_id"] = admin.id
-
-            request.session[
-                "admin_username"
-            ] = admin.username
-
-            request.session[
-                "admin_nickname"
-            ] = admin.nickname or "成哥"
-
-            return RedirectResponse(
-                url="/admin",
-                status_code=303,
+            return _handle_normal_login(
+                request, db, password, code,
             )
 
         finally:
@@ -853,6 +1689,377 @@ def admin_login(
         url="/admin",
         status_code=303,
     )
+
+
+def _handle_init_login(
+    request: Request,
+    db,
+    password: str,
+    code: str,
+):
+    """
+    首次初始化登录：
+    - 初始密码正确 + 一次性初始化验证码正确 → 登录成功
+    - 登录成功创建 admin 记录（password_hash=初始密码Hash），
+      初始密码即正式密码，初始化验证码立即失效
+    """
+
+    init_state = get_admin_init_state()
+
+    if init_state is None:
+
+        context = get_common_context(request)
+
+        context["error"] = "系统已完成初始化，请使用正式密码登录"
+
+        context["need_initialization"] = False
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_login.html",
+            context=context,
+        )
+
+    password_valid = password_hasher.verify(
+        password,
+        init_state["password_hash"],
+    )
+
+    code_valid = password_hasher.verify(
+        code.strip(),
+        init_state["code_hash"],
+    )
+
+    if not (password_valid and code_valid):
+
+        context = get_common_context(request)
+
+        context["error"] = "初始密码或初始化验证码不正确"
+
+        context["need_initialization"] = True
+
+        context["initial_password"] = (
+            init_state["password"]
+        )
+
+        context["initial_code"] = (
+            init_state["code"]
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_login.html",
+            context=context,
+        )
+
+    # 创建 admin 记录：初始密码直接成为正式密码（Hash 存储）
+    admin = Admin(
+        username="admin",
+        password_hash=init_state["password_hash"],
+        nickname="成哥",
+    )
+
+    db.add(admin)
+
+    db.commit()
+
+    db.refresh(admin)
+
+    # 初始化验证码立即失效，不可再次使用
+    clear_admin_init_state()
+
+    print(
+        "[Tnine] 管理员账号初始化完成：admin（初始密码已作为正式密码）"
+    )
+
+    _create_admin_session(request, admin)
+
+    return RedirectResponse(
+        url="/admin",
+        status_code=303,
+    )
+
+
+def _handle_normal_login(
+    request: Request,
+    db,
+    password: str,
+    code: str,
+):
+    """
+    正常登录：管理员密码 + 邮箱验证码。
+    """
+
+    admin = (
+        db.query(Admin)
+        .filter(
+            Admin.username == "admin"
+        )
+        .first()
+    )
+
+    if admin is None:
+
+        context = get_common_context(request)
+
+        context["error"] = "管理员账号尚未初始化"
+
+        context["need_initialization"] = True
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_login.html",
+            context=context,
+        )
+
+    password_valid = password_hasher.verify(
+        password,
+        admin.password_hash,
+    )
+
+    code_valid = verify_login_code(code)
+
+    if not (password_valid and code_valid):
+
+        context = get_common_context(request)
+
+        context["error"] = (
+            "密码或邮箱验证码错误"
+            if not code_valid
+            else "密码错误"
+        )
+
+        context["need_initialization"] = False
+
+        context["mail_to"] = get_mail_config(
+            db
+        )["to_addr"]
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_login.html",
+            context=context,
+        )
+
+    _create_admin_session(request, admin)
+
+    return RedirectResponse(
+        url="/admin",
+        status_code=303,
+    )
+
+
+def _create_admin_session(
+    request: Request,
+    admin,
+):
+    """
+    创建管理员 Session 登录状态。
+    """
+
+    request.session["admin_id"] = admin.id
+
+    request.session["admin_username"] = admin.username
+
+    request.session["admin_nickname"] = (
+        admin.nickname or "成哥"
+    )
+
+
+# ============================================================
+# GUEST：发送登录邮箱验证码
+# 说明：登录前即可获取验证码（无需登录态）；
+# 开发模式无 SMTP 配置时在日志/响应中提示验证码，便于本地联调
+# ============================================================
+
+@app.post("/admin/login/send-code")
+def admin_send_login_code(
+    request: Request,
+):
+
+    if is_admin(request):
+
+        return JSONResponse(
+            status_code=400,
+            content={"ok": False, "detail": "已登录，无需验证码"},
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        result = send_admin_login_code(db)
+
+        return JSONResponse(
+            content={
+                "ok": result["ok"],
+                "detail": (
+                    result["reason"]
+                    if not result["ok"]
+                    else "验证码已发送，请查收邮箱"
+                ),
+                "dev_code": result["dev_code"],
+            }
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：邮箱配置（后台）
+# 配置 SMTP 发件邮箱 + 管理员收件邮箱，用于发送登录验证码
+# ============================================================
+
+@app.get("/admin/settings/email")
+def admin_email_settings_page(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        config = get_mail_config(db)
+
+        context = get_common_context(request)
+
+        context["config"] = config
+
+        context["has_saved_password"] = bool(
+            _get_setting_value(
+                db, EMAIL_SMTP_PASSWORD_ENC_KEY, "",
+            )
+        )
+
+        context["error"] = None
+
+        context["notice"] = None
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_email_settings.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+@app.post("/admin/settings/email")
+def admin_email_settings_save(
+    request: Request,
+    smtp_host: str = Form(""),
+    smtp_port: str = Form("465"),
+    smtp_username: str = Form(""),
+    smtp_password: str = Form(""),
+    use_tls: str = Form("1"),
+    from_addr: str = Form(""),
+    to_addr: str = Form(""),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        smtp_host = smtp_host.strip()
+
+        smtp_username = smtp_username.strip()
+
+        from_addr = from_addr.strip()
+
+        to_addr = to_addr.strip()
+
+        try:
+            smtp_port = int(smtp_port)
+        except (TypeError, ValueError):
+            smtp_port = 465
+
+        if not smtp_host or not smtp_username or not from_addr:
+
+            context = get_common_context(request)
+
+            context["config"] = get_mail_config(db)
+
+            context["has_saved_password"] = bool(
+                _get_setting_value(
+                    db, EMAIL_SMTP_PASSWORD_ENC_KEY, "",
+                )
+            )
+
+            context["error"] = (
+                "SMTP 主机、发件邮箱（SMTP 用户名）、发件人地址为必填项"
+            )
+
+            context["notice"] = None
+
+            return templates.TemplateResponse(
+                request=request,
+                name="admin_email_settings.html",
+                context=context,
+            )
+
+        _set_setting_value(db, EMAIL_SMTP_HOST_KEY, smtp_host)
+
+        _set_setting_value(db, EMAIL_SMTP_PORT_KEY, str(smtp_port))
+
+        _set_setting_value(db, EMAIL_SMTP_USERNAME_KEY, smtp_username)
+
+        _set_setting_value(db, EMAIL_FROM_KEY, from_addr)
+
+        _set_setting_value(db, EMAIL_TO_KEY, to_addr)
+
+        _set_setting_value(
+            db, EMAIL_USE_TLS_KEY,
+            "1" if use_tls == "1" else "0",
+        )
+
+        # 邮箱密码：仅当填写了新密码时才更新（留空表示保持不变），
+        # 加密存储，禁止明文落库
+        if smtp_password.strip():
+
+            _set_setting_value(
+                db,
+                EMAIL_SMTP_PASSWORD_ENC_KEY,
+                encrypt_secret(smtp_password.strip()),
+            )
+
+        # 管理员收件邮箱同步到 Admin.email 字段
+        admin = (
+            db.query(Admin)
+            .filter(Admin.id == request.session["admin_id"])
+            .first()
+        )
+
+        if admin is not None:
+            admin.email = to_addr or from_addr or None
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/admin/settings/email",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
 
 
 # ============================================================
@@ -1213,6 +2420,26 @@ def new_article_page(
 
     context["article"] = None
 
+    # 标签选择器数据
+    db = SessionLocal()
+
+    try:
+
+        context["all_tags"] = (
+            db.query(Tag)
+            .order_by(
+                Tag.sort_order.asc(),
+                Tag.id.asc(),
+            )
+            .all()
+        )
+
+        context["article_tag_ids"] = []
+
+    finally:
+
+        db.close()
+
     return templates.TemplateResponse(
         request=request,
         name="admin_editor.html",
@@ -1231,6 +2458,7 @@ def create_article(
     summary: str = Form(...),
     content: str = Form(...),
     action: str = Form("publish"),
+    tag_ids: list[int] = Form([]),
 ):
 
     if require_admin(request) is None:
@@ -1260,6 +2488,12 @@ def create_article(
             summary=(summary or "").strip(),
             content=content,
             status=status,
+            # 首次发布时生成发布时间；草稿不生成
+            published_at=(
+                datetime.now()
+                if status == "published"
+                else None
+            ),
         )
 
         db.add(article)
@@ -1267,6 +2501,23 @@ def create_article(
         db.commit()
 
         db.refresh(article)
+
+
+        # ====================================================
+        # 关联标签
+        # ====================================================
+
+        if tag_ids:
+
+            tags = (
+                db.query(Tag)
+                .filter(Tag.id.in_(tag_ids))
+                .all()
+            )
+
+            article.tags = tags
+
+            db.commit()
 
 
         # ====================================================
@@ -1338,6 +2589,20 @@ def edit_article_page(
 
         context["article"] = article
 
+        # 标签选择器数据
+        context["all_tags"] = (
+            db.query(Tag)
+            .order_by(
+                Tag.sort_order.asc(),
+                Tag.id.asc(),
+            )
+            .all()
+        )
+
+        context["article_tag_ids"] = [
+            t.id for t in article.tags
+        ]
+
         return templates.TemplateResponse(
             request=request,
             name="admin_editor.html",
@@ -1360,6 +2625,7 @@ def update_article(
     summary: str = Form(...),
     content: str = Form(...),
     action: str = Form("publish"),
+    tag_ids: list[int] = Form([]),
 ):
 
     if require_admin(request) is None:
@@ -1398,6 +2664,25 @@ def update_article(
 
 
         # ====================================================
+        # 同步标签关联
+        # ====================================================
+
+        if tag_ids:
+
+            tags = (
+                db.query(Tag)
+                .filter(Tag.id.in_(tag_ids))
+                .all()
+            )
+
+            article.tags = tags
+
+        else:
+
+            article.tags = []
+
+
+        # ====================================================
         # 保存草稿
         # ====================================================
 
@@ -1422,8 +2707,11 @@ def update_article(
 
         article.status = "published"
 
-        # 发布又编辑：发布时间更新为本次修改时间
-        article.created_at = datetime.now()
+        # 发布时间规则：published_at 仅首次发布时生成，
+        # 之后修改文章发布时间保持不变（created_at 也不再更新）
+        if article.published_at is None:
+
+            article.published_at = datetime.now()
 
         db.commit()
 
@@ -1490,6 +2778,123 @@ def delete_article(
 
     finally:
         db.close()
+
+
+# ============================================================
+# AUTHENTICATED：文章图片上传
+# 供 EasyMDE 编辑器插入正文使用；返回 JSON 给前端回填 Markdown
+# ============================================================
+
+ARTICLE_IMAGE_DIR = "static/uploads/articles"
+
+ALLOWED_ARTICLE_IMAGE_EXT = (
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "webp",
+    "bmp",
+)
+
+
+@app.post("/admin/upload_image")
+async def admin_upload_image(
+    request: Request,
+    image: UploadFile = File(...),
+):
+
+    if require_admin(request) is None:
+
+        return JSONResponse(
+            status_code=403,
+            content={"success": False, "error": "无权操作"},
+        )
+
+
+    try:
+
+        # 清理文件名，防止路径穿透
+        original_name = os.path.basename(
+            image.filename or ""
+        )
+
+        ext = original_name.lower().rsplit(".", 1)[-1] if "." in original_name else ""
+
+        if ext not in ALLOWED_ARTICLE_IMAGE_EXT:
+
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "仅支持 jpg/jpeg/png/gif/webp/bmp 图片"},
+            )
+
+        # MIME 校验：伪造扩展名的文件会被拒绝
+        if not (
+            image.content_type
+            and image.content_type.startswith("image/")
+        ):
+
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "文件类型不合法"},
+            )
+
+        # 单张图片大小限制 10MB
+        image.file.seek(0, 2)
+
+        file_size = image.file.tell()
+
+        image.file.seek(0)
+
+        if file_size > 10 * 1024 * 1024:
+
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "图片不能超过 10MB"},
+            )
+
+        os.makedirs(
+            ARTICLE_IMAGE_DIR,
+            exist_ok=True,
+        )
+
+        filename = (
+            f"{uuid.uuid4().hex}_"
+            f"{original_name}"
+        )
+
+        save_path = os.path.join(
+            ARTICLE_IMAGE_DIR,
+            filename,
+        )
+
+        with open(
+            save_path,
+            "wb"
+        ) as buffer:
+
+            shutil.copyfileobj(
+                image.file,
+                buffer,
+            )
+
+        url = (
+            "/static/uploads/articles/"
+            + filename
+        )
+
+        return JSONResponse(
+            content={
+                "success": True,
+                "url": url,
+            },
+        )
+
+    except Exception as exc:
+
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": f"上传失败: {exc}"},
+        )
 
 
 # ============================================================
@@ -2436,14 +3841,35 @@ def articles_page(
 
     try:
 
+        # ====================================================
+        # 多标签筛选（AND 逻辑：文章必须同时包含所有选中标签）
+        # 支持 /articles?tags=a,b 逗号分隔
+        # ====================================================
+
+        selected_tags: list[str] = []
+
+        raw_tags = request.query_params.get("tags", "").strip()
+
+        if raw_tags:
+
+            selected_tags = [
+                t.strip()
+                for t in raw_tags.split(",")
+                if t.strip()
+            ]
+
         query = (
             db.query(Article)
             .options(
                 selectinload(Article.likes),
                 selectinload(Article.comments).selectinload(ArticleComment.reply_to),
+                selectinload(Article.tags),
             )
             .order_by(
-                Article.created_at.desc()
+                func.coalesce(
+                    Article.published_at,
+                    Article.created_at,
+                ).desc()
             )
         )
 
@@ -2453,11 +3879,44 @@ def articles_page(
                 Article.status == "published"
             )
 
+        # 多标签 AND：文章必须同时包含所有选中标签。
+        # 用 IN 子查询替代多次 JOIN，避免 article_tags 重复 JOIN 时
+        # 列名歧义（ambiguous column name）且语义更清晰。
+        if selected_tags:
+
+            for tag_name in selected_tags:
+
+                subq = (
+                    db.query(ArticleTag.article_id)
+                    .join(
+                        Tag,
+                        Tag.id == ArticleTag.tag_id,
+                    )
+                    .filter(
+                        Tag.name == tag_name
+                    )
+                )
+
+                query = query.filter(
+                    Article.id.in_(subq)
+                )
+
         articles = query.all()
 
         context = get_common_context(request)
 
         context["articles"] = articles
+
+        context["all_tags"] = (
+            db.query(Tag)
+            .order_by(
+                Tag.sort_order.asc(),
+                Tag.id.asc(),
+            )
+            .all()
+        )
+
+        context["selected_tags"] = selected_tags
 
         return templates.TemplateResponse(
             request=request,
@@ -3295,6 +4754,951 @@ def delete_message_item(
         return RedirectResponse(
             url=f"/message/{thread_id}",
             status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# PUBLIC：网络图库背景占位接口
+# 说明：
+# - 需求 4.4 允许接口占位实现
+# - 返回 302 重定向到免费图库（picsum.photos，按关键词生成稳定 seed）
+# - 真实部署可替换为 Unsplash API 等实现
+# - 前端加载失败时回退主题默认背景，不影响页面加载速度
+# ============================================================
+
+@app.get("/api/hero/network-image")
+def hero_network_image(
+    keyword: str = "minimal",
+):
+
+    seed = hashlib.md5(
+        keyword.encode("utf-8")
+    ).hexdigest()[:8]
+
+    return RedirectResponse(
+        url=f"https://picsum.photos/seed/{seed}/1600/900",
+        status_code=302,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：首页设置（Hero 首屏）
+# ============================================================
+
+@app.get("/admin/home")
+def admin_home_settings_page(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        context = get_common_context(request)
+
+        hero_cfg = get_hero_config()
+
+        context["hero_cfg"] = hero_cfg
+
+        context["backgrounds"] = (
+            db.query(HeroBackground)
+            .order_by(
+                HeroBackground.sort_order.asc(),
+                HeroBackground.id.asc(),
+            )
+            .all()
+        )
+
+        context["social_links"] = (
+            db.query(SocialLink)
+            .order_by(
+                SocialLink.sort_order.asc(),
+                SocialLink.id.asc(),
+            )
+            .all()
+        )
+
+        context["hero_bg_modes"] = HERO_BG_MODES
+
+        context["hero_auto_periods"] = HERO_AUTO_PERIODS
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_home_settings.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：保存首页资料（昵称 / 个签 / 头像）
+# ============================================================
+
+@app.post("/admin/home/profile")
+async def admin_home_profile_save(
+    request: Request,
+    hero_name: str = Form(""),
+    hero_slogan: str = Form(""),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    # 保存昵称与个签
+    set_setting_value(
+        "hero_name",
+        (hero_name or "").strip()[:50] or "Tnine",
+    )
+
+    set_setting_value(
+        "hero_slogan",
+        (hero_slogan or "").strip()[:200],
+    )
+
+    # 处理头像上传（可选）
+    form = await request.form()
+
+    avatar_file = form.get("avatar")
+
+    if (
+        avatar_file
+        and getattr(avatar_file, "filename", "")
+    ):
+
+        filename = avatar_file.filename or ""
+
+        ext = os.path.splitext(filename)[1].lower()
+
+        if ext not in HERO_ALLOWED_IMAGE:
+
+            return RedirectResponse(
+                url="/admin/home?error=avatar-format",
+                status_code=303,
+            )
+
+        os.makedirs(HERO_UPLOAD_DIR, exist_ok=True)
+
+        save_name = (
+            "avatar_"
+            + uuid.uuid4().hex[:12]
+            + ext
+        )
+
+        save_path = os.path.join(
+            HERO_UPLOAD_DIR,
+            save_name,
+        )
+
+        content = await avatar_file.read()
+
+        with open(save_path, "wb") as f:
+
+            f.write(content)
+
+        set_setting_value(
+            "hero_avatar",
+            "/static/uploads/hero/" + save_name,
+        )
+
+    return RedirectResponse(
+        url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：上传 Hero 背景资源
+# ============================================================
+
+@app.post("/admin/home/background-upload")
+async def admin_home_background_upload(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    form = await request.form()
+
+    bg_file = form.get("background_file")
+
+    title = (
+        form.get("background_title") or ""
+    ).strip()[:100]
+
+    if (
+        not bg_file
+        or not getattr(bg_file, "filename", "")
+    ):
+
+        return RedirectResponse(
+            url="/admin/home?error=background-missing",
+            status_code=303,
+        )
+
+    filename = bg_file.filename or ""
+
+    ext = os.path.splitext(filename)[1].lower()
+
+    if ext in HERO_ALLOWED_IMAGE:
+
+        kind = "image"
+
+    elif ext in HERO_ALLOWED_VIDEO:
+
+        kind = "video"
+
+    else:
+
+        return RedirectResponse(
+            url="/admin/home?error=background-format",
+            status_code=303,
+        )
+
+    os.makedirs(HERO_UPLOAD_DIR, exist_ok=True)
+
+    save_name = (
+        "bg_"
+        + uuid.uuid4().hex[:12]
+        + ext
+    )
+
+    save_path = os.path.join(
+        HERO_UPLOAD_DIR,
+        save_name,
+    )
+
+    content = await bg_file.read()
+
+    with open(save_path, "wb") as f:
+
+        f.write(content)
+
+    db = SessionLocal()
+
+    try:
+
+        bg = HeroBackground(
+            kind=kind,
+            source="upload",
+            file_path="/static/uploads/hero/" + save_name,
+            title=title or filename,
+        )
+
+        db.add(bg)
+
+        db.commit()
+
+        db.refresh(bg)
+
+        # 首次上传自动设为当前背景
+        active_count = (
+            db.query(HeroBackground)
+            .filter(HeroBackground.is_active.is_(True))
+            .count()
+        )
+
+        if active_count == 0:
+
+            bg.is_active = True
+
+            db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：设为当前 Hero 背景
+# ============================================================
+
+@app.post("/admin/home/background/{bg_id}/activate")
+def admin_home_background_activate(
+    request: Request,
+    bg_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        bg = (
+            db.query(HeroBackground)
+            .filter(HeroBackground.id == bg_id)
+            .first()
+        )
+
+        if bg is None:
+
+            return RedirectResponse(
+                url="/admin/home",
+                status_code=303,
+            )
+
+        # 清除旧的当前背景
+        (
+            db.query(HeroBackground)
+            .filter(HeroBackground.is_active.is_(True))
+            .update({"is_active": False})
+        )
+
+        bg.is_active = True
+
+        db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：删除 Hero 背景资源
+# ============================================================
+
+@app.post("/admin/home/background/{bg_id}/delete")
+def admin_home_background_delete(
+    request: Request,
+    bg_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        bg = (
+            db.query(HeroBackground)
+            .filter(HeroBackground.id == bg_id)
+            .first()
+        )
+
+        if bg is None:
+
+            return RedirectResponse(
+                url="/admin/home",
+                status_code=303,
+            )
+
+        # 删除磁盘文件（仅限 hero 上传目录内的资源）
+        file_name = os.path.basename(
+            bg.file_path or ""
+        )
+
+        if (
+            file_name
+            and (
+                file_name.startswith("bg_")
+                or file_name.startswith("avatar_")
+            )
+        ):
+
+            disk_path = os.path.join(
+                HERO_UPLOAD_DIR,
+                file_name,
+            )
+
+            if os.path.exists(disk_path):
+
+                os.remove(disk_path)
+
+        db.delete(bg)
+
+        db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：保存 Hero 背景设置（模式 / 自动切换 / 网络图库）
+# ============================================================
+
+@app.post("/admin/home/background-settings")
+def admin_home_background_settings_save(
+    request: Request,
+    bg_mode: str = Form("theme"),
+    auto_period: str = Form("daily"),
+    network_source: str = Form("unsplash"),
+    network_keyword: str = Form("minimal"),
+    network_period: str = Form("24"),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    if bg_mode not in HERO_BG_MODES:
+
+        bg_mode = "theme"
+
+    if auto_period not in HERO_AUTO_PERIODS:
+
+        auto_period = "daily"
+
+    set_setting_value("hero_bg_mode", bg_mode)
+
+    set_setting_value("hero_auto_period", auto_period)
+
+    set_setting_value(
+        "hero_network_source",
+        network_source,
+    )
+
+    set_setting_value(
+        "hero_network_keyword",
+        (network_keyword or "").strip()[:50] or "minimal",
+    )
+
+    set_setting_value(
+        "hero_network_period",
+        (network_period or "").strip()[:10] or "24",
+    )
+
+    return RedirectResponse(
+        url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：新增社交链接
+# ============================================================
+
+@app.post("/admin/home/social")
+def admin_home_social_create(
+    request: Request,
+    name: str = Form(...),
+    icon: str = Form("link"),
+    url: str = Form(""),
+    sort_order: int = Form(0),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        link = SocialLink(
+            name=(name or "").strip()[:50] or "链接",
+            icon=(icon or "link").strip()[:30],
+            url=(url or "").strip()[:500],
+            sort_order=sort_order,
+            is_visible=True,
+        )
+
+        db.add(link)
+
+        db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：社交链接显示切换
+# ============================================================
+
+@app.post("/admin/home/social/{link_id}/toggle")
+def admin_home_social_toggle(
+    request: Request,
+    link_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        link = (
+            db.query(SocialLink)
+            .filter(SocialLink.id == link_id)
+            .first()
+        )
+
+        if link is not None:
+
+            link.is_visible = not link.is_visible
+
+            db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：删除社交链接
+# ============================================================
+
+@app.post("/admin/home/social/{link_id}/delete")
+def admin_home_social_delete(
+    request: Request,
+    link_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        link = (
+            db.query(SocialLink)
+            .filter(SocialLink.id == link_id)
+            .first()
+        )
+
+        if link is not None:
+
+            db.delete(link)
+
+            db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：标签管理
+# ============================================================
+
+@app.get("/admin/tags")
+def admin_tags_page(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        context = get_common_context(request)
+
+        context["tags"] = (
+            db.query(Tag)
+            .order_by(
+                Tag.sort_order.asc(),
+                Tag.id.asc(),
+            )
+            .all()
+        )
+
+        # 每个标签关联的文章数
+        context["tag_counts"] = {}
+
+        for tag in context["tags"]:
+
+            context["tag_counts"][tag.id] = (
+                db.query(ArticleTag)
+                .filter(ArticleTag.tag_id == tag.id)
+                .count()
+            )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_tags.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：创建标签
+# ============================================================
+
+@app.post("/admin/tags")
+def admin_tag_create(
+    request: Request,
+    name: str = Form(...),
+    description: str = Form(""),
+    sort_order: int = Form(0),
+    show_on_home: str = Form(""),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    tag_name = (name or "").strip()[:50]
+
+    if not tag_name:
+
+        return RedirectResponse(
+            url="/admin/tags?error=name-empty",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        exists = (
+            db.query(Tag)
+            .filter(Tag.name == tag_name)
+            .first()
+        )
+
+        if exists is not None:
+
+            return RedirectResponse(
+                url="/admin/tags?error=duplicate",
+                status_code=303,
+            )
+
+        tag = Tag(
+            name=tag_name,
+            description=(description or "").strip()[:200],
+            sort_order=sort_order,
+            show_on_home=(show_on_home == "on"),
+        )
+
+        db.add(tag)
+
+        db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/tags",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：编辑标签
+# ============================================================
+
+@app.post("/admin/tags/{tag_id}/edit")
+def admin_tag_edit(
+    request: Request,
+    tag_id: int,
+    name: str = Form(...),
+    description: str = Form(""),
+    sort_order: int = Form(0),
+    show_on_home: str = Form(""),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    tag_name = (name or "").strip()[:50]
+
+    if not tag_name:
+
+        return RedirectResponse(
+            url="/admin/tags?error=name-empty",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        tag = (
+            db.query(Tag)
+            .filter(Tag.id == tag_id)
+            .first()
+        )
+
+        if tag is None:
+
+            return RedirectResponse(
+                url="/admin/tags",
+                status_code=303,
+            )
+
+        duplicate = (
+            db.query(Tag)
+            .filter(
+                Tag.name == tag_name,
+                Tag.id != tag_id,
+            )
+            .first()
+        )
+
+        if duplicate is not None:
+
+            return RedirectResponse(
+                url="/admin/tags?error=duplicate",
+                status_code=303,
+            )
+
+        tag.name = tag_name
+
+        tag.description = (description or "").strip()[:200]
+
+        tag.sort_order = sort_order
+
+        tag.show_on_home = (show_on_home == "on")
+
+        db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/tags",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：删除标签
+# 删除仅移除标签本身与关联关系，不删除文章
+# ============================================================
+
+@app.post("/admin/tags/{tag_id}/delete")
+def admin_tag_delete(
+    request: Request,
+    tag_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        tag = (
+            db.query(Tag)
+            .filter(Tag.id == tag_id)
+            .first()
+        )
+
+        if tag is not None:
+
+            # SQLite 未强制外键时先手动清理关联，避免残留
+            db.query(ArticleTag).filter(
+                ArticleTag.tag_id == tag.id
+            ).delete(synchronize_session=False)
+
+            db.delete(tag)
+
+            db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/tags",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：标签首页展示切换
+# ============================================================
+
+@app.post("/admin/tags/{tag_id}/toggle")
+def admin_tag_toggle(
+    request: Request,
+    tag_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        tag = (
+            db.query(Tag)
+            .filter(Tag.id == tag_id)
+            .first()
+        )
+
+        if tag is not None:
+
+            tag.show_on_home = not tag.show_on_home
+
+            db.commit()
+
+    finally:
+
+        db.close()
+
+    return RedirectResponse(
+        url="/admin/tags",
+        status_code=303,
+    )
+
+
+# ============================================================
+# PUBLIC：标签筛选页 /tag/{tag_name}
+# ============================================================
+
+@app.get("/tag/{tag_name}")
+def tag_detail_page(
+    request: Request,
+    tag_name: str,
+):
+
+    db = SessionLocal()
+
+    try:
+
+        tag = (
+            db.query(Tag)
+            .filter(Tag.name == tag_name)
+            .first()
+        )
+
+        if tag is None:
+
+            raise HTTPException(
+                status_code=404,
+                detail="标签不存在",
+            )
+
+        query = (
+            db.query(Article)
+            .join(ArticleTag, ArticleTag.article_id == Article.id)
+            .filter(
+                ArticleTag.tag_id == tag.id,
+                Article.status == "published",
+            )
+            .options(
+                selectinload(Article.likes),
+                selectinload(Article.comments).selectinload(ArticleComment.reply_to),
+                selectinload(Article.tags),
+            )
+            .order_by(
+                func.coalesce(
+                    Article.published_at,
+                    Article.created_at,
+                ).desc()
+            )
+        )
+
+        articles = query.all()
+
+        context = get_common_context(request)
+
+        context["tag"] = tag
+
+        context["articles"] = articles
+
+        return templates.TemplateResponse(
+            request=request,
+            name="tag_detail.html",
+            context=context,
         )
 
     finally:

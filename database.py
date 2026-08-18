@@ -1,10 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
+import os
+
 
 # SQLite 数据库文件
 # 如果文件不存在，程序第一次运行时会自动创建
-DATABASE_URL = "sqlite:///./blog.db"
+# 支持通过环境变量 TNINE_DATABASE_URL 覆盖（用于测试/迁移）
+DATABASE_URL = os.environ.get(
+    "TNINE_DATABASE_URL",
+    "sqlite:///./blog.db",
+)
 
 
 # 创建数据库引擎

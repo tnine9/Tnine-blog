@@ -19,7 +19,7 @@
         <div class="article-date">
 
             {{
-            item.data.created_at.strftime("%Y-%m-%d")
+            item.data.display_time.strftime("%Y-%m-%d")
             }}
 
         </div>
@@ -93,6 +93,31 @@
         </span>
 
     </div>
+
+
+
+    <!-- 标签胶囊 -->
+
+    {% if item.data.tags %}
+
+    <div class="article-card-tags">
+
+        {% for tag in item.data.tags %}
+
+        <a
+            class="tag-chip"
+            href="/tag/{{ tag.name }}"
+        >
+
+            {{ tag.name }}
+
+        </a>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
 
 
 

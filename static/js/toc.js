@@ -361,21 +361,93 @@ function initMarkdownEditorToc() {
             );
 
 
+        /*
+         * 编辑器目录仅展示 h1-h4 层级
+         */
+
+        const filtered =
+            headings.filter(
+                function (heading) {
+
+                    return (
+                        heading.level >= 1 &&
+                        heading.level <= 4
+                    );
+                }
+            );
+
+
         renderToc(
             toc,
-            headings,
+            filtered,
             function (
                 heading,
                 headingIndex
             ) {
 
-                focusEditorHeading(
-                    editor,
-                    headingIndex
-                );
+                /*
+                 * 优先在预览面板中定位标题；
+                 * 预览区不可用或未命中时，
+                 * 回退到编辑区 CodeMirror 定位
+                 */
+
+                if (
+                    !focusPreviewHeading(
+                        heading
+                    )
+                ) {
+
+                    focusEditorHeading(
+                        editor,
+                        headingIndex
+                    );
+                }
 
             }
         );
+    }
+
+
+    /*
+     * 在实时预览面板中滚动到对应标题
+     */
+
+    function focusPreviewHeading(heading) {
+
+        const preview =
+            document.getElementById(
+                "editorPreviewBody"
+            );
+
+        if (!preview) {
+            return false;
+        }
+
+        const candidates =
+            preview.querySelectorAll(
+                "h1, h2, h3, h4"
+            );
+
+        for (
+            const element of candidates
+        ) {
+
+            if (
+                element.textContent
+                    .trim() ===
+                heading.text
+            ) {
+
+                element.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
 

@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}
+标签管理 - Tnine 后台
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container admin-home">
+
+    <section class="admin-welcome">
+
+        <h1>
+            标签管理
+        </h1>
+
+        <p>
+            创建标签并与文章关联，首页 Hero 仅展示「首页展示」开启的标签。
+        </p>
+
+        <a
+            href="/admin"
+            class="admin-secondary-button"
+        >
+            ← 返回后台
+        </a>
+
+    </section>
+
+
+    {% if request.query_params.get("error") == "name-empty" %}
+
+    <div class="admin-alert">
+        标签名称不能为空
+    </div>
+
+    {% endif %}
+
+    {% if request.query_params.get("error") == "duplicate" %}
+
+    <div class="admin-alert">
+        同名标签已存在
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         新建标签
+         ================================================== -->
+
+    <section class="admin-panel">
+
+        <div class="admin-section-header">
+
+            <h2>
+                新建标签
+            </h2>
+
+        </div>
+
+        <form
+            method="post"
+            action="/admin/tags"
+        >
+
+            <div class="form-group">
+
+                <label for="tag_name">
+                    名称
+                </label>
+
+                <input
+                    type="text"
+                    id="tag_name"
+                    name="name"
+                    maxlength="50"
+                    placeholder="如 Python / 生活记录"
+                    required
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="tag_description">
+                    描述
+                </label>
+
+                <input
+                    type="text"
+                    id="tag_description"
+                    name="description"
+                    maxlength="200"
+                    placeholder="可选"
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="tag_sort">
+                    排序
+                </label>
+
+                <input
+                    type="number"
+                    id="tag_sort"
+                    name="sort_order"
+                    value="0"
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label class="admin-checkbox">
+
+                    <input
+                        type="checkbox"
+                        name="show_on_home"
+                    >
+
+                    <span>
+                        在首页 Hero 展示
+                    </span>
+
+                </label>
+
+            </div>
+
+            <div class="form-actions">
+
+                <button
+                    type="submit"
+                    class="admin-primary-button"
+                >
+                    创建标签
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+    <!-- ==================================================
+         标签列表
+         ================================================== -->
+
+    <section class="admin-panel">
+
+        <div class="admin-section-header">
+
+            <h2>
+                全部标签（{{ tags | length }}）
+            </h2>
+
+        </div>
+
+        {% if tags %}
+
+        <div class="admin-tag-list">
+
+            {% for tag in tags %}
+
+            <div class="admin-tag-item">
+
+                <div class="admin-resource-info">
+
+                    <div class="admin-resource-title">
+
+                        {{ tag.name }}
+
+                        {% if tag.show_on_home %}
+
+                        <span class="article-status article-status-published">
+                            首页展示
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+                    <div class="admin-resource-meta">
+
+                        {% if tag.description %}
+                        {{ tag.description }}
+                        ·
+                        {% endif %}
+
+                        {{ tag_counts.get(tag.id, 0) }} 篇文章
+
+                        · 排序 {{ tag.sort_order }}
+
+                    </div>
+
+                </div>
+
+                <div class="admin-resource-actions">
+
+                    <a
+                        href="/tag/{{ tag.name | urlencode }}"
+                        class="admin-secondary-button"
+                        target="_blank"
+                    >
+                        查看
+                    </a>
+
+                    <form
+                        method="post"
+                        action="/admin/tags/{{ tag.id }}/toggle"
+                    >
+
+                        <button
+                            type="submit"
+                            class="admin-secondary-button"
+                        >
+                            {% if tag.show_on_home %}
+                            取消首页展示
+                            {% else %}
+                            设为首页展示
+                            {% endif %}
+                        </button>
+
+                    </form>
+
+                    <form
+                        method="post"
+                        action="/admin/tags/{{ tag.id }}/delete"
+                        onsubmit="return confirm('确定删除该标签吗？仅移除标签与关联关系，不会删除文章。');"
+                    >
+
+                        <button
+                            type="submit"
+                            class="admin-danger-button"
+                        >
+                            删除
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <p class="admin-hint">
+            暂无标签，请先创建
+        </p>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- ==================================================
+         编辑标签（内联展开，简单实现）
+         ================================================== -->
+
+    <section class="admin-panel">
+
+        <div class="admin-section-header">
+
+            <h2>
+                编辑标签
+            </h2>
+
+        </div>
+
+        {% if tags %}
+
+        {% for tag in tags %}
+
+        <details class="admin-tag-edit">
+
+            <summary>
+                编辑「{{ tag.name }}」
+            </summary>
+
+            <form
+                method="post"
+                action="/admin/tags/{{ tag.id }}/edit"
+            >
+
+                <div class="form-group">
+
+                    <label>
+                        名称
+                    </label>
+
+                    <input
+                        type="text"
+                        name="name"
+                        value="{{ tag.name }}"
+                        maxlength="50"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>
+                        描述
+                    </label>
+
+                    <input
+                        type="text"
+                        name="description"
+                        value="{{ tag.description }}"
+                        maxlength="200"
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>
+                        排序
+                    </label>
+
+                    <input
+                        type="number"
+                        name="sort_order"
+                        value="{{ tag.sort_order }}"
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label class="admin-checkbox">
+
+                        <input
+                            type="checkbox"
+                            name="show_on_home"
+                            {% if tag.show_on_home %}
+                            checked
+                            {% endif %}
+                        >
+
+                        <span>
+                            在首页 Hero 展示
+                        </span>
+
+                    </label>
+
+                </div>
+
+                <div class="form-actions">
+
+                    <button
+                        type="submit"
+                        class="admin-primary-button"
+                    >
+                        保存修改
+                    </button>
+
+                </div>
+
+            </form>
+
+        </details>
+
+        {% endfor %}
+
+        {% else %}
+
+        <p class="admin-hint">
+            暂无标签可编辑
+        </p>
+
+        {% endif %}
+
+    </section>
+
+</main>
+
+{% endblock %}

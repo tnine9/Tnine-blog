@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}
+邮箱配置 - Tnine
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container admin-page">
+
+    <section class="login-page">
+
+        <div class="login-card">
+
+            <div class="login-header">
+
+                <h1>
+                    邮箱配置
+                </h1>
+
+                <p>
+                    配置 SMTP 发件邮箱与管理員收件邮箱，用于发送管理员登录验证码。未单独配置收件邮箱时，默认收件邮箱 = 发件邮箱。
+                </p>
+
+            </div>
+
+
+            {% if error %}
+
+            <div class="login-error">
+                {{ error }}
+            </div>
+
+            {% endif %}
+
+
+            {% if notice %}
+
+            <div class="login-notice">
+                {{ notice }}
+            </div>
+
+            {% endif %}
+
+
+            <form
+                method="post"
+                action="/admin/settings/email"
+                class="article-form"
+            >
+
+                <div class="form-group">
+
+                    <label for="smtp_host">
+                        SMTP 主机
+                    </label>
+
+                    <input
+                        type="text"
+                        id="smtp_host"
+                        name="smtp_host"
+                        value="{{ config.host }}"
+                        placeholder="如 smtp.qq.com / smtp.163.com"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="smtp_port">
+                        SMTP 端口
+                    </label>
+
+                    <input
+                        type="number"
+                        id="smtp_port"
+                        name="smtp_port"
+                        value="{{ config.port }}"
+                        placeholder="465（SSL）或 587（TLS）"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="smtp_username">
+                        发件邮箱（SMTP 用户名）
+                    </label>
+
+                    <input
+                        type="text"
+                        id="smtp_username"
+                        name="smtp_username"
+                        value="{{ config.username }}"
+                        placeholder="发件邮箱地址"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="smtp_password">
+                        邮箱密码 / 授权码
+                    </label>
+
+                    <input
+                        type="password"
+                        id="smtp_password"
+                        name="smtp_password"
+                        placeholder="{% if has_saved_password %}已保存（留空表示不修改）{% else %}请输入邮箱授权码{% endif %}"
+                        autocomplete="new-password"
+                    >
+
+                    <p class="login-code-hint">
+                        密码加密存储，不会明文保存。留空表示保持原密码不变。
+                    </p>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="from_addr">
+                        发件人地址
+                    </label>
+
+                    <input
+                        type="email"
+                        id="from_addr"
+                        name="from_addr"
+                        value="{{ config.from_addr }}"
+                        placeholder="发件邮箱地址"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="to_addr">
+                        管理员收件邮箱
+                    </label>
+
+                    <input
+                        type="email"
+                        id="to_addr"
+                        name="to_addr"
+                        value="{{ config.to_addr }}"
+                        placeholder="留空则默认使用发件邮箱"
+                    >
+
+                    <p class="login-code-hint">
+                        登录验证码将发送到此邮箱。留空时默认收件邮箱 = 发件邮箱。
+                    </p>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label class="login-check-label">
+
+                        <input
+                            type="checkbox"
+                            id="use_tls"
+                            name="use_tls"
+                            value="1"
+                            {% if config.use_tls %}checked{% endif %}
+                        >
+
+                        使用 TLS（端口 587 时勾选；端口 465 使用 SSL 时不勾选）
+
+                    </label>
+
+                </div>
+
+
+                <button type="submit">
+                    保存邮箱配置
+                </button>
+
+            </form>
+
+
+            {% if config.configured %}
+
+            <div class="login-init-notice login-mail-tip">
+
+                <p>
+                    当前邮箱配置可用，登录验证码将发送至：
+                    <strong>{{ config.to_addr }}</strong>
+                </p>
+
+            </div>
+
+            {% else %}
+
+            <div class="login-init-notice login-mail-tip">
+
+                <p>
+                    当前未配置完整 SMTP（或使用环境变量）。
+                    开发模式下验证码会在服务端日志与登录页提示中显示。
+                </p>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+</main>
+
+{% endblock %}

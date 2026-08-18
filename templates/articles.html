@@ -54,9 +54,73 @@ class="action-button"
 
 
 
-<!-- 文章网格（无时间轴） -->
+<!-- ==================================================
+     标签筛选区域（多列多行胶囊，AND 逻辑）
+     ================================================== -->
 
-<div class="article-grid">
+{% if all_tags %}
+
+<div class="article-tag-filter">
+
+    <div class="article-tag-filter-head">
+
+        <span>
+            标签筛选
+        </span>
+
+        {% if selected_tags %}
+
+        <a
+            class="article-tag-filter-clear"
+            href="/articles"
+        >
+            清除筛选
+        </a>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="article-tag-filter-list">
+
+        {% for tag in all_tags %}
+
+            {% if tag.name in selected_tags %}
+
+            {% set next_tags = selected_tags | reject("equalto", tag.name) | list %}
+
+            {% else %}
+
+            {% set next_tags = selected_tags + [tag.name] %}
+
+            {% endif %}
+
+            <a
+                class="tag-chip {% if tag.name in selected_tags %}tag-chip-active{% endif %}"
+                href="/articles?tags={{ next_tags | join(',') }}"
+                title="点击{{ '取消' if tag.name in selected_tags else '筛选' }}「{{ tag.name }}」"
+            >
+
+                {{ tag.name }}
+
+            </a>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+
+<!-- ==================================================
+     文章时间线
+     ================================================== -->
+
+<div class="timeline">
 
 
 {% if articles %}
@@ -67,100 +131,47 @@ class="action-button"
 
 
 
-<article
-class="content-card article-card article-grid-card"
-data-url="/article/{{ article.id }}"
->
+<div class="timeline-item">
 
 
 
-<div class="article-card-top">
+    <!-- 左侧时间 -->
+
+    <div class="timeline-side">
+
+        <div class="timeline-date">
+
+            {{
+            article.display_time.strftime("%Y-%m-%d")
+            }}
+
+        </div>
+
+        <div
+            class="timeline-type timeline-type-article"
+        >
+            文章
+        </div>
+
+        <div class="timeline-dot"></div>
+
+    </div>
 
 
-{% if article.status == "draft" and is_admin %}
 
-<span class="article-draft-badge">
-草稿
-</span>
+    <!-- 右侧内容 -->
 
-{% endif %}
+    <div class="timeline-content">
+
+        {% set item = {"data": article} %}
+
+        {% include "components/article_card.html" %}
+
+    </div>
 
 
-
-<span class="article-date">
-
-{{ article.created_at.strftime("%Y-%m-%d") }}
-
-</span>
 
 </div>
-
-
-<h2 class="article-title">
-
-<a href="/article/{{ article.id }}">
-
-{{ article.title }}
-
-</a>
-
-</h2>
-
-
-
-{% if article.summary %}
-
-<p class="article-summary">
-
-{{ article.summary }}
-
-</p>
-
-{% endif %}
-
-
-
-<!-- 互动统计 -->
-
-<div class="article-card-stats">
-
-<span class="article-stat">
-
-<span class="stat-icon">👁</span>
-
-{{ article.views }}
-
-<span class="stat-label">浏览</span>
-
-</span>
-
-
-<span class="article-stat">
-
-<span class="stat-icon">❤️</span>
-
-{{ article.like_count }}
-
-<span class="stat-label">点赞</span>
-
-</span>
-
-
-<span class="article-stat">
-
-<span class="stat-icon">💬</span>
-
-{{ article.comment_count }}
-
-<span class="stat-label">评论</span>
-
-</span>
-
-</div>
-
-
-
-</article>
 
 
 
@@ -172,22 +183,29 @@ data-url="/article/{{ article.id }}"
 
 
 
+<!-- 空状态 -->
+
 <div class="empty-state">
 
+    <div class="empty-state-title">
 
-<div class="empty-state-title">
+        {% if selected_tags %}
+        没有匹配的文章
+        {% else %}
+        还没有文章
+        {% endif %}
 
-还没有文章
+    </div>
 
-</div>
+    <div class="empty-state-text">
 
+        {% if selected_tags %}
+        当前筛选条件下暂无文章，试试清除部分标签
+        {% else %}
+        这里暂时还没有发布任何内容
+        {% endif %}
 
-<div class="empty-state-text">
-
-这里暂时还没有发布任何内容
-
-</div>
-
+    </div>
 
 </div>
 

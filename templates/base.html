@@ -63,7 +63,7 @@
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/admin.css') }}?v=4">
+          href="{{ url_for('static', path='css/admin.css') }}?v=5">
 
 
     <link rel="stylesheet"
@@ -153,7 +153,19 @@
             id="userMenuButton"
         >
 
+            {% if site_avatar %}
+
+            <img
+                class="user-avatar-img"
+                src="{{ site_avatar }}"
+                alt="头像"
+            >
+
+            {% else %}
+
             {{ (admin_nickname or admin_username or "管")[0] }}
+
+            {% endif %}
 
         </button>
 
@@ -170,7 +182,19 @@
 
                 <div class="dropdown-avatar">
 
+                    {% if site_avatar %}
+
+                    <img
+                        class="dropdown-avatar-img"
+                        src="{{ site_avatar }}"
+                        alt="头像"
+                    >
+
+                    {% else %}
+
                     {{ (admin_nickname or admin_username or "管")[0] }}
+
+                    {% endif %}
 
                 </div>
 
@@ -220,6 +244,15 @@
             <a href="/admin/profile">
 
                 修改昵称
+
+            </a>
+
+
+
+
+            <a href="/admin/settings/email">
+
+                邮箱配置
 
             </a>
 

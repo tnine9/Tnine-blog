@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+标签 #{{ tag.name }} - Tnine
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<section class="page-content">
+
+
+<header class="section-header">
+
+
+<div class="section-header-top">
+
+
+<h1 class="section-title">
+
+# {{ tag.name }}
+
+</h1>
+
+
+<a
+href="javascript:history.back()"
+class="action-button"
+>
+
+← 返回
+
+</a>
+
+
+</div>
+
+
+<p class="text-secondary">
+
+{% if tag.description %}
+{{ tag.description }}
+{% else %}
+「{{ tag.name }}」标签下的全部文章
+{% endif %}
+
+（共 {{ articles | length }} 篇）
+
+</p>
+
+
+</header>
+
+
+<!-- 文章列表 -->
+
+<div class="article-grid">
+
+
+{% if articles %}
+
+
+
+{% for article in articles %}
+
+
+
+<article
+class="content-card article-card article-grid-card"
+data-url="/article/{{ article.id }}"
+>
+
+
+
+<div class="article-card-top">
+
+
+{% if article.status == "draft" and is_admin %}
+
+<span
+class="article-status article-status-draft"
+>
+草稿
+</span>
+
+{% else %}
+
+<span
+class="article-status article-status-published"
+>
+文章
+</span>
+
+{% endif %}
+
+
+
+<span class="article-card-date">
+
+{{ article.display_time.strftime("%Y-%m-%d") }}
+
+</span>
+
+
+</div>
+
+
+
+<h3 class="article-card-title">
+
+<a href="/article/{{ article.id }}">
+
+{{ article.title }}
+
+</a>
+
+</h3>
+
+
+
+{% if article.summary %}
+
+<p class="article-card-summary">
+
+{{ article.summary }}
+
+</p>
+
+{% endif %}
+
+
+
+{% if article.tags %}
+
+<div class="article-card-tags">
+
+{% for t in article.tags %}
+
+<a
+class="tag-chip
+{% if t.id == tag.id %}
+tag-chip-active
+{% endif %}
+"
+href="/tag/{{ t.name | urlencode }}"
+>
+
+# {{ t.name }}
+
+</a>
+
+{% endfor %}
+
+</div>
+
+{% endif %}
+
+
+
+</article>
+
+
+
+{% endfor %}
+
+
+
+{% else %}
+
+
+
+<div class="empty-state">
+
+<p>
+
+该标签下还没有文章
+
+</p>
+
+</div>
+
+
+
+{% endif %}
+
+
+
+</div>
+
+
+</section>
+
+
+{% endblock %}

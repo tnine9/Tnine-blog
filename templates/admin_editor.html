@@ -16,6 +16,17 @@
     href="https://unpkg.com/easymde/dist/easymde.min.css"
 >
 
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
+>
+
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+    media="(prefers-color-scheme: dark)"
+>
+
 {% endblock %}
 
 
@@ -142,7 +153,7 @@
          编辑区域
          ================================================== -->
 
-    <div class="editor-layout">
+    <div class="editor-layout editor-layout-3col">
 
         <div class="editor-main">
 
@@ -174,6 +185,65 @@
                         name="content"
                         placeholder="开始写你的 Markdown 文章……"
                     >{% if article %}{{ article.content }}{% endif %}</textarea>
+
+                </div>
+
+
+                <!-- ==================================================
+                     标签（多列多行选择 + 已选胶囊）
+                     ================================================== -->
+
+                <div class="form-group">
+
+                    <label>
+                        标签
+                    </label>
+
+                    <div
+                        class="editor-tags-selected"
+                        id="editorTagsSelected"
+                    >
+                        已选择：
+                    </div>
+
+                    <div class="editor-tags editor-tags-grid">
+
+                        {% for tag in all_tags %}
+
+                        <label
+                            class="editor-tag-option"
+                        >
+
+                            <input
+                                type="checkbox"
+                                name="tag_ids"
+                                value="{{ tag.id }}"
+                                data-tag-name="{{ tag.name }}"
+                                {% if tag.id in article_tag_ids %}
+                                checked
+                                {% endif %}
+                            >
+
+                            <span>
+                                {{ tag.name }}
+                            </span>
+
+                        </label>
+
+                        {% endfor %}
+
+                        {% if not all_tags %}
+
+                        <p
+                            class="text-secondary"
+                            style="margin:0;"
+                        >
+                            暂无标签，请先到后台「标签管理」创建
+                        </p>
+
+                        {% endif %}
+
+                    </div>
 
                 </div>
 
@@ -234,6 +304,39 @@
 
 
         <!-- ==================================================
+             实时预览（中栏）
+             ================================================== -->
+
+        <div class="editor-col editor-col-preview">
+
+            <div class="editor-preview-panel">
+
+                <div class="editor-preview-head">
+
+                    <span>
+                        实时预览
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="editor-preview-body markdown-body"
+                    id="editorPreviewBody"
+                >
+
+                    <p class="text-secondary">
+                        正在等待输入……
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
              右侧文章导航
              ================================================== -->
 
@@ -251,6 +354,19 @@
 
 <script
     src="https://unpkg.com/easymde/dist/easymde.min.js"
+></script>
+
+
+<!-- =========================================================
+     marked（Markdown 渲染）+ highlight.js（代码高亮）
+     ========================================================= -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"
+></script>
+
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
 ></script>
 
 
@@ -322,6 +438,285 @@ document.addEventListener(
         }
 
 
+        /* =================================================
+         实时预览（marked + highlight.js）
+         ================================================= */
+
+        const previewBody =
+            document.getElementById(
+                "editorPreviewBody"
+            );
+
+
+        function renderMarkdownPreview() {
+
+            if (!previewBody) {
+                return;
+            }
+
+            const markdownText =
+                editor.value() || "";
+
+            if (!markdownText.trim()) {
+
+                previewBody.innerHTML =
+                    '<p class="text-secondary">' +
+                    "正在等待输入……" +
+                    "</p>";
+
+                return;
+            }
+
+            try {
+
+                let html = "";
+
+                if (
+                    typeof marked !==
+                    "undefined"
+                ) {
+
+                    html = marked.parse(
+                        markdownText,
+                        {
+                            gfm: true,
+                            breaks: false,
+                        }
+                    );
+
+                } else {
+
+                    html =
+                        "<p>" +
+                        markdownText
+                            .replace(/&/g, "&amp;")
+                            .replace(/</g, "&lt;")
+                            .replace(/>/g, "&gt;")
+                            .replace(/\n/g, "<br>") +
+                        "</p>";
+                }
+
+                previewBody.innerHTML = html;
+
+                /*
+                 * 代码高亮
+                 */
+
+                if (
+                    typeof hljs !==
+                    "undefined"
+                ) {
+
+                    previewBody
+                        .querySelectorAll(
+                            "pre code"
+                        )
+                        .forEach(
+                            function (block) {
+
+                                try {
+
+                                    hljs.highlightElement(
+                                        block
+                                    );
+
+                                } catch (error) {
+
+                                    /* 高亮失败不影响展示 */
+
+                                }
+
+                            }
+                        );
+                }
+
+                /*
+                 * 代码复制按钮
+                 */
+
+                if (
+                    typeof scanCodeBlocks ===
+                    "function"
+                ) {
+
+                    scanCodeBlocks(
+                        previewBody
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "预览渲染失败：",
+                    error
+                );
+
+                previewBody.innerHTML =
+                    '<p class="text-secondary">' +
+                    "预览渲染失败" +
+                    "</p>";
+            }
+        }
+
+
+        /* =================================================
+         插入代码块（含语言选择）
+         ================================================= */
+
+        const CODE_LANGUAGES = [
+            { value: "python", label: "Python" },
+            { value: "javascript", label: "JavaScript" },
+            { value: "html", label: "HTML" },
+            { value: "css", label: "CSS" },
+            { value: "shell", label: "Shell" },
+            { value: "sql", label: "SQL" },
+            { value: "dockerfile", label: "Dockerfile" },
+        ];
+
+
+        let codeLangMenu = null;
+
+
+        function buildCodeLangMenu() {
+
+            if (codeLangMenu) {
+                return codeLangMenu;
+            }
+
+            codeLangMenu =
+                document.createElement("div");
+
+            codeLangMenu.className =
+                "editor-code-lang-menu";
+
+            codeLangMenu.hidden = true;
+
+            const list =
+                document.createElement("div");
+
+            list.className =
+                "editor-code-lang-list";
+
+            CODE_LANGUAGES.forEach(
+                function (lang) {
+
+                    const item =
+                        document.createElement(
+                            "button"
+                        );
+
+                    item.type = "button";
+
+                    item.className =
+                        "editor-code-lang-item";
+
+                    item.dataset.lang =
+                        lang.value;
+
+                    item.textContent =
+                        lang.label;
+
+                    item.addEventListener(
+                        "click",
+                        function () {
+
+                            codeLangMenu.hidden =
+                                true;
+
+                            insertCodeBlock(
+                                lang.value
+                            );
+
+                        }
+                    );
+
+                    list.appendChild(item);
+                }
+            );
+
+            codeLangMenu.appendChild(list);
+
+            document.body.appendChild(
+                codeLangMenu
+            );
+
+            return codeLangMenu;
+        }
+
+
+        function insertCodeBlock(lang) {
+
+            const cm = editor.codemirror;
+
+            const doc = cm.getDoc();
+
+            const cursor = doc.getCursor();
+
+            const prefix = "```" +
+                lang +
+                "\n\n```\n\n";
+
+            doc.replaceRange(
+                prefix,
+                cursor
+            );
+
+            cm.setCursor(
+                cursor.line + 1,
+                0
+            );
+
+            cm.focus();
+        }
+
+
+        function toggleCodeLangMenu(anchor) {
+
+            const menu = buildCodeLangMenu();
+
+            menu.hidden = !menu.hidden;
+
+            if (menu.hidden) {
+                return;
+            }
+
+            const rect =
+                anchor.getBoundingClientRect();
+
+            menu.style.top =
+                (rect.bottom + 6) + "px";
+
+            menu.style.left =
+                rect.left + "px";
+
+            menu.style.position = "fixed";
+
+            menu.style.zIndex = "300";
+        }
+
+
+        document.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    codeLangMenu &&
+                    !codeLangMenu.hidden &&
+                    !codeLangMenu.contains(
+                        event.target
+                    )
+                ) {
+
+                    codeLangMenu.hidden = true;
+                }
+            }
+        );
+
+
+        /* =================================================
+         EasyMDE 实例
+         ================================================= */
+
         const editor =
             new EasyMDE({
 
@@ -353,16 +748,104 @@ document.addEventListener(
                     "link",
                     "table",
                     "image",
+                    "|",
+                    {
+                        name: "code-block",
+                        action: function (
+                            editorInstance
+                        ) {
+
+                            const toolbar =
+                                editorInstance.toolbar;
+
+                            toggleCodeLangMenu(
+                                toolbar
+                                    .querySelector(
+                                        "button[title*='代码块'], " +
+                                        ".editor-code-lang-trigger"
+                                    ) ||
+                                toolbar
+                            );
+                        },
+                        className:
+                            "fa fa-code editor-code-lang-trigger",
+                        title: "插入代码块（选择语言）",
+                    },
                     "code",
                     "|",
-                    "preview",
-                    "side-by-side",
                     "fullscreen",
                     "|",
                     "guide"
                 ],
 
-                sideBySideFullscreen: true
+                sideBySideFullscreen: true,
+
+                /*
+                 * 图片上传：插入正文
+                 */
+
+                uploadImage: true,
+
+                imageUploadFunction: function (
+                    file,
+                    onSuccess,
+                    onError
+                ) {
+
+                    const formData =
+                        new FormData();
+
+                    formData.append(
+                        "image",
+                        file
+                    );
+
+                    fetch(
+                        "/admin/upload_image",
+                        {
+                            method: "POST",
+                            body: formData,
+                        }
+                    )
+                        .then(
+                            function (response) {
+
+                                return response.json();
+                            }
+                        )
+                        .then(
+                            function (result) {
+
+                                if (
+                                    result &&
+                                    result.success
+                                ) {
+
+                                    onSuccess(
+                                        result.url
+                                    );
+
+                                } else {
+
+                                    onError(
+                                        (
+                                            result &&
+                                            result.error
+                                        ) ||
+                                        "图片上传失败"
+                                    );
+                                }
+                            }
+                        )
+                        .catch(
+                            function () {
+
+                                onError(
+                                    "网络错误，图片上传失败"
+                                );
+                            }
+                        );
+                }
 
             });
 
@@ -373,6 +856,100 @@ document.addEventListener(
 
         window.tnineMarkdownEditor =
             editor;
+
+
+        /*
+         * 实时预览：内容变化即刷新
+         */
+
+        editor.codemirror.on(
+            "change",
+            function () {
+
+                renderMarkdownPreview();
+
+            }
+        );
+
+
+        /*
+         * 首次渲染
+         */
+
+        renderMarkdownPreview();
+
+
+        /*
+         * 标签：已选胶囊实时更新
+         */
+
+        const tagsSelectedBox =
+            document.getElementById(
+                "editorTagsSelected"
+            );
+
+
+        function updateEditorTagsSelected() {
+
+            if (!tagsSelectedBox) {
+                return;
+            }
+
+            const checked =
+                document.querySelectorAll(
+                    'input[name="tag_ids"]:checked'
+                );
+
+            const names =
+                Array.from(checked).map(
+                    function (box) {
+
+                        return box.dataset.tagName ||
+                            box.value;
+                    }
+                );
+
+            if (names.length === 0) {
+
+                tagsSelectedBox.innerHTML =
+                    "已选择：<span class='text-secondary'>未选择任何标签</span>";
+
+                return;
+            }
+
+            tagsSelectedBox.innerHTML =
+                "已选择：" +
+                names
+                    .map(
+                        function (name) {
+
+                            return (
+                                "<span class='tag-chip'>" +
+                                name +
+                                "</span>"
+                            );
+                        }
+                    )
+                    .join("");
+        }
+
+
+        document
+            .querySelectorAll(
+                'input[name="tag_ids"]'
+            )
+            .forEach(
+                function (box) {
+
+                    box.addEventListener(
+                        "change",
+                        updateEditorTagsSelected
+                    );
+                }
+            );
+
+
+        updateEditorTagsSelected();
 
 
         /*

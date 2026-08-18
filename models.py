@@ -142,6 +142,13 @@ class Article(Base):
     )
 
 
+    # 首次发布时间（第一次发布时生成，之后修改保持不变；草稿为 NULL）
+    published_at = Column(
+        DateTime,
+        nullable=True
+    )
+
+
     # 点赞
     likes = relationship(
         "ArticleLike",
@@ -158,6 +165,14 @@ class Article(Base):
     )
 
 
+    # 标签（多对多）
+    tags = relationship(
+        "Tag",
+        secondary="article_tags",
+        back_populates="articles",
+    )
+
+
     @property
     def like_count(self):
         return len(self.likes)
@@ -166,6 +181,14 @@ class Article(Base):
     @property
     def comment_count(self):
         return len(self.comments)
+
+
+    @property
+    def display_time(self):
+        """
+        展示时间：已发布文章优先 published_at，草稿退回 created_at。
+        """
+        return self.published_at or self.created_at
 
 
 
@@ -328,6 +351,19 @@ class Admin(Base):
         String(50),
         default="成哥",
         nullable=False
+    )
+
+
+    # 管理员收件邮箱（用于接收登录验证码），可空
+    email = Column(
+        String(255),
+        nullable=True
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
     )
 
 
@@ -688,4 +724,235 @@ class Message(Base):
     thread = relationship(
         "MessageThread",
         back_populates="messages"
+    )
+
+
+# ===========================
+# 标签
+# 说明：
+# - name 唯一，用于 /tag/{name} 筛选页
+# - show_on_home 控制 Hero 首屏胶囊展示
+# ===========================
+
+class Tag(Base):
+
+    __tablename__ = "tags"
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    name = Column(
+        String(50),
+        unique=True,
+        nullable=False
+    )
+
+
+    description = Column(
+        String(200),
+        default="",
+        nullable=False
+    )
+
+
+    # 是否在首页 Hero 展示
+    show_on_home = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+
+    # 排序（越小越靠前）
+    sort_order = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )
+
+
+    articles = relationship(
+        "Article",
+        secondary="article_tags",
+        back_populates="tags",
+    )
+
+
+
+# ===========================
+# 文章-标签 关联表
+# ===========================
+
+class ArticleTag(Base):
+
+    __tablename__ = "article_tags"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "article_id",
+            "tag_id",
+            name="uq_article_tag",
+        ),
+    )
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    article_id = Column(
+        Integer,
+        ForeignKey(
+            "articles.id",
+            ondelete="CASCADE"
+        ),
+        nullable=False
+    )
+
+
+    tag_id = Column(
+        Integer,
+        ForeignKey(
+            "tags.id",
+            ondelete="CASCADE"
+        ),
+        nullable=False
+    )
+
+
+
+# ===========================
+# 社交链接（Hero 底部小图标）
+# ===========================
+
+class SocialLink(Base):
+
+    __tablename__ = "social_links"
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    name = Column(
+        String(50),
+        nullable=False
+    )
+
+
+    # 图标类型：github / csdn / wechat / qq / email / link
+    icon = Column(
+        String(30),
+        default="link",
+        nullable=False
+    )
+
+
+    url = Column(
+        String(500),
+        default="",
+        nullable=False
+    )
+
+
+    sort_order = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+
+    is_visible = Column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )
+
+
+
+# ===========================
+# Hero 背景资源
+# 说明：
+# - kind：image / video
+# - source：upload（自定义上传）/ network（网络图库，占位）
+# - is_active：当前选中使用（upload 模式生效）
+# - auto 模式从 upload 资源中按周期选取，不使用 is_active
+# ===========================
+
+class HeroBackground(Base):
+
+    __tablename__ = "hero_backgrounds"
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    kind = Column(
+        String(10),
+        default="image",
+        nullable=False
+    )
+
+
+    source = Column(
+        String(20),
+        default="upload",
+        nullable=False
+    )
+
+
+    file_path = Column(
+        String(255),
+        default="",
+        nullable=False
+    )
+
+
+    title = Column(
+        String(100),
+        default="",
+        nullable=False
+    )
+
+
+    sort_order = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+
+    is_active = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
     )

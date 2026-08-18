@@ -53,7 +53,7 @@
             <div class="article-sticky-meta">
 
                 <span>
-                    {{ article.created_at.strftime("%Y-%m-%d") }}
+                    {{ article.display_time.strftime("%Y-%m-%d") }}
                 </span>
 
 
@@ -95,7 +95,7 @@
 
 
             <span class="compact-date">
-                {{ article.created_at.strftime("%Y-%m-%d") }}
+                {{ article.display_time.strftime("%Y-%m-%d") }}
             </span>
 
 
@@ -124,7 +124,19 @@
 
                 <span class="detail-avatar">
 
+                    {% if site_avatar %}
+
+                    <img
+                        class="detail-avatar-img"
+                        src="{{ site_avatar }}"
+                        alt="头像"
+                    >
+
+                    {% else %}
+
                     {{ (admin_nickname or admin_username or "管")[0] }}
+
+                    {% endif %}
 
                 </span>
 
@@ -138,7 +150,7 @@
 
                     <div class="detail-author-time">
 
-                        {{ article.created_at.strftime("%Y-%m-%d %H:%M") }}
+                        {{ article.display_time.strftime("%Y-%m-%d %H:%M") }}
 
                         {% if article.status == "draft" and is_admin %}
 
@@ -207,6 +219,26 @@
             <p class="article-detail-subtitle">
                 {{ article.summary }}
             </p>
+
+            {% endif %}
+
+
+            {% if article.tags %}
+
+            <div class="article-detail-tags">
+
+                {% for tag in article.tags %}
+
+                <a
+                    class="article-tag"
+                    href="/tag/{{ tag.name | urlencode }}"
+                >
+                    # {{ tag.name }}
+                </a>
+
+                {% endfor %}
+
+            </div>
 
             {% endif %}
 

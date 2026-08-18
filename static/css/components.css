@@ -896,6 +896,22 @@ right:30px;
 
 
 
+.detail-avatar-img {
+
+    width: 100%;
+
+    height: 100%;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    display: block;
+
+}
+
+
+
 .detail-author-name {
 
     font-weight: 700;

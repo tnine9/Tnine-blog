@@ -1,4 +1,6 @@
-from getpass import getpass
+import os
+import secrets
+import string
 
 from pwdlib import PasswordHash
 
@@ -9,53 +11,80 @@ from models import Admin
 password_hasher = PasswordHash.recommended()
 
 
+def generate_strong_password(length: int = 10) -> str:
+    """
+    生成高强度随机密码（不依赖任何默认/硬编码值）。
+    """
+    alphabet = (
+        string.ascii_letters
+        + string.digits
+        + "!@#$%^&*"
+    )
+
+    # 保证至少包含字母与数字
+    password = [
+        secrets.choice(string.ascii_uppercase),
+        secrets.choice(string.ascii_lowercase),
+        secrets.choice(string.digits),
+    ]
+
+    password += [
+        secrets.choice(alphabet)
+        for _ in range(max(length - 3, 0))
+    ]
+
+    secrets.SystemRandom().shuffle(password)
+
+    return "".join(password)
+
+
 def create_admin():
     """
-    创建管理员账号。
+    创建唯一管理员账号 admin。
+
+    - 用户名固定为 admin，不接受自定义
+    - 密码优先读取环境变量 TNINE_ADMIN_PASSWORD；
+      未设置时生成高强度随机密码并打印（仅本次可见，不落明文）
+    - admin 已存在时不覆盖原密码
     """
-
-    username = input(
-        "请输入管理员用户名："
-    ).strip()
-
-    if not username:
-        print("用户名不能为空。")
-        return
-
-    password = getpass(
-        "请输入管理员密码："
-    )
-
-    confirm_password = getpass(
-        "请再次输入管理员密码："
-    )
-
-    if password != confirm_password:
-        print("两次输入的密码不一致。")
-        return
 
     db = SessionLocal()
 
     try:
-        # 检查用户名是否已经存在
+
         existing_admin = (
             db.query(Admin)
-            .filter(Admin.username == username)
+            .filter(Admin.username == "admin")
             .first()
         )
 
         if existing_admin:
-            print("管理员用户名已经存在。")
+            print(
+                "管理员账号 admin 已存在，"
+                "如需修改密码请使用后台功能，本脚本不会覆盖。"
+            )
             return
 
-        # 对密码进行哈希
-        password_hash = password_hasher.hash(
-            password
-        )
+        password = os.environ.get(
+            "TNINE_ADMIN_PASSWORD", ""
+        ).strip()
+
+        if not password:
+            password = generate_strong_password()
+
+            print(
+                "未设置环境变量 TNINE_ADMIN_PASSWORD，"
+                "已生成随机初始密码（仅本次显示一次）："
+            )
+
+            print(f">>> {password} <<<")
+
+        password_hash = password_hasher.hash(password)
 
         admin = Admin(
-            username=username,
+            username="admin",
             password_hash=password_hash,
+            nickname="成哥",
         )
 
         db.add(admin)
@@ -65,7 +94,7 @@ def create_admin():
         db.refresh(admin)
 
         print(
-            f"管理员创建成功，ID：{admin.id}"
+            f"管理员创建成功，ID：{admin.id}，用户名：admin（密码已 Hash 存储）"
         )
 
     finally:
