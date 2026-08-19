@@ -1,31 +1,33 @@
 {% extends "base.html" %}
 
 {% block title %}
-管理后台 - Tnine
+控制台 - {{ site_name }}
 {% endblock %}
 
 
 {% block content %}
 
-<main class="container admin-home">
+<main class="container dashboard">
 
     <!-- ==================================================
-         欢迎区域
+         Dashboard 头部
          ================================================== -->
 
-    <section class="admin-welcome">
+    <section class="dashboard-header">
 
-        <h1>
-            欢迎回来，{{ admin_nickname or admin_username }} 👋
-        </h1>
+        <div>
 
-        <p>
-            这里是你的博客管理中心。
-        </p>
+            <h1 class="dashboard-title">
+                {{ site_name }} 控制台
+            </h1>
 
-        <!-- ==================================================
-             切换主题（仅管理员可用，已选主题全站生效）
-             ================================================== -->
+            <p class="dashboard-subtitle">
+                欢迎回来，{{ admin_nickname or admin_username }} · 从这里管理你的全部内容
+            </p>
+
+        </div>
+
+        <!-- 切换主题（保留原有功能，已选主题全站生效） -->
 
         <div class="admin-theme-switch">
 
@@ -114,324 +116,548 @@
 
     </section>
 
-
     <!-- ==================================================
-         数据统计
+         卡片工作台（无侧边导航，纯卡片入口）
          ================================================== -->
 
-    <section class="admin-stats">
+    <section class="dashboard-grid">
 
-        <div class="admin-stat-card">
-
-            <div class="admin-stat-label">
-                文章数量
-            </div>
-
-            <div class="admin-stat-value">
-                {{ article_count }}
-            </div>
-
-        </div>
-
-        <div class="admin-stat-card">
-
-            <div class="admin-stat-label">
-                访客档案
-            </div>
-
-            <div class="admin-stat-value">
-                {{ visitor_count }}
-            </div>
-
-        </div>
-
-        <div class="admin-stat-card">
-
-            <div class="admin-stat-label">
-                留言会话
-            </div>
-
-            <div class="admin-stat-value">
-                {{ thread_count }}
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- ==================================================
-         后台工具
-         ================================================== -->
-
-    <section class="admin-actions">
+        <!-- 文章卡片 -->
 
         <a
-            href="/admin/new"
-            class="admin-primary-button"
+            href="/admin/articles"
+            class="dashboard-card dashboard-card-article"
         >
-            ＋ 写一篇新文章
+
+            <div class="dashboard-card-head">
+
+                <span class="dashboard-card-icon">✍️</span>
+
+                <span class="dashboard-card-label">文章</span>
+
+            </div>
+
+            <div class="dashboard-card-stats">
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ article_count }}</span>
+                    <span class="stat-label">数量</span>
+                </div>
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ article_views }}</span>
+                    <span class="stat-label">浏览</span>
+                </div>
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ article_likes }}</span>
+                    <span class="stat-label">点赞</span>
+                </div>
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ article_comments }}</span>
+                    <span class="stat-label">评论</span>
+                </div>
+
+            </div>
+
+            <div class="dashboard-card-foot">
+                进入文章管理 →
+            </div>
+
         </a>
 
-        <a
-            href="/admin/home"
-            class="admin-secondary-button"
-        >
-            首页设置
-        </a>
+        <!-- 朋友圈卡片 -->
 
         <a
-            href="/admin/tags"
-            class="admin-secondary-button"
+            href="/admin/moments"
+            class="dashboard-card dashboard-card-moment"
         >
-            标签管理
+
+            <div class="dashboard-card-head">
+
+                <span class="dashboard-card-icon">📷</span>
+
+                <span class="dashboard-card-label">朋友圈</span>
+
+            </div>
+
+            <div class="dashboard-card-stats">
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ moment_count }}</span>
+                    <span class="stat-label">数量</span>
+                </div>
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ moment_likes }}</span>
+                    <span class="stat-label">点赞</span>
+                </div>
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ moment_comments }}</span>
+                    <span class="stat-label">评论</span>
+                </div>
+
+            </div>
+
+            <div class="dashboard-card-foot">
+                进入朋友圈管理 →
+            </div>
+
         </a>
+
+        <!-- 留言卡片 -->
+
+        <a
+            href="/admin/messages"
+            class="dashboard-card dashboard-card-message"
+        >
+
+            <div class="dashboard-card-head">
+
+                <span class="dashboard-card-icon">💬</span>
+
+                <span class="dashboard-card-label">留言</span>
+
+            </div>
+
+            <div class="dashboard-card-stats">
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ thread_count }}</span>
+                    <span class="stat-label">数量</span>
+                </div>
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ unreplied_count }}</span>
+                    <span class="stat-label">未回复</span>
+                </div>
+
+            </div>
+
+            <div class="dashboard-card-foot">
+                进入留言管理 →
+            </div>
+
+        </a>
+
+        <!-- 访客卡片 -->
 
         <a
             href="/admin/visitors"
-            class="admin-secondary-button"
+            class="dashboard-card dashboard-card-visitor"
         >
-            访客管理
-        </a>
 
-        <a
-            href="/admin/profile"
-            class="admin-secondary-button"
-        >
-            修改昵称
-        </a>
+            <div class="dashboard-card-head">
 
-        <a
-            href="/admin/settings/email"
-            class="admin-secondary-button"
-        >
-            邮箱配置
-        </a>
+                <span class="dashboard-card-icon">👤</span>
 
-    </section>
+                <span class="dashboard-card-label">访客</span>
 
+            </div>
 
-    <!-- ==================================================
-         文章管理
-         ================================================== -->
+            <div class="dashboard-card-stats">
 
-    <section class="admin-articles">
-
-        <div class="admin-section-header">
-
-            <h2>
-                文章管理
-            </h2>
-
-        </div>
-
-
-        {% if articles %}
-
-        <div class="admin-article-list">
-
-            {% for article in articles %}
-
-            <div class="admin-article-item">
-
-                <!-- ==================================================
-                     文章信息
-                     ================================================== -->
-
-                <div class="admin-article-info">
-
-                    <h3>
-
-                        {{ article.title }}
-
-
-                        <!-- ==============================
-                             文章状态
-                             ============================== -->
-
-                        {% if article.status == "draft" %}
-
-                        <span
-                            class="article-status article-status-draft"
-                        >
-                            草稿
-                        </span>
-
-                        {% else %}
-
-                        <span
-                            class="article-status article-status-published"
-                        >
-                            已发布
-                        </span>
-
-                        {% endif %}
-
-                    </h3>
-
-
-                    <p>
-                        {{ article.created_at.strftime(
-                            "%Y-%m-%d %H:%M"
-                        ) }}
-                    </p>
-
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ visitor_count }}</span>
+                    <span class="stat-label">总访客</span>
                 </div>
 
-
-                <!-- ==================================================
-                     操作按钮
-                     ================================================== -->
-
-                <div class="admin-article-actions">
-
-
-                    {% if article.status == "published" %}
-
-                    <!-- ==============================================
-                         已发布文章
-                         查看 / 编辑 / 删除
-                         ============================================== -->
-
-                    <a
-                        href="/article/{{ article.id }}"
-                        class="admin-view-link"
-                    >
-                        查看
-                    </a>
-
-
-                    <a
-                        href="/admin/edit/{{ article.id }}"
-                        class="admin-edit-link"
-                        title="编辑"
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                    </a>
-
-
-                    {% else %}
-
-                    <!-- ==============================================
-                         草稿文章
-                         编辑 / 发布 / 删除
-                         ============================================== -->
-
-                    <a
-                        href="/admin/edit/{{ article.id }}"
-                        class="admin-edit-link"
-                        title="编辑"
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                    </a>
-
-
-                    <!-- 发布草稿 -->
-
-                    <form
-                        method="post"
-                        action="/admin/edit/{{ article.id }}"
-                        class="admin-publish-form"
-                    >
-
-                        <!--
-                            发布时把当前文章内容一起提交。
-                            后端 action=publish 会将状态改成 published。
-                        -->
-
-                        <input
-                            type="hidden"
-                            name="title"
-                            value="{{ article.title }}"
-                        >
-
-
-                        <input
-                            type="hidden"
-                            name="summary"
-                            value="{{ article.summary }}"
-                        >
-
-
-                        <input
-                            type="hidden"
-                            name="content"
-                            value="{{ article.content }}"
-                        >
-
-
-                        <input
-                            type="hidden"
-                            name="action"
-                            value="publish"
-                        >
-
-
-                        <button
-                            type="submit"
-                            class="admin-publish-link"
-                            onclick="return confirm('确定要发布这篇草稿吗？');"
-                        >
-                            发布
-                        </button>
-
-                    </form>
-
-                    {% endif %}
-
-
-                    <!-- ==============================================
-                         删除
-                         ============================================== -->
-
-                    <form
-                        method="post"
-                        action="/admin/delete/{{ article.id }}"
-                        class="admin-delete-form"
-                        onsubmit="return confirm('确定要删除这篇文章吗？删除后无法恢复。');"
-                    >
-
-                        <button
-                            type="submit"
-                            class="admin-delete-link"
-                            title="删除"
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                        </button>
-
-                    </form>
-
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ visitor_today }}</span>
+                    <span class="stat-label">今日</span>
                 </div>
 
             </div>
 
-            {% endfor %}
+            <div class="dashboard-card-foot">
+                进入访客管理 →
+            </div>
 
-        </div>
+        </a>
 
+        <!-- 通知卡片 -->
 
-        {% else %}
+        <a
+            href="/admin/notifications"
+            class="dashboard-card dashboard-card-notification"
+        >
 
-        <!-- ==================================================
-             没有文章
-             ================================================== -->
+            <div class="dashboard-card-head">
 
-        <div class="admin-empty">
+                <span class="dashboard-card-icon">🔔</span>
 
-            <p>
-                目前还没有文章。
-            </p>
+                <span class="dashboard-card-label">通知</span>
 
-            <a href="/admin/new">
-                写下第一篇文章
-            </a>
+                {% if notification_unread > 0 %}
 
-        </div>
+                <span class="dashboard-notification-badge">
+                    {{ notification_unread }}
+                </span>
 
-        {% endif %}
+                {% endif %}
+
+            </div>
+
+            <div class="dashboard-card-stats">
+
+                <div class="dashboard-card-stat">
+                    <span class="stat-value">{{ notification_unread }}</span>
+                    <span class="stat-label">未读</span>
+                </div>
+
+            </div>
+
+            <div class="dashboard-card-summary">
+
+                {% if notification_latest %}
+
+                <span class="summary-text">
+                    {{ notification_latest.content }}
+                </span>
+
+                {% else %}
+
+                <span class="summary-text muted">
+                    暂无通知
+                </span>
+
+                {% endif %}
+
+            </div>
+
+            <div class="dashboard-card-foot">
+                查看通知 →
+            </div>
+
+        </a>
+
+        <!-- 个人资料卡片 -->
+
+        <a
+            href="/admin/profile"
+            class="dashboard-card dashboard-card-profile"
+        >
+
+            <div class="dashboard-card-head">
+
+                <span class="dashboard-card-icon">🧑‍💻</span>
+
+                <span class="dashboard-card-label">个人资料</span>
+
+            </div>
+
+            <div class="dashboard-card-summary">
+
+                <span class="summary-text">
+                    头像 · 昵称 · 简介 · 密码 · 社交链接
+                </span>
+
+            </div>
+
+            <div class="dashboard-card-foot">
+                进入个人资料 →
+            </div>
+
+        </a>
+
+        <!-- 网站设置卡片 -->
+
+        <a
+            href="/admin/settings"
+            class="dashboard-card dashboard-card-settings"
+        >
+
+            <div class="dashboard-card-head">
+
+                <span class="dashboard-card-icon">⚙️</span>
+
+                <span class="dashboard-card-label">网站设置</span>
+
+            </div>
+
+            <div class="dashboard-card-summary">
+
+                <span class="summary-text">
+                    外观 · Hero · 标签 · 页面信息
+                </span>
+
+            </div>
+
+            <div class="dashboard-card-foot">
+                进入网站设置 →
+            </div>
+
+        </a>
 
     </section>
 
 </main>
+
+{% endblock %}
+
+
+{% block extra_head %}
+
+<style>
+
+    /* ============ Dashboard 卡片工作台 ============ */
+
+    .dashboard-header {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 24px;
+
+        margin: 32px 0 28px;
+
+    }
+
+    .dashboard-title {
+
+        font-size: 28px;
+
+        font-weight: 800;
+
+        margin: 0 0 6px;
+
+        color: var(--color-text);
+
+    }
+
+    .dashboard-subtitle {
+
+        margin: 0;
+
+        color: var(--color-text-secondary, #888);
+
+        font-size: 14px;
+
+    }
+
+    .dashboard-grid {
+
+        display: grid;
+
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+
+        gap: 20px;
+
+        padding-bottom: 48px;
+
+    }
+
+    .dashboard-card {
+
+        position: relative;
+
+        display: block;
+
+        background: var(--color-card, #fff);
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 16px;
+
+        padding: 22px 20px 18px;
+
+        text-decoration: none;
+
+        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+
+    }
+
+    .dashboard-card:hover {
+
+        transform: translateY(-3px);
+
+        box-shadow: 0 10px 28px rgba(124, 58, 237, .12);
+
+        border-color: #7C3AED;
+
+    }
+
+    .dashboard-card-head {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 10px;
+
+        margin-bottom: 18px;
+
+    }
+
+    .dashboard-card-icon {
+
+        font-size: 22px;
+
+        line-height: 1;
+
+    }
+
+    .dashboard-card-label {
+
+        font-size: 17px;
+
+        font-weight: 700;
+
+        color: var(--color-text);
+
+    }
+
+    .dashboard-notification-badge {
+
+        margin-left: auto;
+
+        background: #7C3AED;
+
+        color: #fff;
+
+        font-size: 12px;
+
+        font-weight: 700;
+
+        min-width: 20px;
+
+        height: 20px;
+
+        border-radius: 10px;
+
+        display: inline-flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        padding: 0 6px;
+
+    }
+
+    .dashboard-card-stats {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 10px 18px;
+
+        margin-bottom: 14px;
+
+    }
+
+    .dashboard-card-stat {
+
+        display: flex;
+
+        flex-direction: column;
+
+    }
+
+    .stat-value {
+
+        font-size: 24px;
+
+        font-weight: 800;
+
+        color: var(--color-text);
+
+        line-height: 1.2;
+
+    }
+
+    .stat-label {
+
+        font-size: 12px;
+
+        color: var(--color-text-secondary, #999);
+
+        margin-top: 2px;
+
+    }
+
+    .dashboard-card-summary {
+
+        margin-bottom: 14px;
+
+    }
+
+    .summary-text {
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #888);
+
+        display: -webkit-box;
+
+        -webkit-line-clamp: 2;
+
+        -webkit-box-orient: vertical;
+
+        overflow: hidden;
+
+    }
+
+    .summary-text.muted {
+
+        opacity: .6;
+
+    }
+
+    .dashboard-card-foot {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: #7C3AED;
+
+        border-top: 1px dashed var(--color-border, #eee);
+
+        padding-top: 12px;
+
+    }
+
+    /* 卡片主题色弱区分 */
+
+    .dashboard-card-article:hover { border-color: #7C3AED; }
+
+    .dashboard-card-moment:hover { border-color: #0EA5E9; }
+
+    .dashboard-card-message:hover { border-color: #10B981; }
+
+    .dashboard-card-visitor:hover { border-color: #F59E0B; }
+
+    .dashboard-card-notification:hover { border-color: #EF4444; }
+
+    .dashboard-card-profile:hover { border-color: #EC4899; }
+
+    .dashboard-card-settings:hover { border-color: #6366F1; }
+
+    @media (max-width: 720px) {
+
+        .dashboard-header {
+
+            flex-direction: column;
+
+            align-items: flex-start;
+
+        }
+
+        .dashboard-grid {
+
+            grid-template-columns: 1fr;
+
+        }
+
+    }
+
+</style>
 
 {% endblock %}

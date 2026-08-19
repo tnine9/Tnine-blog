@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}
+朋友圈管理 - {{ site_name }}
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container admin-list-page">
+
+    <div class="admin-list-header">
+
+        <div>
+
+            <h1 class="admin-list-title">
+                朋友圈管理
+            </h1>
+
+            <p class="admin-list-subtitle">
+                共 {{ moment_count }} 条 · 发布 / 编辑 / 删除 / 图片
+            </p>
+
+        </div>
+
+        <a
+            href="/admin/moment/new"
+            class="admin-primary-button"
+        >
+            ＋ 发布朋友圈
+        </a>
+
+    </div>
+
+    {% if moments %}
+
+    <div class="admin-list">
+
+        {% for moment in moments %}
+
+        <div class="admin-list-item moment-item">
+
+            <div class="admin-list-main">
+
+                <div class="admin-list-title-row">
+
+                    <h3 class="admin-list-name moment-content">
+                        {{ moment.content }}
+                    </h3>
+
+                </div>
+
+                {% if moment.images %}
+
+                <div class="moment-thumbs">
+
+                    {% for image in moment.images[:4] %}
+
+                    <img
+                        src="{{ image.image_path }}"
+                        alt="朋友圈图片"
+                        loading="lazy"
+                    >
+
+                    {% endfor %}
+
+                    {% if moment.images | length > 4 %}
+
+                    <span class="moment-more">
+                        +{{ moment.images | length - 4 }}
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+                {% endif %}
+
+                <div class="admin-list-meta">
+
+                    <span class="meta-item">
+                        {{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
+                    </span>
+
+                    <span class="meta-item">
+                        点赞 {{ moment.like_count }}
+                    </span>
+
+                    <span class="meta-item">
+                        评论 {{ moment.comment_count }}
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="admin-list-actions">
+
+                <a
+                    href="/admin/moment/{{ moment.id }}/edit"
+                    class="admin-edit-link"
+                    title="编辑"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </a>
+
+                <a
+                    href="/moment/{{ moment.id }}"
+                    class="admin-view-link"
+                    title="查看"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
+
+                <form
+                    method="post"
+                    action="/admin/moment/{{ moment.id }}/delete"
+                    class="admin-delete-form"
+                    onsubmit="return confirm('确定要删除这条朋友圈吗？删除后无法恢复。');"
+                >
+
+                    <button
+                        type="submit"
+                        class="admin-delete-link"
+                        title="删除"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="admin-empty">
+
+        <p>
+            还没有发布过朋友圈。
+        </p>
+
+        <a href="/admin/moment/new">
+            发布第一条
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</main>
+
+{% endblock %}
+
+
+{% block extra_head %}
+
+<style>
+
+    /* ============ 朋友圈管理 ============ */
+
+    .moment-item .moment-content {
+
+        font-size: 15px;
+
+        font-weight: 600;
+
+        line-height: 1.5;
+
+        display: -webkit-box;
+
+        -webkit-line-clamp: 2;
+
+        -webkit-box-orient: vertical;
+
+        overflow: hidden;
+
+    }
+
+    .moment-thumbs {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 6px;
+
+        margin: 10px 0;
+
+    }
+
+    .moment-thumbs img {
+
+        width: 72px;
+
+        height: 72px;
+
+        object-fit: cover;
+
+        border-radius: 8px;
+
+        border: 1px solid var(--color-border, #eee);
+
+    }
+
+    .moment-more {
+
+        width: 72px;
+
+        height: 72px;
+
+        border-radius: 8px;
+
+        background: rgba(124, 58, 237, .08);
+
+        color: #7C3AED;
+
+        font-size: 13px;
+
+        font-weight: 700;
+
+        display: inline-flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+    }
+
+</style>
+
+{% endblock %}

@@ -347,9 +347,18 @@ class Admin(Base):
     )
 
 
+    # 昵称：网站核心名称；首次登录后强制完善，可空（空显示"空"）
     nickname = Column(
         String(50),
-        default="成哥",
+        default="",
+        nullable=True
+    )
+
+
+    # 个人简介（slogan 来源，Hero 首屏展示）
+    bio = Column(
+        String(200),
+        default="",
         nullable=False
     )
 
@@ -862,6 +871,22 @@ class SocialLink(Base):
     )
 
 
+    # 展示方式：link（链接）/ qrcode（二维码）
+    link_type = Column(
+        String(30),
+        default="link",
+        nullable=False
+    )
+
+
+    # 二维码图片路径（link_type=qrcode 时使用）
+    qr_code = Column(
+        String(500),
+        default="",
+        nullable=False
+    )
+
+
     url = Column(
         String(500),
         default="",
@@ -946,6 +971,57 @@ class HeroBackground(Base):
 
 
     is_active = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )
+
+# ===========================
+# ֪ͨ
+# type: article_like / article_comment / moment_like / moment_comment / message / message_reply / visitor
+# target_id: Ŀ����� ID������/����Ȧ/���ԻỰ/�ÿͣ���������ת
+# ===========================
+
+class Notification(Base):
+
+    __tablename__ = "notifications"
+
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+
+    type = Column(
+        String(30),
+        default="",
+        nullable=False,
+        index=True
+    )
+
+
+    target_id = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+
+    content = Column(
+        String(500),
+        default="",
+        nullable=False
+    )
+
+
+    is_read = Column(
         Boolean,
         default=False,
         nullable=False

@@ -462,6 +462,26 @@ right:30px;
 
     color: transparent;
 
+    display:inline-flex;
+
+    align-items:center;
+
+}
+
+.footer-logo-img {
+
+    width: 22px;
+
+    height: 22px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    margin-right: 6px;
+
+    -webkit-text-fill-color: initial;
+
 }
 
 

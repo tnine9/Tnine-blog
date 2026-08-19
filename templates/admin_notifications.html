@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}
+通知中心 - {{ site_name }}
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container admin-list-page">
+
+    <div class="admin-list-header">
+
+        <div>
+
+            <h1 class="admin-list-title">
+                通知中心
+            </h1>
+
+            <p class="admin-list-subtitle">
+                {{ unread_count }} 条未读通知
+            </p>
+
+        </div>
+
+        <div class="notification-tools">
+
+            <a
+                href="/admin/notifications?scope=all"
+                class="notification-scope{% if scope == 'all' %} is-active{% endif %}"
+            >
+                全部
+            </a>
+
+            <a
+                href="/admin/notifications?scope=unread"
+                class="notification-scope{% if scope == 'unread' %} is-active{% endif %}"
+            >
+                未读
+            </a>
+
+            <form
+                method="post"
+                action="/admin/notifications/read-all"
+                class="admin-inline-form"
+                onsubmit="return confirm('确定将全部通知标记为已读吗？');"
+            >
+
+                <button
+                    type="submit"
+                    class="notification-read-all"
+                >
+                    全部已读
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    {% if notifications %}
+
+    <div class="admin-list notification-list">
+
+        {% for notification in notifications %}
+
+        {% set target_url =
+            "/admin/visitors"
+            if notification.type == "visitor"
+            else "/article/" ~ notification.target_id
+            if notification.type in ["article_like", "article_comment"]
+            else "/moment/" ~ notification.target_id
+            if notification.type in ["moment_like", "moment_comment"]
+            else "/message/" ~ notification.target_id
+        %}
+
+        <div
+            class="admin-list-item notification-item{% if not notification.is_read %} is-unread{% endif %}"
+        >
+
+            <div class="admin-list-main">
+
+                <div class="admin-list-title-row">
+
+                    <span class="notification-type">
+                        {{ {
+                            "article_like": "文章点赞",
+                            "article_comment": "文章评论",
+                            "moment_like": "朋友圈点赞",
+                            "moment_comment": "朋友圈评论",
+                            "message": "新留言",
+                            "message_reply": "留言回复",
+                            "visitor": "新访客",
+                        }.get(notification.type, notification.type) }}
+                    </span>
+
+                    {% if not notification.is_read %}
+
+                    <span
+                        class="notification-dot"
+                        title="未读"
+                    ></span>
+
+                    {% endif %}
+
+                </div>
+
+                <p class="admin-list-summary">
+                    {{ notification.content }}
+                </p>
+
+                <div class="admin-list-meta">
+
+                    <span class="meta-item">
+                        {{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="admin-list-actions">
+
+                <a
+                    href="{{ target_url }}"
+                    class="admin-view-link"
+                    title="查看详情"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
+
+                {% if not notification.is_read %}
+
+                <form
+                    method="post"
+                    action="/admin/notifications/{{ notification.id }}/read"
+                    class="admin-inline-form"
+                >
+
+                    <button
+                        type="submit"
+                        class="admin-view-link"
+                        title="标记已读"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </button>
+
+                </form>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="admin-empty">
+
+        <p>
+            暂无{% if scope == "unread" %}未读{% endif %}通知。
+        </p>
+
+    </div>
+
+    {% endif %}
+
+</main>
+
+{% endblock %}
+
+
+{% block extra_head %}
+
+<style>
+
+    .notification-tools {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 10px;
+
+    }
+
+    .notification-scope {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: var(--color-text-secondary, #888);
+
+        text-decoration: none;
+
+        padding: 6px 14px;
+
+        border-radius: 999px;
+
+        border: 1px solid var(--color-border, #eee);
+
+    }
+
+    .notification-scope.is-active {
+
+        color: #7C3AED;
+
+        border-color: #7C3AED;
+
+        background: rgba(124, 58, 237, .08);
+
+    }
+
+    .notification-read-all {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: #7C3AED;
+
+        background: rgba(124, 58, 237, .1);
+
+        border: none;
+
+        border-radius: 999px;
+
+        padding: 6px 14px;
+
+        cursor: pointer;
+
+    }
+
+    .admin-inline-form {
+
+        margin: 0;
+
+        display: inline;
+
+    }
+
+    .notification-item.is-unread {
+
+        border-left: 3px solid #7C3AED;
+
+    }
+
+    .notification-type {
+
+        font-size: 12px;
+
+        font-weight: 700;
+
+        color: #7C3AED;
+
+        background: rgba(124, 58, 237, .1);
+
+        border-radius: 999px;
+
+        padding: 3px 12px;
+
+    }
+
+    .notification-dot {
+
+        width: 8px;
+
+        height: 8px;
+
+        border-radius: 50%;
+
+        background: #EF4444;
+
+        display: inline-block;
+
+    }
+
+</style>
+
+{% endblock %}

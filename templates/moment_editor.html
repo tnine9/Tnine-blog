@@ -2,7 +2,7 @@
 
 
 {% block title %}
-发布朋友圈 - Tnine
+发布朋友圈 - {{ site_name }}
 {% endblock %}
 
 
@@ -18,13 +18,21 @@
 <div class="section-header-top">
 
 <h1 class="section-title">
+{% if moment %}
+编辑朋友圈
+{% else %}
 发布朋友圈
+{% endif %}
 </h1>
 
 </div>
 
 <p class="section-subtitle">
+{% if moment %}
+{{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
+{% else %}
 记录生活碎片，分享此刻心情
+{% endif %}
 </p>
 
 </header>
@@ -110,7 +118,11 @@ class="action-button"
 type="submit"
 >
 
+{% if moment %}
+保存修改
+{% else %}
 发布
+{% endif %}
 
 </button>
 
@@ -148,12 +160,14 @@ document.getElementById(
 
 let files=[];
 
+// 编辑模式无上传框时跳过图片交互
+const hasUpload = input && preview;
 
+if (hasUpload) {
 
 // ===============================
 // 选择图片
 // ===============================
-
 
 input.addEventListener(
 "change",
@@ -190,6 +204,9 @@ renderPreview();
 
 
 });
+
+}
+
 
 
 

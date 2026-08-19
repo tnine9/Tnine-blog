@@ -1,75 +1,1149 @@
 {% extends "base.html" %}
 
 {% block title %}
-修改昵称 - Tnine
+个人资料 - {{ site_name }}
 {% endblock %}
 
 
 {% block content %}
 
-<main class="container admin-page">
+<main class="container profile-page">
 
-    <section class="login-page">
+    <div class="profile-header">
 
-        <div class="login-card">
+        <div>
 
-            <div class="login-header">
+            <h1 class="profile-title">
+                个人资料
+            </h1>
 
-                <h1>
-                    修改管理员昵称
-                </h1>
+            <p class="profile-subtitle">
+                基础资料 · 管理员安全 · 社交链接
+            </p>
 
-                <p>
-                    账号固定为 <strong>admin</strong>，昵称可修改（公开页面显示昵称）。
-                </p>
+        </div>
+
+        <a
+            href="/admin"
+            class="profile-back"
+        >
+            ← 返回控制台
+        </a>
+
+    </div>
+
+    {% if first_login %}
+
+    <div class="profile-first-banner">
+        欢迎回来！请先完善网站主人资料（昵称为必填），完成后昵称将成为全站核心名称。
+    </div>
+
+    {% endif %}
+
+    {% if error %}
+
+    <div class="profile-error">
+        {% if error == "avatar-format" %}
+        头像格式不支持，仅支持图片格式
+        {% elif error == "password-too-short" %}
+        新密码至少 6 位
+        {% elif error == "password-wrong" %}
+        原密码不正确
+        {% elif error == "qr-format" %}
+        二维码格式不支持，仅支持图片格式
+        {% elif error == "link-empty" %}
+        链接模式下请输入地址
+        {% else %}
+        {{ error }}
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+    {% if ok == "password-changed" %}
+
+    <div class="profile-ok">
+        密码修改成功
+    </div>
+
+    {% endif %}
+
+    <!-- ============ 基础资料卡片 ============ -->
+
+    <section class="profile-card">
+
+        <h2 class="profile-card-title">
+            基础资料
+        </h2>
+
+        <form
+            method="post"
+            action="/admin/profile"
+            enctype="multipart/form-data"
+            class="profile-form"
+        >
+
+            <div class="profile-avatar-row">
+
+                <div class="profile-avatar-preview">
+
+                    {% if avatar_url %}
+
+                    <img
+                        src="{{ avatar_url }}"
+                        alt="头像"
+                        class="profile-avatar-img"
+                    >
+
+                    {% else %}
+
+                    <div class="profile-avatar-fallback">
+                        {{ (admin.nickname or '空')[0].upper() }}
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+                <div class="profile-avatar-field">
+
+                    <label class="profile-field-label">
+                        头像
+                    </label>
+
+                    <input
+                        type="file"
+                        name="avatar"
+                        accept="image/*"
+                        class="profile-file-input"
+                    >
+
+                    <p class="profile-field-hint">
+                        上传后作为全站 Logo 使用；未上传时使用昵称首字母
+                    </p>
+
+                </div>
 
             </div>
 
+            <div class="profile-field">
 
-            {% if error %}
+                <label
+                    for="nickname"
+                    class="profile-field-label"
+                >
+                    昵称 <em>（必填 · 全站核心名称）</em>
+                </label>
 
-            <div class="login-error">
-                {{ error }}
+                <input
+                    type="text"
+                    id="nickname"
+                    name="nickname"
+                    value="{{ admin.nickname or '' }}"
+                    placeholder="请输入昵称"
+                    maxlength="50"
+                    required
+                    class="profile-input"
+                >
+
             </div>
 
-            {% endif %}
+            <div class="profile-field">
 
+                <label
+                    for="bio"
+                    class="profile-field-label"
+                >
+                    简介 <em>（作为全站 slogan）</em>
+                </label>
+
+                <input
+                    type="text"
+                    id="bio"
+                    name="bio"
+                    value="{{ admin.bio or '' }}"
+                    placeholder="记录代码、生活和探索世界的过程"
+                    maxlength="200"
+                    class="profile-input"
+                >
+
+            </div>
+
+            <div class="profile-actions">
+
+                <button
+                    type="submit"
+                    class="profile-save-btn"
+                >
+                    保存基础资料
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+    <!-- ============ 管理员安全卡片 ============ -->
+
+    <section class="profile-card">
+
+        <h2 class="profile-card-title">
+            管理员安全
+        </h2>
+
+        <form
+            method="post"
+            action="/admin/profile/password"
+            class="profile-form"
+        >
+
+            <div class="profile-field">
+
+                <label
+                    for="old_password"
+                    class="profile-field-label"
+                >
+                    原密码
+                </label>
+
+                <input
+                    type="password"
+                    id="old_password"
+                    name="old_password"
+                    class="profile-input"
+                    required
+                >
+
+            </div>
+
+            <div class="profile-field">
+
+                <label
+                    for="new_password"
+                    class="profile-field-label"
+                >
+                    新密码 <em>（至少 6 位）</em>
+                </label>
+
+                <input
+                    type="password"
+                    id="new_password"
+                    name="new_password"
+                    class="profile-input"
+                    required
+                >
+
+            </div>
+
+            <div class="profile-actions">
+
+                <button
+                    type="submit"
+                    class="profile-save-btn"
+                >
+                    修改密码
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+    <!-- ============ 社交链接卡片 ============ -->
+
+    <section class="profile-card">
+
+        <h2 class="profile-card-title">
+            社交链接
+        </h2>
+
+        <p class="profile-card-desc">
+            管理首页展示的联系方式，按创建顺序展示
+        </p>
+
+        {% if social_links %}
+
+        <div class="social-link-list">
+
+            {% for link in social_links %}
+
+            <div class="social-link-item">
+
+                <div class="social-link-info">
+
+                    <span class="social-link-icon">
+                        {{ link.icon[:1] | upper }}
+                    </span>
+
+                    <div>
+
+                        <strong>{{ link.name }}</strong>
+
+                        <span class="social-link-type">
+                            {% if link.link_type == 'qr' or link.qr_code %}
+                            二维码
+                            {% else %}
+                            链接
+                            {% endif %}
+                        </span>
+
+                        {% if link.qr_code %}
+
+                        <img
+                            src="{{ link.qr_code }}"
+                            alt="二维码"
+                            class="social-link-qr-thumb"
+                        >
+
+                        {% else %}
+
+                        <span class="social-link-url">
+                            {{ link.url }}
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="social-link-actions">
+
+                    <form
+                        method="post"
+                        action="/admin/profile/social/{{ link.id }}/toggle"
+                        class="inline-form"
+                    >
+
+                        <button
+                            type="submit"
+                            class="social-link-toggle{% if not link.is_visible %} is-off{% endif %}"
+                        >
+                            {% if link.is_visible %}
+                            首页展示中
+                            {% else %}
+                            已隐藏
+                            {% endif %}
+                        </button>
+
+                    </form>
+
+                    <form
+                        method="post"
+                        action="/admin/profile/social/{{ link.id }}/delete"
+                        class="inline-form"
+                    >
+
+                        <button
+                            type="submit"
+                            class="social-link-delete"
+                            onclick="return confirm('确定删除该联系方式？')"
+                        >
+                            删除
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <p class="profile-empty-text">
+            暂无联系方式，请在下方添加
+        </p>
+
+        {% endif %}
+
+        <!-- 添加联系方式 -->
+
+        <details class="social-add-box">
+
+            <summary class="social-add-summary">
+                + 添加联系方式
+            </summary>
 
             <form
                 method="post"
-                action="/admin/profile"
-                class="article-form"
+                action="/admin/profile/social"
+                enctype="multipart/form-data"
+                class="profile-form social-add-form"
+                id="socialAddForm"
             >
 
-                <div class="form-group">
+                <div class="profile-field">
 
-                    <label for="nickname">
-                        昵称
+                    <label
+                        for="link_type"
+                        class="profile-field-label"
+                    >
+                        类型
+                    </label>
+
+                    <select
+                        id="link_type"
+                        name="link_type"
+                        class="profile-input"
+                        onchange="updateSocialMode()"
+                    >
+
+                        {% for t in social_link_types %}
+
+                        <option value="{{ t.value }}">
+                            {{ t.label }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div class="profile-field">
+
+                    <label
+                        for="social_name"
+                        class="profile-field-label"
+                    >
+                        名称 <em>（留空自动使用类型默认名称）</em>
                     </label>
 
                     <input
                         type="text"
-                        id="nickname"
-                        name="nickname"
-                        value="{{ admin.nickname or '' }}"
-                        placeholder="请输入公开昵称"
+                        id="social_name"
+                        name="name"
+                        class="profile-input"
+                        placeholder="如：{{ site_name }} 的 GitHub"
                         maxlength="50"
-                        required
                     >
 
                 </div>
 
+                <div class="profile-field social-mode-row">
 
-                <button type="submit">
-                    保存昵称
-                </button>
+                    <label class="social-mode-label">
+
+                        <input
+                            type="radio"
+                            name="show_mode"
+                            value="link"
+                            checked
+                            onchange="updateSocialMode()"
+                        >
+
+                        链接
+
+                    </label>
+
+                    <label class="social-mode-label">
+
+                        <input
+                            type="radio"
+                            name="show_mode"
+                            value="qr"
+                            onchange="updateSocialMode()"
+                        >
+
+                        二维码
+
+                    </label>
+
+                </div>
+
+                <div
+                    class="profile-field"
+                    id="linkValueField"
+                >
+
+                    <label
+                        for="link_value"
+                        class="profile-field-label"
+                    >
+                        地址
+                    </label>
+
+                    <input
+                        type="text"
+                        id="link_value"
+                        name="link_value"
+                        class="profile-input"
+                        placeholder="https://..."
+                        maxlength="500"
+                    >
+
+                </div>
+
+                <div
+                    class="profile-field"
+                    id="qrField"
+                    style="display:none"
+                >
+
+                    <label
+                        for="qr_code"
+                        class="profile-field-label"
+                    >
+                        上传二维码图片
+                    </label>
+
+                    <input
+                        type="file"
+                        id="qr_code"
+                        name="qr_code"
+                        accept="image/*"
+                        class="profile-file-input"
+                    >
+
+                </div>
+
+                <div class="profile-actions">
+
+                    <button
+                        type="submit"
+                        class="profile-save-btn"
+                    >
+                        添加
+                    </button>
+
+                </div>
 
             </form>
 
-        </div>
+        </details>
 
     </section>
 
 </main>
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+
+<script>
+
+    function updateSocialMode() {
+
+        var mode = document.querySelector(
+            'input[name="show_mode"]:checked'
+        ).value;
+
+        var linkField = document.getElementById("linkValueField");
+
+        var qrField = document.getElementById("qrField");
+
+        if (mode === "link") {
+
+            linkField.style.display = "";
+
+            qrField.style.display = "none";
+
+        } else {
+
+            linkField.style.display = "none";
+
+            qrField.style.display = "";
+
+        }
+
+    }
+
+</script>
+
+{% endblock %}
+
+
+{% block extra_head %}
+
+<style>
+
+    .profile-page {
+
+        max-width: 760px;
+
+        padding: 32px 0 48px;
+
+    }
+
+    .profile-header {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 16px;
+
+        margin-bottom: 24px;
+
+    }
+
+    .profile-title {
+
+        font-size: 26px;
+
+        font-weight: 800;
+
+        margin: 0 0 4px;
+
+        color: var(--color-text);
+
+    }
+
+    .profile-subtitle {
+
+        margin: 0;
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #999);
+
+    }
+
+    .profile-back {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: #7C3AED;
+
+        text-decoration: none;
+
+    }
+
+    .profile-first-banner {
+
+        background: rgba(124, 58, 237, .1);
+
+        border: 1px solid #7C3AED;
+
+        color: #6d28d9;
+
+        border-radius: 12px;
+
+        padding: 12px 16px;
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        margin-bottom: 18px;
+
+    }
+
+    .profile-error {
+
+        background: rgba(239, 68, 68, .08);
+
+        border: 1px solid rgba(239, 68, 68, .4);
+
+        color: #dc2626;
+
+        border-radius: 12px;
+
+        padding: 10px 16px;
+
+        font-size: 13px;
+
+        margin-bottom: 18px;
+
+    }
+
+    .profile-ok {
+
+        background: rgba(34, 197, 94, .1);
+
+        border: 1px solid rgba(34, 197, 94, .4);
+
+        color: #16a34a;
+
+        border-radius: 12px;
+
+        padding: 10px 16px;
+
+        font-size: 13px;
+
+        margin-bottom: 18px;
+
+    }
+
+    .profile-card {
+
+        background: var(--color-card, #fff);
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 16px;
+
+        padding: 24px 26px;
+
+        margin-bottom: 20px;
+
+    }
+
+    .profile-card-title {
+
+        font-size: 18px;
+
+        font-weight: 800;
+
+        margin: 0 0 14px;
+
+        color: var(--color-text);
+
+    }
+
+    .profile-card-desc {
+
+        margin: -8px 0 16px;
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #999);
+
+    }
+
+    .profile-form {
+
+        margin: 0;
+
+    }
+
+    .profile-avatar-row {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 18px;
+
+        margin-bottom: 16px;
+
+    }
+
+    .profile-avatar-preview {
+
+        width: 72px;
+
+        height: 72px;
+
+        border-radius: 50%;
+
+        overflow: hidden;
+
+        background: #7C3AED;
+
+        color: #fff;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        flex-shrink: 0;
+
+    }
+
+    .profile-avatar-img {
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+
+    }
+
+    .profile-avatar-fallback {
+
+        font-size: 28px;
+
+        font-weight: 800;
+
+    }
+
+    .profile-avatar-field {
+
+        flex: 1;
+
+    }
+
+    .profile-field {
+
+        margin-bottom: 14px;
+
+    }
+
+    .profile-field-label {
+
+        display: block;
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: var(--color-text);
+
+        margin-bottom: 6px;
+
+    }
+
+    .profile-field-label em {
+
+        font-style: normal;
+
+        font-weight: 400;
+
+        color: var(--color-text-secondary, #999);
+
+    }
+
+    .profile-field-hint {
+
+        margin: 6px 0 0;
+
+        font-size: 12px;
+
+        color: var(--color-text-secondary, #999);
+
+    }
+
+    .profile-input {
+
+        width: 100%;
+
+        box-sizing: border-box;
+
+        font-size: 14px;
+
+        padding: 10px 14px;
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 10px;
+
+        background: var(--color-bg, #f7f7f7);
+
+        color: var(--color-text);
+
+    }
+
+    .profile-file-input {
+
+        font-size: 13px;
+
+    }
+
+    .profile-actions {
+
+        text-align: right;
+
+        margin-top: 16px;
+
+    }
+
+    .profile-save-btn {
+
+        font-size: 14px;
+
+        font-weight: 700;
+
+        color: #fff;
+
+        background: #7C3AED;
+
+        border: none;
+
+        border-radius: 10px;
+
+        padding: 10px 24px;
+
+        cursor: pointer;
+
+    }
+
+    /* 社交链接 */
+
+    .social-link-list {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 10px;
+
+        margin-bottom: 16px;
+
+    }
+
+    .social-link-item {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 12px;
+
+        background: var(--color-bg, #fafafa);
+
+        border-radius: 12px;
+
+        padding: 12px 14px;
+
+    }
+
+    .social-link-info {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        min-width: 0;
+
+    }
+
+    .social-link-icon {
+
+        width: 36px;
+
+        height: 36px;
+
+        border-radius: 10px;
+
+        background: #7C3AED;
+
+        color: #fff;
+
+        font-size: 16px;
+
+        font-weight: 800;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        flex-shrink: 0;
+
+    }
+
+    .social-link-info strong {
+
+        display: block;
+
+        font-size: 14px;
+
+        color: var(--color-text);
+
+    }
+
+    .social-link-type {
+
+        font-size: 11px;
+
+        color: #7C3AED;
+
+        font-weight: 600;
+
+    }
+
+    .social-link-url {
+
+        display: block;
+
+        font-size: 12px;
+
+        color: var(--color-text-secondary, #999);
+
+        max-width: 260px;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+    }
+
+    .social-link-qr-thumb {
+
+        display: block;
+
+        width: 40px;
+
+        height: 40px;
+
+        border-radius: 6px;
+
+        margin-top: 4px;
+
+        object-fit: cover;
+
+    }
+
+    .social-link-actions {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        flex-shrink: 0;
+
+    }
+
+    .inline-form {
+
+        margin: 0;
+
+    }
+
+    .social-link-toggle {
+
+        font-size: 12px;
+
+        font-weight: 600;
+
+        color: #16a34a;
+
+        background: rgba(34, 197, 94, .1);
+
+        border: none;
+
+        border-radius: 999px;
+
+        padding: 5px 12px;
+
+        cursor: pointer;
+
+    }
+
+    .social-link-toggle.is-off {
+
+        color: var(--color-text-secondary, #888);
+
+        background: var(--color-bg, #eee);
+
+    }
+
+    .social-link-delete {
+
+        font-size: 12px;
+
+        font-weight: 600;
+
+        color: #dc2626;
+
+        background: rgba(239, 68, 68, .08);
+
+        border: none;
+
+        border-radius: 999px;
+
+        padding: 5px 12px;
+
+        cursor: pointer;
+
+    }
+
+    .profile-empty-text {
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #999);
+
+        margin: 0 0 14px;
+
+    }
+
+    .social-add-box {
+
+        border: 1px dashed var(--color-border, #ddd);
+
+        border-radius: 12px;
+
+        padding: 12px 14px;
+
+    }
+
+    .social-add-summary {
+
+        font-size: 14px;
+
+        font-weight: 700;
+
+        color: #7C3AED;
+
+        cursor: pointer;
+
+    }
+
+    .social-add-form {
+
+        margin-top: 14px;
+
+    }
+
+    .social-mode-row {
+
+        display: flex;
+
+        gap: 20px;
+
+    }
+
+    .social-mode-label {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        font-size: 14px;
+
+        color: var(--color-text);
+
+        cursor: pointer;
+
+    }
+
+    @media (max-width: 640px) {
+
+        .profile-avatar-row {
+
+            flex-direction: column;
+
+            align-items: flex-start;
+
+        }
+
+        .social-link-item {
+
+            flex-direction: column;
+
+            align-items: flex-start;
+
+        }
+
+    }
+
+</style>
 
 {% endblock %}

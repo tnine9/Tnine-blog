@@ -17,7 +17,7 @@
     <title>
 
         {% block title %}
-        Tnine
+        {{ site_name }}
         {% endblock %}
 
     </title>
@@ -75,6 +75,49 @@
 
 
 
+    <!-- 动态外观：主色 / 字体（网站设置卡片） -->
+
+    {% if site_primary_color or (site_font and site_font != 'default') %}
+
+    <style>
+
+        {% if site_primary_color %}
+
+        :root,
+        html[data-theme="dark"] {
+
+            --color-primary: {{ site_primary_color }};
+
+            --color-primary-hover: {{ site_primary_color }};
+
+        }
+
+        {% endif %}
+
+        {% if site_font == 'serif' %}
+
+        body {
+
+            font-family: Georgia, "Songti SC", "SimSun", serif;
+
+        }
+
+        {% elif site_font == 'mono' %}
+
+        body {
+
+            font-family: Consolas, "Cascadia Code", "Courier New", monospace;
+
+        }
+
+        {% endif %}
+
+    </style>
+
+    {% endif %}
+
+
+
     {% block extra_head %}
     {% endblock %}
 
@@ -101,18 +144,37 @@
 
 <nav class="site-nav">
 
-    <!-- Tnine 站标：悬停变色，点击进入首页展示全屏 hero -->
+    <!-- 站标：有头像用头像，无头像用昵称首字母；悬停变色，点击进入首页展示全屏 hero -->
 
     <a
         href="/"
         class="site-logo"
         title="回到首页"
-        aria-label="Tnine 首页"
+        aria-label="{{ site_name }} 首页"
     >
 
-        Tnine
+        {% if site_avatar %}
+
+        <img
+            class="site-logo-img"
+            src="{{ site_avatar }}"
+            alt="站标"
+        >
+
+        {% else %}
+
+        {{ site_logo_text }}
+
+        {% endif %}
 
     </a>
+
+
+    {% if site_bio %}
+
+    <span class="site-slogan">{{ site_bio }}</span>
+
+    {% endif %}
 
 
     <a
@@ -232,33 +294,6 @@
 
 
 
-            <a href="/admin/visitors">
-
-                访客管理
-
-            </a>
-
-
-
-
-            <a href="/admin/profile">
-
-                修改昵称
-
-            </a>
-
-
-
-
-            <a href="/admin/settings/email">
-
-                邮箱配置
-
-            </a>
-
-
-
-
             <div class="dropdown-divider"></div>
 
 
@@ -348,13 +383,25 @@
 
             <span class="footer-logo">
 
-                Tnine
+                {% if site_avatar %}
+
+                <img
+                    class="footer-logo-img"
+                    src="{{ site_avatar }}"
+                    alt="站标"
+                >
+
+                {% else %}
+
+                {{ site_logo_text }}
+
+                {% endif %}
 
             </span>
 
             <p class="footer-desc">
 
-                记录文字与生活的小站
+                {{ site_bio or site_name }}
 
             </p>
 
@@ -378,7 +425,7 @@
 
             <p>
 
-                © 2026 Tnine
+                © 2026 {{ site_name }}
 
             </p>
 

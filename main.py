@@ -27,7 +27,10 @@ from models import (
     ArticleTag,
     SocialLink,
     HeroBackground,
+    Notification,
 )
+
+import notifications_service
 
 from fastapi import UploadFile, File
 import os
@@ -872,17 +875,20 @@ HERO_ALLOWED_IMAGE = {".jpg", ".jpeg", ".png", ".webp"}
 HERO_ALLOWED_VIDEO = {".mp4", ".webm"}
 
 
-def get_hero_config():
+def get_hero_config(db=None):
     """
     读取 Hero 全部配置项。
+
+    Tnine v2：
+    - name 取消独立网站名，统一使用管理员昵称（空显示"空"）
+    - slogan 使用管理员简介（bio）
     """
 
+    profile = get_admin_profile(db)
+
     return {
-        "name": get_setting_value("hero_name", "Tnine"),
-        "slogan": get_setting_value(
-            "hero_slogan",
-            "记录代码、生活和探索世界的过程",
-        ),
+        "name": profile["nickname"] or "空",
+        "slogan": profile["bio"],
         "avatar": get_setting_value("hero_avatar", ""),
         "bg_mode": get_setting_value("hero_bg_mode", "theme"),
         "auto_period": get_setting_value("hero_auto_period", "daily"),
@@ -899,6 +905,49 @@ def get_hero_config():
             "24",
         ),
     }
+
+
+# ============================================================
+# 社交链接类型（Tnine v2：动态添加）
+# ============================================================
+
+SOCIAL_LINK_TYPES = [
+    {
+        "value": "github",
+        "label": "GitHub",
+        "icon": "github",
+    },
+    {
+        "value": "csdn",
+        "label": "CSDN",
+        "icon": "csdn",
+    },
+    {
+        "value": "wechat",
+        "label": "微信",
+        "icon": "wechat",
+    },
+    {
+        "value": "qq",
+        "label": "QQ",
+        "icon": "qq",
+    },
+    {
+        "value": "email",
+        "label": "邮箱",
+        "icon": "email",
+    },
+    {
+        "value": "website",
+        "label": "个人网站",
+        "icon": "website",
+    },
+    {
+        "value": "other",
+        "label": "其他",
+        "icon": "other",
+    },
+]
 
 
 def get_hero_social_links(db):
@@ -1049,7 +1098,89 @@ def get_hero_background(db, cfg):
     }
 
 
+def get_admin_profile(db=None):
+    """
+    读取管理员资料（昵称/简介/邮箱），用于全站名称与 slogan。
+    昵称为空时返回 ""（显示"空"），不使用默认昵称。
+    """
+
+    session_local = db if db is not None else SessionLocal()
+
+    try:
+
+        admin = (
+            session_local.query(Admin)
+            .order_by(Admin.id.asc())
+            .first()
+        )
+
+        if admin is None:
+
+            return {
+                "nickname": "",
+                "bio": "",
+                "email": "",
+                "avatar": get_setting_value("hero_avatar", ""),
+            }
+
+        return {
+            "nickname": admin.nickname or "",
+            "bio": admin.bio or "",
+            "email": admin.email or "",
+            "avatar": get_setting_value("hero_avatar", ""),
+        }
+
+    finally:
+
+        if db is None:
+
+            session_local.close()
+
+
 def get_common_context(request: Request):
+    """
+    全站公共上下文。
+    - site_name：网站核心名称 = 管理员昵称（空显示"空"）
+    - site_logo：有头像用头像，无头像用昵称首字母
+    """
+
+    profile = get_admin_profile()
+
+    nickname = profile["nickname"] or ""
+
+    site_logo_text = (
+        (nickname or "空")[0].upper()
+        if nickname
+        else "T"
+    )
+
+    # 页面信息：按当前路径选择对应页面标题与说明
+    # （首页 / 文章 / 朋友圈 / 留言，来自网站设置卡片 8 字段）
+    page_info = get_page_info()
+
+    path = request.url.path.rstrip("/") or "/"
+
+    if path.startswith("/articles"):
+        page_key = "article"
+    elif path.startswith("/moments"):
+        page_key = "moment"
+    elif path.startswith("/messages"):
+        page_key = "message"
+    else:
+        page_key = "home"
+
+    page_title = (
+        page_info.get(page_key + "_title")
+        or nickname
+        or "空"
+    )
+
+    page_description = (
+        page_info.get(page_key + "_description")
+        or profile["bio"]
+        or ""
+    )
+
     return {
         "is_admin": is_admin(request),
         "admin_username": request.session.get(
@@ -1057,12 +1188,54 @@ def get_common_context(request: Request):
         ),
         "admin_nickname": request.session.get(
             "admin_nickname",
-            "成哥",
+            "",
+        ),
+        "site_name": nickname or "空",
+        "site_bio": profile["bio"],
+        "site_logo_text": site_logo_text,
+        "site_primary_color": get_setting_value(
+            "site_primary_color",
+            "",
+        ),
+        "site_font": get_setting_value(
+            "site_font",
+            "default",
         ),
         "visitor_id": get_visitor_id(request),
         "theme": get_site_theme(),
-        "site_avatar": get_setting_value("hero_avatar", ""),
+        "site_avatar": profile["avatar"],
+        "page_title": page_title,
+        "page_description": page_description,
     }
+
+
+# ============================================================
+# 页面信息配置（网站设置卡片 8 字段）
+# ============================================================
+
+def get_page_info():
+    """
+    读取页面信息配置：home / article / moment / message
+    各 title + description，共 8 字段。
+    """
+
+    keys = [
+        "home_title",
+        "home_description",
+        "article_title",
+        "article_description",
+        "moment_title",
+        "moment_description",
+        "message_title",
+        "message_description",
+    ]
+
+    info = {}
+
+    for key in keys:
+        info[key] = get_setting_value(key, "")
+
+    return info
 
 
 # ============================================================
@@ -1137,11 +1310,14 @@ def ensure_visitor(
     db,
     visitor_id: str,
     nickname: str | None = None,
+    request: Request | None = None,
 ):
     """
     确保 Visitor 档案存在（首次互动时自动建档）。
 
     已存在则更新昵称快照与最后活动时间。
+
+    Tnine v2：新访客建档时写入 visitor 通知（管理员自身互动不计）。
     """
 
     if not visitor_id:
@@ -1166,6 +1342,21 @@ def ensure_visitor(
         )
 
         db.add(visitor)
+
+        # 新访客通知（管理员自身互动不通知）
+        if (
+            request is not None
+            and not is_admin(request)
+        ):
+
+            notifications_service.create_notification(
+                db,
+                type="visitor",
+                target_id=0,
+                content=(
+                    f"新访客「{visitor.nickname}」访问了你的网站"
+                ),
+            )
 
     else:
 
@@ -1192,15 +1383,15 @@ def get_actor_identity(
 
     visitor_id = get_visitor_id(request)
 
-    # 管理员：使用管理员昵称（成哥）
+    # 管理员：使用管理员昵称（Tnine v2 取消默认昵称，为空时返回 None）
     if is_admin(request):
 
         nickname = request.session.get(
             "admin_nickname",
-            "成哥",
+            "",
         )
 
-        return nickname, visitor_id
+        return nickname or None, visitor_id
 
     # 本次操作明确指定昵称
     if fallback_nickname is not None:
@@ -1753,10 +1944,11 @@ def _handle_init_login(
         )
 
     # 创建 admin 记录：初始密码直接成为正式密码（Hash 存储）
+    # Tnine v2：取消默认昵称，nickname 为空字符串，首次登录后强制完善资料
     admin = Admin(
         username="admin",
         password_hash=init_state["password_hash"],
-        nickname="成哥",
+        nickname="",
     )
 
     db.add(admin)
@@ -1862,7 +2054,7 @@ def _create_admin_session(
     request.session["admin_username"] = admin.username
 
     request.session["admin_nickname"] = (
-        admin.nickname or "成哥"
+        admin.nickname or ""
     )
 
 
@@ -2063,7 +2255,8 @@ def admin_email_settings_save(
 
 
 # ============================================================
-# AUTHENTICATED：管理员主页
+# AUTHENTICATED：管理员主页（Dashboard 卡片工作台）
+# Tnine v2：纯卡片布局，无左侧/右侧导航
 # ============================================================
 
 @app.get("/admin")
@@ -2083,33 +2276,141 @@ def admin_home(
 
     try:
 
-        # 管理员可以看到草稿
-        articles = (
-            db.query(Article)
-            .order_by(
-                Article.created_at.desc()
-            )
-            .all()
+        # ====================================================
+        # 首次登录强制完善资料：昵称为空时进入个人资料页
+        # ====================================================
+
+        admin = (
+            db.query(Admin)
+            .order_by(Admin.id.asc())
+            .first()
         )
+
+        if (
+            admin is None
+            or not (admin.nickname or "").strip()
+        ):
+
+            return RedirectResponse(
+                url="/admin/profile?first=1",
+                status_code=303,
+            )
 
 
         context = get_common_context(request)
 
-        context["articles"] = articles
-
-        context["article_count"] = len(
-            articles
+        # ---------- 文章卡片 ----------
+        article_stats = (
+            db.query(
+                func.count(Article.id),
+                func.coalesce(
+                    func.sum(Article.views),
+                    0,
+                ),
+            )
+            .first()
         )
 
-        # 访客数量与留言会话数
+        context["article_count"] = (
+            article_stats[0] or 0
+        )
+
+        context["article_views"] = (
+            article_stats[1] or 0
+        )
+
+        context["article_likes"] = (
+            db.query(ArticleLike)
+            .count()
+        )
+
+        context["article_comments"] = (
+            db.query(ArticleComment)
+            .count()
+        )
+
+        # ---------- 朋友圈卡片 ----------
+        context["moment_count"] = (
+            db.query(Moment)
+            .count()
+        )
+
+        context["moment_likes"] = (
+            db.query(MomentLike)
+            .count()
+        )
+
+        context["moment_comments"] = (
+            db.query(MomentComment)
+            .count()
+        )
+
+        # ---------- 留言卡片 ----------
+        context["thread_count"] = (
+            db.query(MessageThread)
+            .count()
+        )
+
+        # 未回复：该会话最后一条消息为访客发送
+        from sqlalchemy import text
+
+        unreplied = db.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM message_threads t
+                WHERE (
+                    SELECT m.sender_type
+                    FROM message m
+                    WHERE m.thread_id = t.id
+                    ORDER BY m.created_at DESC, m.id DESC
+                    LIMIT 1
+                ) = 'visitor'
+                """
+            )
+        ).scalar() or 0
+
+        context["unreplied_count"] = (
+            unreplied
+        )
+
+        # ---------- 访客卡片 ----------
         context["visitor_count"] = (
             db.query(Visitor)
             .count()
         )
 
-        context["thread_count"] = (
-            db.query(MessageThread)
+        today_start = datetime.now().replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+
+        context["visitor_today"] = (
+            db.query(Visitor)
+            .filter(
+                Visitor.created_at >= today_start
+            )
             .count()
+        )
+
+        # ---------- 通知卡片 ----------
+        context["notification_unread"] = (
+            db.query(Notification)
+            .filter(
+                Notification.is_read.is_(False)
+            )
+            .count()
+        )
+
+        context["notification_latest"] = (
+            db.query(Notification)
+            .order_by(
+                Notification.created_at.desc(),
+                Notification.id.desc(),
+            )
+            .first()
         )
 
 
@@ -2124,12 +2425,193 @@ def admin_home(
 
 
 # ============================================================
-# AUTHENTICATED：管理员个人资料（修改昵称）
+# AUTHENTICATED：文章管理列表（列表页即管理页）
+# ============================================================
+
+@app.get("/admin/articles")
+def admin_articles_page(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        articles = (
+            db.query(Article)
+            .options(
+                selectinload(Article.tags),
+                selectinload(Article.likes),
+                selectinload(Article.comments),
+            )
+            .order_by(
+                Article.created_at.desc()
+            )
+            .all()
+        )
+
+        context = get_common_context(request)
+
+        context["articles"] = articles
+
+        context["article_count"] = len(articles)
+
+        # 是否有草稿（新建文章流程提示）
+        context["has_draft"] = any(
+            not a.published_at
+            for a in articles
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_articles.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：朋友圈管理列表
+# ============================================================
+
+@app.get("/admin/moments")
+def admin_moments_page(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        moments = (
+            db.query(Moment)
+            .options(
+                selectinload(Moment.images),
+                selectinload(Moment.likes),
+                selectinload(Moment.comments),
+            )
+            .order_by(
+                Moment.created_at.desc()
+            )
+            .all()
+        )
+
+        context = get_common_context(request)
+
+        context["moments"] = moments
+
+        context["moment_count"] = len(moments)
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_moments.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：留言管理列表
+# ============================================================
+
+@app.get("/admin/messages")
+def admin_messages_page(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        threads = (
+            db.query(MessageThread)
+            .options(
+                selectinload(
+                    MessageThread.messages
+                )
+            )
+            .order_by(
+                MessageThread.updated_at.desc()
+            )
+            .all()
+        )
+
+        context = get_common_context(request)
+
+        context["threads"] = threads
+
+        context["thread_count"] = len(threads)
+
+        # 未回复统计
+        unreplied = 0
+
+        for t in threads:
+
+            last = (
+                t.messages[-1]
+                if t.messages
+                else None
+            )
+
+            if (
+                last is not None
+                and last.sender_type == "visitor"
+            ):
+
+                unreplied += 1
+
+        context["unreplied_count"] = unreplied
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_messages.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：管理员个人资料（基础资料 / 安全 / 社交链接）
+# Tnine v2：卡片式个人资料页
 # ============================================================
 
 @app.get("/admin/profile")
 def admin_profile_page(
     request: Request,
+    first: int = 0,
 ):
 
     if require_admin(request) is None:
@@ -2164,6 +2646,29 @@ def admin_profile_page(
 
         context["admin"] = admin
 
+        context["social_links"] = (
+            db.query(SocialLink)
+            .order_by(
+                SocialLink.id.asc()
+            )
+            .all()
+        )
+
+        context["social_link_types"] = (
+            SOCIAL_LINK_TYPES
+        )
+
+        context["avatar_url"] = get_setting_value(
+            "hero_avatar",
+            "",
+        )
+
+        # 首次登录强制完善资料标志
+        context["first_login"] = bool(
+            first == 1
+            and not (admin.nickname or "").strip()
+        )
+
         context["error"] = None
 
         return templates.TemplateResponse(
@@ -2178,13 +2683,14 @@ def admin_profile_page(
 
 
 # ============================================================
-# AUTHENTICATED：保存管理员昵称
+# AUTHENTICATED：保存管理员基础资料（昵称 / 简介 / 头像）
 # ============================================================
 
 @app.post("/admin/profile")
-def admin_profile_save(
+async def admin_profile_save(
     request: Request,
     nickname: str = Form(""),
+    bio: str = Form(""),
 ):
 
     if require_admin(request) is None:
@@ -2222,7 +2728,24 @@ def admin_profile_save(
 
             context["admin"] = admin
 
-            context["error"] = "昵称不能为空"
+            context["error"] = "昵称不能为空（昵称是全站核心名称）"
+
+            context["social_links"] = (
+                db.query(SocialLink)
+                .order_by(SocialLink.id.asc())
+                .all()
+            )
+
+            context["social_link_types"] = (
+                SOCIAL_LINK_TYPES
+            )
+
+            context["avatar_url"] = get_setting_value(
+                "hero_avatar",
+                "",
+            )
+
+            context["first_login"] = False
 
             return templates.TemplateResponse(
                 request=request,
@@ -2230,15 +2753,524 @@ def admin_profile_save(
                 context=context,
             )
 
+        first_time_complete = not (
+            admin.nickname or ""
+        ).strip()
+
         admin.nickname = nickname
+
+        admin.bio = (bio or "").strip()[:200]
+
+        # 头像上传（可选）
+        form = await request.form()
+
+        avatar_file = form.get("avatar")
+
+        if (
+            avatar_file
+            and getattr(avatar_file, "filename", "")
+        ):
+
+            filename = avatar_file.filename or ""
+
+            ext = os.path.splitext(filename)[1].lower()
+
+            if ext not in HERO_ALLOWED_IMAGE:
+
+                return RedirectResponse(
+                    url="/admin/profile?error=avatar-format",
+                    status_code=303,
+                )
+
+            os.makedirs(HERO_UPLOAD_DIR, exist_ok=True)
+
+            save_name = (
+                "avatar_"
+                + uuid.uuid4().hex[:12]
+                + ext
+            )
+
+            save_path = os.path.join(
+                HERO_UPLOAD_DIR,
+                save_name,
+            )
+
+            content = await avatar_file.read()
+
+            with open(save_path, "wb") as f:
+
+                f.write(content)
+
+            set_setting_value(
+                "hero_avatar",
+                "/static/uploads/hero/" + save_name,
+            )
 
         db.commit()
 
         # 同步会话昵称
         request.session["admin_nickname"] = nickname
 
+        # 首次登录完善资料后直接进入后台首页
+        return RedirectResponse(
+            url=(
+                "/admin"
+                if first_time_complete
+                else "/admin/profile"
+            ),
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：修改管理员密码
+# ============================================================
+
+@app.post("/admin/profile/password")
+def admin_profile_password_save(
+    request: Request,
+    old_password: str = Form(""),
+    new_password: str = Form(""),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    if len(new_password) < 6:
+
+        return RedirectResponse(
+            url="/admin/profile?error=password-too-short",
+            status_code=303,
+        )
+
+
+    db = SessionLocal()
+
+    try:
+
+        admin = (
+            db.query(Admin)
+            .filter(
+                Admin.id == request.session["admin_id"]
+            )
+            .first()
+        )
+
+        if admin is None:
+
+            return RedirectResponse(
+                url="/admin/login",
+                status_code=303,
+            )
+
+        if not password_hasher.verify(
+            old_password,
+            admin.password_hash,
+        ):
+
+            return RedirectResponse(
+                url="/admin/profile?error=password-wrong",
+                status_code=303,
+            )
+
+        admin.password_hash = password_hasher.hash(
+            new_password
+        )
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/admin/profile?ok=password-changed",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：社交链接动态添加
+# Tnine v2：选择类型 → 链接或二维码 → 生成图标与默认名称
+# ============================================================
+
+@app.post("/admin/profile/social")
+async def admin_profile_social_add(
+    request: Request,
+    link_type: str = Form("github"),
+    name: str = Form(""),
+    link_value: str = Form(""),
+    show_mode: str = Form("link"),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        type_cfg = next(
+            (
+                t
+                for t in SOCIAL_LINK_TYPES
+                if t["value"] == link_type
+            ),
+            SOCIAL_LINK_TYPES[0],
+        )
+
+        # 默认名称：类型标签；用户填写则使用用户名称
+        link_name = (
+            (name or "").strip()[:50]
+            or type_cfg["label"]
+        )
+
+        link_value = (link_value or "").strip()[:500]
+
+        if show_mode == "qr":
+
+            # 二维码：解析上传二维码图片
+            form = await request.form()
+
+            qr_file = form.get("qr_code")
+
+            qr_url = ""
+
+            if (
+                qr_file
+                and getattr(qr_file, "filename", "")
+            ):
+
+                filename = qr_file.filename or ""
+
+                ext = os.path.splitext(filename)[1].lower()
+
+                if ext not in HERO_ALLOWED_IMAGE:
+
+                    return RedirectResponse(
+                        url="/admin/profile?error=qr-format",
+                        status_code=303,
+                    )
+
+                os.makedirs(
+                    HERO_UPLOAD_DIR,
+                    exist_ok=True,
+                )
+
+                save_name = (
+                    "qr_"
+                    + uuid.uuid4().hex[:12]
+                    + ext
+                )
+
+                save_path = os.path.join(
+                    HERO_UPLOAD_DIR,
+                    save_name,
+                )
+
+                content = await qr_file.read()
+
+                with open(save_path, "wb") as f:
+
+                    f.write(content)
+
+                qr_url = (
+                    "/static/uploads/hero/" + save_name
+                )
+
+            link = SocialLink(
+                name=link_name,
+                icon=type_cfg["icon"],
+                url=link_value,
+                is_visible=True,
+                sort_order=0,
+                link_type=link_type,
+                qr_code=qr_url or None,
+            )
+
+            db.add(link)
+
+            db.commit()
+
+        else:
+
+            if not link_value:
+
+                return RedirectResponse(
+                    url="/admin/profile?error=link-empty",
+                    status_code=303,
+                )
+
+            link = SocialLink(
+                name=link_name,
+                icon=type_cfg["icon"],
+                url=link_value,
+                is_visible=True,
+                sort_order=0,
+                link_type=link_type,
+                qr_code=None,
+            )
+
+            db.add(link)
+
+            db.commit()
+
         return RedirectResponse(
             url="/admin/profile",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：社交链接显示切换
+# ============================================================
+
+@app.post("/admin/profile/social/{link_id}/toggle")
+def admin_profile_social_toggle(
+    request: Request,
+    link_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        link = (
+            db.query(SocialLink)
+            .filter(SocialLink.id == link_id)
+            .first()
+        )
+
+        if link is not None:
+
+            link.is_visible = (
+                not link.is_visible
+            )
+
+            db.commit()
+
+        return RedirectResponse(
+            url="/admin/profile",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：社交链接删除
+# ============================================================
+
+@app.post("/admin/profile/social/{link_id}/delete")
+def admin_profile_social_delete(
+    request: Request,
+    link_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        link = (
+            db.query(SocialLink)
+            .filter(SocialLink.id == link_id)
+            .first()
+        )
+
+        if link is not None:
+
+            db.delete(link)
+
+            db.commit()
+
+        return RedirectResponse(
+            url="/admin/profile",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：通知中心
+# Tnine v2：7 类通知（article_like/article_comment/moment_like/
+# moment_comment/message/message_reply/visitor）
+# ============================================================
+
+@app.get("/admin/notifications")
+def admin_notifications_page(
+    request: Request,
+    scope: str = "all",
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        q = db.query(Notification)
+
+        if scope == "unread":
+
+            q = q.filter(
+                Notification.is_read.is_(False)
+            )
+
+        notifications = (
+            q.order_by(
+                Notification.created_at.desc(),
+                Notification.id.desc(),
+            )
+            .all()
+        )
+
+        context = get_common_context(request)
+
+        context["notifications"] = notifications
+
+        context["scope"] = scope
+
+        context["unread_count"] = (
+            db.query(Notification)
+            .filter(
+                Notification.is_read.is_(False)
+            )
+            .count()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_notifications.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：标记单条通知已读
+# ============================================================
+
+@app.post("/admin/notifications/{notification_id}/read")
+def admin_notification_read(
+    request: Request,
+    notification_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        notification = (
+            db.query(Notification)
+            .filter(
+                Notification.id == notification_id
+            )
+            .first()
+        )
+
+        if notification is not None:
+
+            notification.is_read = True
+
+            db.commit()
+
+        return RedirectResponse(
+            url="/admin/notifications",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：全部标记已读
+# ============================================================
+
+@app.post("/admin/notifications/read-all")
+def admin_notifications_read_all(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        (
+            db.query(Notification)
+            .filter(
+                Notification.is_read.is_(False)
+            )
+            .update(
+                {
+                    "is_read": True
+                },
+                synchronize_session=False,
+            )
+        )
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/admin/notifications",
             status_code=303,
         )
 
@@ -2402,12 +3434,18 @@ def admin_delete_visitor(
 @app.get("/admin/new")
 def new_article_page(
     request: Request,
+    force: int = 0,
 ):
     """
     新建文章页面。
 
     使用统一编辑器：
     article = None
+
+    Tnine v2 草稿检测流程：
+    - 无草稿 → 直接进入新增页
+    - 有草稿 → 展示"发现已有草稿 [查看草稿] [新文章]"确认页
+      （force=1 跳过提示，直接进入新增页）
     """
 
     if require_admin(request) is None:
@@ -2418,13 +3456,37 @@ def new_article_page(
 
     context = get_common_context(request)
 
-    context["article"] = None
-
-    # 标签选择器数据
     db = SessionLocal()
 
     try:
 
+        drafts = (
+            db.query(Article)
+            .filter(
+                Article.published_at.is_(None)
+            )
+            .order_by(
+                Article.created_at.desc()
+            )
+            .all()
+        )
+
+        if (
+            drafts
+            and force != 1
+        ):
+
+            context["drafts"] = drafts
+
+            return templates.TemplateResponse(
+                request=request,
+                name="admin_new_article_confirm.html",
+                context=context,
+            )
+
+        context["article"] = None
+
+        # 标签选择器数据
         context["all_tags"] = (
             db.query(Tag)
             .order_by(
@@ -2977,12 +4039,107 @@ def new_moment_page(
 
     context = get_common_context(request)
 
+    context["moment"] = None
+
 
     return templates.TemplateResponse(
         request=request,
         name="moment_editor.html",
         context=context,
     )
+
+
+# ============================================================
+# AUTHENTICATED：编辑朋友圈
+# ============================================================
+
+@app.get("/admin/moment/{moment_id}/edit")
+def edit_moment_page(
+    request: Request,
+    moment_id: int,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        moment = (
+            db.query(Moment)
+            .filter(Moment.id == moment_id)
+            .first()
+        )
+
+        if moment is None:
+
+            return RedirectResponse(
+                url="/admin/moments",
+                status_code=303,
+            )
+
+        context = get_common_context(request)
+
+        context["moment"] = moment
+
+        return templates.TemplateResponse(
+            request=request,
+            name="moment_editor.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：保存朋友圈编辑（仅内容，图片保留）
+# ============================================================
+
+@app.post("/admin/moment/{moment_id}/update")
+def update_moment(
+    request: Request,
+    moment_id: int,
+    content: str = Form(...),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        moment = (
+            db.query(Moment)
+            .filter(Moment.id == moment_id)
+            .first()
+        )
+
+        if moment is not None:
+
+            moment.content = content.strip()
+
+            db.commit()
+
+        return RedirectResponse(
+            url="/admin/moments",
+            status_code=303,
+        )
+
+    finally:
+
+        db.close()
 
 
 
@@ -3015,7 +4172,7 @@ def create_moment(
         moment = Moment(
             nickname=request.session.get(
                 "admin_nickname",
-                "成哥",
+                "",
             ),
             content=content,
         )
@@ -3265,7 +4422,7 @@ def like_moment(
         # 访客档案建档
         # ====================================================
 
-        ensure_visitor(db, visitor_id, actor_name)
+        ensure_visitor(db, visitor_id, actor_name, request)
 
         db.flush()
 
@@ -3325,6 +4482,15 @@ def like_moment(
 
         liked = True
 
+        # 通知：朋友圈点赞
+        if not is_admin(request):
+
+            notifications_service.create_notification(
+                db,
+                type="moment_like",
+                target_id=moment_id,
+                content=f"{actor_name} 赞了你的朋友圈：{moment.content[:50]}",
+            )
 
         db.commit()
 
@@ -3470,7 +4636,7 @@ def comment_moment(
         # 访客档案建档
         # ====================================================
 
-        ensure_visitor(db, visitor_id, actor_name)
+        ensure_visitor(db, visitor_id, actor_name, request)
 
         db.flush()
 
@@ -3489,6 +4655,16 @@ def comment_moment(
 
 
         db.add(comment)
+
+        # 通知：朋友圈评论
+        if not is_admin(request):
+
+            notifications_service.create_notification(
+                db,
+                type="moment_comment",
+                target_id=moment_id,
+                content=f"{actor_name} 评论了你的朋友圈：{content[:50]}",
+            )
 
         db.commit()
 
@@ -3605,7 +4781,7 @@ def like_article(
         # 访客档案建档
         # ====================================================
 
-        ensure_visitor(db, visitor_id, actor_name)
+        ensure_visitor(db, visitor_id, actor_name, request)
 
         db.flush()
 
@@ -3621,6 +4797,16 @@ def like_article(
         )
 
         db.add(like)
+
+        # 通知：文章点赞
+        if not is_admin(request):
+
+            notifications_service.create_notification(
+                db,
+                type="article_like",
+                target_id=article_id,
+                content=f"{actor_name} 赞了你的文章",
+            )
 
         db.commit()
 
@@ -3770,7 +4956,7 @@ def comment_article(
         # 访客档案建档
         # ====================================================
 
-        ensure_visitor(db, visitor_id, actor_name)
+        ensure_visitor(db, visitor_id, actor_name, request)
 
         db.flush()
 
@@ -3784,6 +4970,16 @@ def comment_article(
         )
 
         db.add(comment)
+
+        # 通知：文章评论
+        if not is_admin(request):
+
+            notifications_service.create_notification(
+                db,
+                type="article_comment",
+                target_id=article_id,
+                content=f"{actor_name} 评论了你的文章：{content[:50]}",
+            )
 
         db.commit()
 
@@ -4218,7 +5414,7 @@ def create_message(
 
 
         # 访客档案建档
-        ensure_visitor(db, visitor_id, actor_name)
+        ensure_visitor(db, visitor_id, actor_name, request)
 
         db.flush()
 
@@ -4250,6 +5446,16 @@ def create_message(
         )
 
         db.add(message)
+
+        # 通知：新留言（仅访客留言时通知）
+        if not is_admin(request):
+
+            notifications_service.create_notification(
+                db,
+                type="message",
+                target_id=thread.id,
+                content=f"{actor_name} 给你留了一条新留言：{content[:50]}",
+            )
 
         db.commit()
 
@@ -4374,7 +5580,7 @@ def reply_message(
 
 
         # 访客档案建档
-        ensure_visitor(db, visitor_id, actor_name)
+        ensure_visitor(db, visitor_id, actor_name, request)
 
         db.flush()
 
@@ -4393,6 +5599,16 @@ def reply_message(
         )
 
         db.add(reply)
+
+        # 通知：留言回复（仅访客回复时通知）
+        if not is_admin(request):
+
+            notifications_service.create_notification(
+                db,
+                type="message_reply",
+                target_id=thread.id,
+                content=f"{actor_name} 回复了你的留言：{content[:50]}",
+            )
 
         db.commit()
 
@@ -4806,7 +6022,7 @@ def admin_home_settings_page(
 
         context = get_common_context(request)
 
-        hero_cfg = get_hero_config()
+        hero_cfg = get_hero_config(db)
 
         context["hero_cfg"] = hero_cfg
 
@@ -5342,6 +6558,185 @@ def admin_home_social_delete(
 
     return RedirectResponse(
         url="/admin/home",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：网站设置卡片（外观 / 标签 / 页面信息）
+# Tnine v2：卡片式配置
+# ============================================================
+
+@app.get("/admin/settings")
+def admin_settings_page(
+    request: Request,
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    db = SessionLocal()
+
+    try:
+
+        context = get_common_context(request)
+
+        # ---------- 外观：Hero 配置摘要 ----------
+        hero_cfg = get_hero_config(db)
+
+        context["hero_cfg"] = hero_cfg
+
+        context["hero_bg_modes"] = HERO_BG_MODES
+
+        context["hero_auto_periods"] = (
+            HERO_AUTO_PERIODS
+        )
+
+        context["background_count"] = (
+            db.query(HeroBackground)
+            .count()
+        )
+
+        # ---------- 标签 ----------
+        tags = (
+            db.query(Tag)
+            .order_by(
+                Tag.id.asc()
+            )
+            .all()
+        )
+
+        context["tags"] = tags
+
+        # ---------- 页面信息 8 字段 ----------
+        context["page_info"] = {
+            "home_title": get_setting_value(
+                "home_title", ""
+            ),
+            "home_description": get_setting_value(
+                "home_description", ""
+            ),
+            "article_title": get_setting_value(
+                "article_title", ""
+            ),
+            "article_description": get_setting_value(
+                "article_description", ""
+            ),
+            "moment_title": get_setting_value(
+                "moment_title", ""
+            ),
+            "moment_description": get_setting_value(
+                "moment_description", ""
+            ),
+            "message_title": get_setting_value(
+                "message_title", ""
+            ),
+            "message_description": get_setting_value(
+                "message_description", ""
+            ),
+        }
+
+        context["site_theme"] = get_site_theme()
+
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_settings.html",
+            context=context,
+        )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# AUTHENTICATED：保存页面信息（8 字段）
+# ============================================================
+
+@app.post("/admin/settings/pages")
+def admin_settings_pages_save(
+    request: Request,
+    home_title: str = Form(""),
+    home_description: str = Form(""),
+    article_title: str = Form(""),
+    article_description: str = Form(""),
+    moment_title: str = Form(""),
+    moment_description: str = Form(""),
+    message_title: str = Form(""),
+    message_description: str = Form(""),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    for key, value in {
+        "home_title": home_title,
+        "home_description": home_description,
+        "article_title": article_title,
+        "article_description": article_description,
+        "moment_title": moment_title,
+        "moment_description": moment_description,
+        "message_title": message_title,
+        "message_description": message_description,
+    }.items():
+
+        set_setting_value(
+            key,
+            (value or "").strip()[:200],
+        )
+
+    return RedirectResponse(
+        url="/admin/settings",
+        status_code=303,
+    )
+
+
+# ============================================================
+# AUTHENTICATED：保存外观设置（主色 / 字体）
+# ============================================================
+
+@app.post("/admin/settings/appearance")
+def admin_settings_appearance_save(
+    request: Request,
+    primary_color: str = Form(""),
+    font: str = Form(""),
+):
+
+    if require_admin(request) is None:
+
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=303,
+        )
+
+    primary_color = (primary_color or "").strip()
+
+    if primary_color:
+
+        set_setting_value(
+            "site_primary_color",
+            primary_color[:30],
+        )
+
+    font = (font or "").strip()
+
+    if font in {"default", "serif", "mono"}:
+
+        set_setting_value(
+            "site_font",
+            font,
+        )
+
+    return RedirectResponse(
+        url="/admin/settings",
         status_code=303,
     )
 

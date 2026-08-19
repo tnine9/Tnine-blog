@@ -637,6 +637,15 @@
         transform .25s ease;
 
 
+    display:flex;
+
+
+    align-items:center;
+
+
+    gap:8px;
+
+
 }
 
 
@@ -650,6 +659,45 @@
     transform:
         translateY(-1px);
 
+
+}
+
+
+/* 站标头像 / 首字母 Logo */
+
+.site-logo-img {
+
+    width:30px;
+
+    height:30px;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    display:block;
+
+}
+
+
+/* 网站 slogan（昵称旁显示个人简介） */
+
+.site-slogan {
+
+    font-size:13px;
+
+    color:
+        var(--color-text-secondary, #666);
+
+    margin-right:18px;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    max-width:220px;
 
 }
 

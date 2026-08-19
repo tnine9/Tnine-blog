@@ -1,0 +1,895 @@
+{% extends "base.html" %}
+
+{% block title %}
+网站设置 - {{ site_name }}
+{% endblock %}
+
+
+{% block content %}
+
+<main class="container settings-page">
+
+    <div class="settings-header">
+
+        <div>
+
+            <h1 class="settings-title">
+                网站设置
+            </h1>
+
+            <p class="settings-subtitle">
+                外观 · Hero · 标签 · 页面信息
+            </p>
+
+        </div>
+
+        <a
+            href="/admin"
+            class="settings-back"
+        >
+            ← 返回控制台
+        </a>
+
+    </div>
+
+    <!-- ============ 外观设置卡片 ============ -->
+
+    <section class="settings-card">
+
+        <h2 class="settings-card-title">
+            外观设置
+        </h2>
+
+        <div class="settings-card-body">
+
+            <div class="settings-row">
+
+                <div class="settings-row-label">
+                    <strong>全站主题</strong>
+                    <span>明暗模式，全站生效</span>
+                </div>
+
+                <div class="theme-switch-group">
+
+                    <form
+                        method="post"
+                        action="/admin/theme"
+                        class="theme-switch-form"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="theme"
+                            value="light"
+                        >
+
+                        <button
+                            type="submit"
+                            class="theme-switch-btn{% if site_theme == 'light' %} is-active{% endif %}"
+                        >
+                            浅色
+                        </button>
+
+                    </form>
+
+                    <form
+                        method="post"
+                        action="/admin/theme"
+                        class="theme-switch-form"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="theme"
+                            value="dark"
+                        >
+
+                        <button
+                            type="submit"
+                            class="theme-switch-btn{% if site_theme == 'dark' %} is-active{% endif %}"
+                        >
+                            深色
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            <div class="settings-row">
+
+                <div class="settings-row-label">
+                    <strong>Hero 首屏</strong>
+                    <span>背景图片 / 视频 / 背景模式 / 自动切换（{{ background_count }} 个背景资源）</span>
+                </div>
+
+                <a
+                    href="/admin/home"
+                    class="settings-link-btn"
+                >
+                    进入 Hero 设置 →
+                </a>
+
+            </div>
+
+            <div class="settings-row">
+
+                <div class="settings-row-label">
+                    <strong>主色</strong>
+                    <span>全站强调色，默认 #7C3AED</span>
+                </div>
+
+                <form
+                    method="post"
+                    action="/admin/settings/appearance"
+                    class="appearance-color-form"
+                >
+
+                    <input
+                        type="color"
+                        name="primary_color"
+                        value="{{ site_primary_color or '#7C3AED' }}"
+                        class="appearance-color-input"
+                        title="选择主色"
+                    >
+
+                    <button
+                        type="submit"
+                        class="settings-link-btn"
+                    >
+                        保存主色
+                    </button>
+
+                </form>
+
+            </div>
+
+            <div class="settings-row">
+
+                <div class="settings-row-label">
+                    <strong>字体</strong>
+                    <span>全站正文字体风格</span>
+                </div>
+
+                <div class="theme-switch-group">
+
+                    <form
+                        method="post"
+                        action="/admin/settings/appearance"
+                        class="theme-switch-form"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="font"
+                            value="default"
+                        >
+
+                        <button
+                            type="submit"
+                            class="theme-switch-btn{% if site_font == 'default' %} is-active{% endif %}"
+                        >
+                            默认
+                        </button>
+
+                    </form>
+
+                    <form
+                        method="post"
+                        action="/admin/settings/appearance"
+                        class="theme-switch-form"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="font"
+                            value="serif"
+                        >
+
+                        <button
+                            type="submit"
+                            class="theme-switch-btn{% if site_font == 'serif' %} is-active{% endif %}"
+                        >
+                            衬线
+                        </button>
+
+                    </form>
+
+                    <form
+                        method="post"
+                        action="/admin/settings/appearance"
+                        class="theme-switch-form"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="font"
+                            value="mono"
+                        >
+
+                        <button
+                            type="submit"
+                            class="theme-switch-btn{% if site_font == 'mono' %} is-active{% endif %}"
+                        >
+                            等宽
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ============ 标签设置卡片 ============ -->
+
+    <section class="settings-card">
+
+        <h2 class="settings-card-title">
+            标签设置
+        </h2>
+
+        <p class="settings-card-desc">
+            点击标签切换是否在首页 Hero 展示，按创建顺序排列
+        </p>
+
+        <div class="settings-card-body">
+
+            {% if tags %}
+
+            <div class="tag-toggle-list">
+
+                {% for tag in tags %}
+
+                <form
+                    method="post"
+                    action="/admin/tags/{{ tag.id }}/toggle"
+                    class="tag-toggle-form"
+                >
+
+                    <button
+                        type="submit"
+                        class="tag-toggle-chip{% if tag.show_on_home %} is-on{% endif %}"
+                        title="{% if tag.show_on_home %}点击隐藏{% else %}点击展示{% endif %}"
+                    >
+                        {{ tag.name }}
+                    </button>
+
+                </form>
+
+                {% endfor %}
+
+            </div>
+
+            {% else %}
+
+            <p class="settings-empty-text">
+                暂无标签
+            </p>
+
+            {% endif %}
+
+            <form
+                method="post"
+                action="/admin/tags"
+                class="tag-create-form"
+            >
+
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="输入新标签名称"
+                    class="tag-create-input"
+                    maxlength="50"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    class="tag-create-btn"
+                    title="新增标签"
+                >
+                    ✓
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+    <!-- ============ 页面信息设置卡片 ============ -->
+
+    <section class="settings-card">
+
+        <h2 class="settings-card-title">
+            页面信息
+        </h2>
+
+        <p class="settings-card-desc">
+            统一管理各页面标题与说明，共 8 个字段
+        </p>
+
+        <form
+            method="post"
+            action="/admin/settings/pages"
+            class="page-info-form"
+        >
+
+            <div class="page-info-grid">
+
+                <div class="page-info-group">
+
+                    <h3 class="page-info-group-title">
+                        首页
+                    </h3>
+
+                    <label>
+                        页面标题
+                        <input
+                            type="text"
+                            name="home_title"
+                            value="{{ page_info.home_title }}"
+                            maxlength="100"
+                        >
+                    </label>
+
+                    <label>
+                        页面说明
+                        <input
+                            type="text"
+                            name="home_description"
+                            value="{{ page_info.home_description }}"
+                            maxlength="200"
+                        >
+                    </label>
+
+                </div>
+
+                <div class="page-info-group">
+
+                    <h3 class="page-info-group-title">
+                        文章页面
+                    </h3>
+
+                    <label>
+                        页面标题
+                        <input
+                            type="text"
+                            name="article_title"
+                            value="{{ page_info.article_title }}"
+                            maxlength="100"
+                        >
+                    </label>
+
+                    <label>
+                        页面说明
+                        <input
+                            type="text"
+                            name="article_description"
+                            value="{{ page_info.article_description }}"
+                            maxlength="200"
+                        >
+                    </label>
+
+                </div>
+
+                <div class="page-info-group">
+
+                    <h3 class="page-info-group-title">
+                        朋友圈页面
+                    </h3>
+
+                    <label>
+                        页面标题
+                        <input
+                            type="text"
+                            name="moment_title"
+                            value="{{ page_info.moment_title }}"
+                            maxlength="100"
+                        >
+                    </label>
+
+                    <label>
+                        页面说明
+                        <input
+                            type="text"
+                            name="moment_description"
+                            value="{{ page_info.moment_description }}"
+                            maxlength="200"
+                        >
+                    </label>
+
+                </div>
+
+                <div class="page-info-group">
+
+                    <h3 class="page-info-group-title">
+                        留言页面
+                    </h3>
+
+                    <label>
+                        页面标题
+                        <input
+                            type="text"
+                            name="message_title"
+                            value="{{ page_info.message_title }}"
+                            maxlength="100"
+                        >
+                    </label>
+
+                    <label>
+                        页面说明
+                        <input
+                            type="text"
+                            name="message_description"
+                            value="{{ page_info.message_description }}"
+                            maxlength="200"
+                        >
+                    </label>
+
+                </div>
+
+            </div>
+
+            <div class="page-info-actions">
+
+                <button
+                    type="submit"
+                    class="settings-save-btn"
+                >
+                    保存页面信息
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+</main>
+
+{% endblock %}
+
+
+{% block extra_head %}
+
+<style>
+
+    /* ============ 设置页通用 ============ */
+
+    .settings-page {
+
+        padding: 32px 0 48px;
+
+        max-width: 900px;
+
+    }
+
+    .settings-header {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 16px;
+
+        margin-bottom: 24px;
+
+    }
+
+    .settings-title {
+
+        font-size: 26px;
+
+        font-weight: 800;
+
+        margin: 0 0 4px;
+
+        color: var(--color-text);
+
+    }
+
+    .settings-subtitle {
+
+        margin: 0;
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #999);
+
+    }
+
+    .settings-back {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: #7C3AED;
+
+        text-decoration: none;
+
+    }
+
+    .settings-card {
+
+        background: var(--color-card, #fff);
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 16px;
+
+        padding: 24px 26px;
+
+        margin-bottom: 20px;
+
+    }
+
+    .settings-card-title {
+
+        font-size: 18px;
+
+        font-weight: 800;
+
+        margin: 0 0 4px;
+
+        color: var(--color-text);
+
+    }
+
+    .settings-card-desc {
+
+        margin: 0 0 16px;
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #999);
+
+    }
+
+    .settings-card-body {
+
+        margin-top: 14px;
+
+    }
+
+    .settings-row {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 16px;
+
+        padding: 14px 0;
+
+        border-bottom: 1px dashed var(--color-border, #eee);
+
+    }
+
+    .settings-row:last-child {
+
+        border-bottom: none;
+
+    }
+
+    .settings-row-label {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 2px;
+
+    }
+
+    .settings-row-label strong {
+
+        font-size: 14px;
+
+        color: var(--color-text);
+
+    }
+
+    .settings-row-label span {
+
+        font-size: 12px;
+
+        color: var(--color-text-secondary, #999);
+
+    }
+
+    .settings-link-btn {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: #7C3AED;
+
+        text-decoration: none;
+
+        white-space: nowrap;
+
+    }
+
+    .theme-switch-group {
+
+        display: flex;
+
+        gap: 8px;
+
+    }
+
+    .theme-switch-form {
+
+        margin: 0;
+
+    }
+
+    .theme-switch-btn {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: var(--color-text-secondary, #888);
+
+        background: var(--color-bg, #f7f7f7);
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 999px;
+
+        padding: 6px 16px;
+
+        cursor: pointer;
+
+    }
+
+    .theme-switch-btn.is-active {
+
+        color: #7C3AED;
+
+        border-color: #7C3AED;
+
+        background: rgba(124, 58, 237, .08);
+
+    }
+
+    /* 标签 */
+
+    .tag-toggle-list {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 10px;
+
+        margin-bottom: 16px;
+
+    }
+
+    .tag-toggle-form {
+
+        margin: 0;
+
+    }
+
+    .tag-toggle-chip {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: var(--color-text-secondary, #888);
+
+        background: var(--color-bg, #f7f7f7);
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 999px;
+
+        padding: 6px 16px;
+
+        cursor: pointer;
+
+        transition: all .2s ease;
+
+    }
+
+    .tag-toggle-chip.is-on {
+
+        color: #7C3AED;
+
+        border-color: #7C3AED;
+
+        background: rgba(124, 58, 237, .1);
+
+    }
+
+    .tag-create-form {
+
+        display: flex;
+
+        gap: 8px;
+
+        margin: 0;
+
+    }
+
+    .tag-create-input {
+
+        flex: 1;
+
+        font-size: 13px;
+
+        padding: 8px 14px;
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 10px;
+
+        background: var(--color-bg, #f7f7f7);
+
+        color: var(--color-text);
+
+    }
+
+    .tag-create-btn {
+
+        width: 36px;
+
+        height: 36px;
+
+        border-radius: 10px;
+
+        background: #7C3AED;
+
+        color: #fff;
+
+        border: none;
+
+        font-size: 16px;
+
+        cursor: pointer;
+
+        flex-shrink: 0;
+
+    }
+
+    .settings-empty-text {
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #999);
+
+        margin: 0 0 16px;
+
+    }
+
+    /* 页面信息 */
+
+    .page-info-grid {
+
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 18px;
+
+        margin-bottom: 18px;
+
+    }
+
+    .page-info-group {
+
+        background: var(--color-bg, #fafafa);
+
+        border-radius: 12px;
+
+        padding: 16px;
+
+    }
+
+    .page-info-group-title {
+
+        font-size: 14px;
+
+        font-weight: 700;
+
+        color: #7C3AED;
+
+        margin: 0 0 12px;
+
+    }
+
+    .page-info-group label {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 4px;
+
+        font-size: 12px;
+
+        color: var(--color-text-secondary, #888);
+
+        margin-bottom: 10px;
+
+    }
+
+    .page-info-group input {
+
+        font-size: 13px;
+
+        padding: 8px 12px;
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 8px;
+
+        background: var(--color-card, #fff);
+
+        color: var(--color-text);
+
+    }
+
+    .page-info-actions {
+
+        text-align: right;
+
+    }
+
+    .settings-save-btn {
+
+        font-size: 14px;
+
+        font-weight: 700;
+
+        color: #fff;
+
+        background: #7C3AED;
+
+        border: none;
+
+        border-radius: 10px;
+
+        padding: 10px 24px;
+
+        cursor: pointer;
+
+    }
+
+    @media (max-width: 640px) {
+
+        .page-info-grid {
+
+            grid-template-columns: 1fr;
+
+        }
+
+        .settings-row {
+
+            flex-direction: column;
+
+            align-items: flex-start;
+
+        }
+
+    }
+
+</style>
+
+{% endblock %}
