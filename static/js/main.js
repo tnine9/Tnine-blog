@@ -2,6 +2,35 @@
    Tnine 全局 JS
    ========================================================= */
 
+/* ---------- 轻量 Toast（全局反馈，供 moment.js 等调用） ---------- */
+
+window.showToast = function (message, type) {
+
+    type = type || "info";
+
+    var container = document.getElementById("tnine-toast-container");
+
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "tnine-toast-container";
+        container.className = "tnine-toast-container";
+        document.body.appendChild(container);
+    }
+
+    var item = document.createElement("div");
+    item.className = "tnine-toast-item tnine-toast-" + type;
+    item.textContent = message;
+    container.appendChild(item);
+
+    setTimeout(function () {
+        item.classList.add("is-hide");
+        setTimeout(function () {
+            item.remove();
+        }, 300);
+    }, 2600);
+
+};
+
 
 
 document.addEventListener(

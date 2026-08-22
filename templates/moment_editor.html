@@ -10,7 +10,7 @@
 {% block content %}
 
 
-<section class="page-content">
+<section class="page-content work-page moment-editor-page">
 
 
 <header class="section-header section-header-stack">
@@ -18,21 +18,13 @@
 <div class="section-header-top">
 
 <h1 class="section-title">
-{% if moment %}
-编辑朋友圈
-{% else %}
-发布朋友圈
-{% endif %}
+朋友圈
 </h1>
 
 </div>
 
 <p class="section-subtitle">
-{% if moment %}
-{{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
-{% else %}
-记录生活碎片，分享此刻心情
-{% endif %}
+记录生活中的一些瞬间。
 </p>
 
 </header>
@@ -45,88 +37,116 @@
 
 
 <form
-method="post"
-action="/admin/moment/create"
-enctype="multipart/form-data"
+    method="post"
+    action="{% if moment %}/admin/moment/{{ moment.id }}/update{% else %}/admin/moment/create{% endif %}"
+    enctype="multipart/form-data"
 >
 
 
+
+<!-- 发布者：头像 + 昵称 -->
+
+<div class="moment-editor-author">
+
+    <div class="moment-avatar moment-editor-avatar">
+
+        {% if site_avatar %}
+
+        <img
+            class="moment-avatar-img"
+            src="{{ site_avatar }}"
+            alt="头像"
+        >
+
+        {% else %}
+
+        {{ (admin_nickname or site_name or "匿")[0] }}
+
+        {% endif %}
+
+    </div>
+
+    <div class="moment-editor-author-name">
+
+        {{ admin_nickname or site_name or "匿名" }}
+
+    </div>
+
+</div>
+
+
+
+<!-- 正文：自动增长高度 -->
 
 <textarea
-class="moment-editor-textarea"
-name="content"
-placeholder="这一刻想说什么..."
-rows="6"
-required
-></textarea>
+    class="moment-editor-textarea"
+    name="content"
+    placeholder="这一刻想说什么..."
+    required
+>{{ moment.content if moment else "" }}</textarea>
 
 
 
+<!-- 图片九宫格 -->
 
-<div class="moment-upload-area">
+{% if moment and moment.images %}
 
+<div class="moment-upload-grid is-readonly">
 
-<label class="upload-button">
+    {% for img in moment.images|sort(attribute="sort_order") %}
 
+    <div class="moment-upload-cell is-image">
 
-＋ 添加照片
+        <img
+            src="{{ img.image_path }}"
+            alt="朋友圈图片"
+        >
 
+    </div>
 
-<input
-id="moment-image-input"
-type="file"
-name="images"
-multiple
-accept="image/*"
-hidden
->
-
-
-</label>
-
-
-
-<span class="upload-tip">
-
-最多上传9张照片
-
-</span>
-
-
+    {% endfor %}
 
 </div>
 
+<span class="upload-tip">编辑模式暂不支持修改图片</span>
 
-
-
+{% else %}
 
 <div
-id="image-preview"
-class="image-preview-grid"
+    id="moment-upload-grid"
+    class="moment-upload-grid"
+></div>
+
+<input
+    id="moment-image-input"
+    type="file"
+    name="images"
+    multiple
+    accept="image/*"
+    hidden
 >
 
-
-</div>
-
+{% endif %}
 
 
 
 
+<div class="moment-editor-submit-row">
 
 <button
-class="action-button"
-type="submit"
+    class="action-button moment-editor-submit"
+    type="submit"
 >
 
 {% if moment %}
-保存修改
+保存
 {% else %}
 发布
 {% endif %}
 
 </button>
 
-
+</div>
 
 
 </form>
@@ -135,455 +155,195 @@ type="submit"
 </div>
 
 
-
 </section>
 
 
 
 
-
 <script>
 
+// ===============================
+// 文本输入框自动增长高度
+// ===============================
 
-const input =
-document.getElementById(
-"moment-image-input"
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const ta = document.querySelector(".moment-editor-textarea");
+
+        if (ta) {
+
+            const autoresize = function () {
+
+                ta.style.height = "auto";
+
+                ta.style.height = ta.scrollHeight + "px";
+
+            };
+
+            ta.addEventListener("input", autoresize);
+
+            autoresize();
+
+        }
+
+    }
 );
 
 
-const preview =
-document.getElementById(
-"image-preview"
-);
 
 
+// ===============================
+// 微信朋友圈式九宫格图片选择
+// ===============================
 
-let files=[];
+const input = document.getElementById("moment-image-input");
 
-// 编辑模式无上传框时跳过图片交互
-const hasUpload = input && preview;
+const grid = document.getElementById("moment-upload-grid");
+
+const MAX_IMAGES = 9;
+
+let files = [];
+
+
+// 编辑模式（只读展示已有图片）或无上传框时跳过交互
+
+const hasUpload = input && grid;
+
 
 if (hasUpload) {
 
-// ===============================
-// 选择图片
-// ===============================
+    // 未上传：9 个 [+] 添加格；已上传：图片替换对应位置
 
-input.addEventListener(
-"change",
-function(){
+    function renderGrid() {
+
+        grid.innerHTML = "";
+
+        for (let i = 0; i < MAX_IMAGES; i++) {
+
+            const cell = document.createElement("div");
+
+            cell.className = "moment-upload-cell";
+
+            if (i < files.length) {
+
+                cell.classList.add("is-image");
+
+                const img = document.createElement("img");
+
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+
+                    img.src = e.target.result;
+
+                };
+
+                reader.readAsDataURL(files[i]);
+
+                cell.appendChild(img);
+
+                const rm = document.createElement("button");
+
+                rm.type = "button";
+
+                rm.className = "cell-remove";
+
+                rm.title = "移除";
+
+                rm.textContent = "✕";
+
+                rm.addEventListener("click", function () {
+
+                    files.splice(i, 1);
+
+                    updateInput();
+
+                    renderGrid();
+
+                });
+
+                cell.appendChild(rm);
+
+            } else {
+
+                cell.classList.add("is-add");
+
+                const add = document.createElement("button");
+
+                add.type = "button";
+
+                add.className = "cell-add";
+
+                add.title = "添加图片";
+
+                add.textContent = "＋";
+
+                add.addEventListener("click", function () {
+
+                    input.click();
+
+                });
+
+                cell.appendChild(add);
+
+            }
+
+            grid.appendChild(cell);
+
+        }
+
+    }
 
 
-files=[
-...files,
-...input.files
-];
+    // 同步文件到 input.files（提交时一并上传）
+
+    function updateInput() {
+
+        const dt = new DataTransfer();
+
+        files.forEach(function (file) {
+
+            dt.items.add(file);
+
+        });
+
+        input.files = dt.files;
+
+    }
 
 
+    input.addEventListener("change", function () {
 
-if(files.length>9){
+        const picked = Array.from(input.files);
+
+        const merged = files.concat(picked);
+
+        if (merged.length > MAX_IMAGES) {
+
+            alert("最多只能上传 9 张图片");
+
+            files = merged.slice(0, MAX_IMAGES);
+
+        } else {
+
+            files = merged;
+
+        }
+
+        updateInput();
+
+        renderGrid();
+
+    });
 
 
-alert(
-"最多只能上传9张图片"
-);
-
-
-files =
-files.slice(0,9);
-
+    renderGrid();
 
 }
-
-
-
-updateInput();
-
-
-renderPreview();
-
-
-});
-
-}
-
-
-
-
-
-
-// ===============================
-// 同步 input 文件
-// ===============================
-
-
-function updateInput(){
-
-
-
-const dt =
-new DataTransfer();
-
-
-
-files.forEach(
-file=>{
-
-dt.items.add(file);
-
-}
-
-);
-
-
-
-input.files =
-dt.files;
-
-
-
-}
-
-
-
-
-
-
-
-// ===============================
-// 渲染预览
-// ===============================
-
-
-function renderPreview(){
-
-
-
-preview.innerHTML="";
-
-
-
-files.forEach(
-(file,index)=>{
-
-
-const reader =
-new FileReader();
-
-
-
-reader.onload=function(e){
-
-
-
-const box =
-document.createElement(
-"div"
-);
-
-
-
-box.className=
-"preview-item";
-
-
-
-box.draggable=true;
-
-
-
-box.dataset.index=index;
-
-
-
-
-box.innerHTML=`
-
-<img src="${e.target.result}">
-
-
-
-<div class="preview-actions">
-
-
-<button
-type="button"
-onclick="removeImage(${index})"
->
-删除
-</button>
-
-
-<button
-type="button"
-onclick="previewImage(${index})"
->
-放大
-</button>
-
-
-</div>
-
-
-`;
-
-
-
-preview.appendChild(box);
-
-
-
-}
-
-
-
-reader.readAsDataURL(file);
-
-
-
-});
-
-
-
-}
-
-
-
-
-// ===============================
-// 删除
-// ===============================
-
-
-function removeImage(index){
-
-
-files.splice(
-index,
-1
-);
-
-
-updateInput();
-
-
-renderPreview();
-
-
-}
-
-
-
-
-
-
-// ===============================
-// 放大
-// ===============================
-
-
-function previewImage(index){
-
-
-const url =
-URL.createObjectURL(
-files[index]
-);
-
-
-
-// openImageViewer 接收图片数组与索引
-openImageViewer(
-[url],
-0
-);
-
-
-}
-
-
-
-
-
-
-// ===============================
-// 拖动排序
-// ===============================
-
-
-let dragIndex=null;
-
-
-
-preview.addEventListener(
-"dragstart",
-function(e){
-
-
-dragIndex =
-Number(
-e.target.dataset.index
-);
-
-
-
-});
-
-
-
-
-
-
-preview.addEventListener(
-"dragover",
-function(e){
-
-
-e.preventDefault();
-
-
-});
-
-
-
-
-
-
-preview.addEventListener(
-"drop",
-function(e){
-
-
-e.preventDefault();
-
-
-
-const targetIndex =
-Number(
-e.target.closest(
-".preview-item"
-).dataset.index
-);
-
-
-
-
-if(
-dragIndex===null ||
-dragIndex===targetIndex
-){
-
-return;
-
-}
-
-
-
-
-
-const moveFile =
-files.splice(
-dragIndex,
-1
-)[0];
-
-
-
-files.splice(
-targetIndex,
-0,
-moveFile
-);
-
-
-
-updateInput();
-
-
-renderPreview();
-
-
-
-dragIndex=null;
-
-
-
-});
-
-
 
 </script>
 
-<script>
-
-
-document.addEventListener(
-"DOMContentLoaded",
-function(){
-
-
-const preview =
-document.getElementById(
-"image-preview"
-);
-
-
-
-if(!preview){
-    return;
-}
-
-
-
-// CDN 未加载时（离线环境）跳过拖动排序，避免报错中断
-if(
-    typeof Sortable === "undefined"
-){
-    return;
-}
-
-
-new Sortable(
-preview,
-{
-
-
-animation:250,
-
-
-ghostClass:
-"image-ghost",
-
-
-chosenClass:
-"image-chosen",
-
-
-dragClass:
-"image-drag",
-
-
-
-onEnd:function(){
-
-
-console.log(
-"新的顺序:",
-this.toArray()
-);
-
-
-}
-
-}
-);
-
-
-
-});
-
-
-
-</script>
 
 {% endblock %}

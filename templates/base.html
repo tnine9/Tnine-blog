@@ -34,32 +34,40 @@
     <!-- 基础样式 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/base.css') }}?v=3">
+          href="{{ url_for('static', path='css/base.css') }}?v=4">
 
 
 
     <!-- 布局 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/layout.css') }}?v=5">
+          href="{{ url_for('static', path='css/layout.css') }}?v=21">
 
 
 
     <!-- 组件 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/components.css') }}?v=4">
+          href="{{ url_for('static', path='css/components.css') }}?v=9">
 
 
 
     <!-- 页面 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/article.css') }}?v=5">
+          href="{{ url_for('static', path='css/article.css') }}?v=11">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/moment.css') }}?v=4">
+          href="{{ url_for('static', path='css/moment-card.css') }}?v=8">
+
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/moment-detail.css') }}?v=4">
+
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/moment-editor.css') }}?v=2">
 
 
     <link rel="stylesheet"
@@ -67,7 +75,7 @@
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/editor.css') }}?v=3">
+          href="{{ url_for('static', path='css/editor.css') }}?v=7">
 
 
     <link rel="stylesheet"
@@ -130,7 +138,9 @@
 
 
 
-<header class="site-header glass-header">
+{% block site_header %}
+
+<header class="site-header glass-header{% if request.url.path == '/' %} home-nav{% endif %}">
 
 
     <div class="container header-inner">
@@ -144,7 +154,9 @@
 
 <nav class="site-nav">
 
-    <!-- 站标：有头像用头像，无头像用昵称首字母；悬停变色，点击进入首页展示全屏 hero -->
+    <!-- 站标：显示站点昵称；悬停变主题色，点击进入首页展示全屏 hero -->
+
+    <div class="brand">
 
     <a
         href="/"
@@ -153,19 +165,7 @@
         aria-label="{{ site_name }} 首页"
     >
 
-        {% if site_avatar %}
-
-        <img
-            class="site-logo-img"
-            src="{{ site_avatar }}"
-            alt="站标"
-        >
-
-        {% else %}
-
-        {{ site_logo_text }}
-
-        {% endif %}
+        {{ site_name }}
 
     </a>
 
@@ -176,10 +176,14 @@
 
     {% endif %}
 
+    </div>
+
+
+    <div class="nav-links">
 
     <a
-        href="/?view=timeline"
-        class="{% if request.url.path == '/' %}active{% endif %}"
+        href="/home"
+        class="{% if request.url.path == '/home' %}active{% endif %}"
         title="进入首页时间线"
     >
         首页
@@ -199,6 +203,8 @@
     <a href="/messages" class="{% if request.url.path in ['/messages'] or request.url.path.startswith('/message/') %}active{% endif %}">
         留言
     </a>
+
+    </div>
 
 
     {% if is_admin %}
@@ -344,6 +350,8 @@
 
 </header>
 
+{% endblock %}
+
 
 
 
@@ -372,6 +380,8 @@
 
 
 
+
+{% block site_footer %}
 
 <footer class="site-footer">
 
@@ -410,7 +420,7 @@
 
         <div class="footer-links">
 
-            <a href="/">首页</a>
+            <a href="/home">首页</a>
 
             <a href="/articles">文章</a>
 
@@ -435,6 +445,8 @@
 
 
 </footer>
+
+{% endblock %}
 
 
 
@@ -473,10 +485,10 @@ onclick="showNextImage()"
 
 
 
-<script src="{{ url_for('static', path='js/moment.js') }}?v=3"></script>
+<script src="{{ url_for('static', path='js/moment.js') }}?v=7"></script>
 
 
-<script src="{{ url_for('static', path='js/main.js') }}?v=5"></script>
+<script src="{{ url_for('static', path='js/main.js') }}?v=6"></script>
 
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>

@@ -10,114 +10,106 @@
 {% block content %}
 
 
-<div class="container detail-page">
+<div class="moment-detail-page">
 
 
-    <header class="detail-page-head">
+    <div class="moment-detail-top">
 
         <a href="javascript:history.back()" class="detail-back">
 
-            ← 返回上一页
+            ← 返回
 
         </a>
-
-    </header>
-
-
-
-    <!-- 页面标题区 -->
-
-    <div class="detail-title-area">
-
-        <h1 class="detail-title">
-
-            朋友圈详情
-
-        </h1>
-
-        <p class="detail-subtitle">
-
-            发布于 {{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
-
-        </p>
 
     </div>
 
 
 
-    <!-- 朋友圈详情卡片 -->
+    <!-- 朋友圈详情卡片：头像 昵称 → 正文 → 图片 → 时间 → 点赞 评论 → 评论列表 -->
 
-    <article class="content-card moment-card moment-detail-card">
+    <div class="moment-card-shell moment-detail-shell">
+
+    {% if is_admin %}
+
+    <div class="detail-card-actions">
+
+        <a
+            href="/admin/moment/{{ moment.id }}/edit"
+            class="detail-edit-button"
+        >
+
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+
+        </a>
+
+        <form
+            method="post"
+            action="/admin/moment/{{ moment.id }}/delete"
+            class="detail-delete-form"
+            onsubmit="return confirm('确定删除这条朋友圈吗？其评论与点赞将一并删除。');"
+        >
+
+            <button
+                type="submit"
+                class="detail-delete-button"
+            >
+
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+
+            </button>
+
+        </form>
+
+    </div>
+
+    {% endif %}
+
+    <article class="moment-card moment-detail-card">
 
 
         <!-- 发布者信息 -->
 
-        <div class="detail-card-header">
+        <div class="moment-header detail-moment-header">
 
-            <div class="detail-author">
+            <div class="moment-avatar detail-avatar">
 
-                <span class="detail-avatar">
+                {% if site_avatar %}
 
-                    {{ (moment.nickname or "匿")[0] }}
+                <img
+                    class="moment-avatar-img"
+                    src="{{ site_avatar }}"
+                    alt="头像"
+                >
 
-                </span>
+                {% else %}
 
-                <div>
+                {{ (moment.nickname or "匿")[0] }}
 
-                    <div class="detail-author-name">
+                {% endif %}
 
-                        {{ moment.nickname }}
+            </div>
 
-                    </div>
+            <div class="moment-user-info">
 
-                    <div class="detail-author-time">
+                <div class="moment-user detail-user-name">
 
-                        {{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
-
-                    </div>
+                    {{ moment.nickname }}
 
                 </div>
 
             </div>
 
 
-            {% if is_admin %}
-
-            <div class="detail-card-actions">
-
-                <form
-                    method="post"
-                    action="/admin/moment/{{ moment.id }}/delete"
-                    class="detail-delete-form"
-                    onsubmit="return confirm('确定删除这条朋友圈吗？其评论与点赞将一并删除。');"
-                >
-
-                    <button
-                        type="submit"
-                        class="detail-delete-button"
-                        title="删除"
-                    >
-
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-
-                    </button>
-
-                </form>
-
-            </div>
-
-            {% endif %}
-
         </div>
 
 
 
 
-        <!-- 完整内容 -->
+        <!-- 完整正文（不折叠） -->
 
         {% if moment.content %}
 
-        <div class="moment-content moment-content-flex">
+        <div class="moment-content moment-content-flex detail-content">
 
             {{ moment.content }}
 
@@ -128,17 +120,19 @@
 
 
 
-        <!-- 全部图片 -->
+        <!-- 图片九宫格：单图大图 / 两张并排 / 三张以上九宫格 -->
 
         {% if moment.images %}
 
-        <div class="moment-images-grid detail-images-grid">
+        <div class="moment-images detail-images moment-images-count-{{ moment.images|length }}">
 
-            {% for img in moment.images|sort(attribute="sort_order") %}
+            {% set sorted_images = moment.images|sort(attribute="sort_order") %}
+
+            {% for img in sorted_images %}
 
             <div
-                class="detail-image-item moment-image-item"
-                data-images='{{ moment.images|sort(attribute="sort_order")|map(attribute="image_path")|list|tojson }}'
+                class="moment-image-item detail-image-item"
+                data-images='{{ sorted_images|map(attribute="image_path")|list|tojson }}'
                 data-image-index="{{ loop.index0 }}"
             >
 
@@ -160,9 +154,21 @@
 
 
 
-        <!-- 交互区（卡片底部） -->
+        <!-- 发布时间 -->
+
+        <div class="detail-time">
+
+            发布于 {{ moment.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+        </div>
+
+
+
+
+        <!-- 交互区：点赞 评论 -->
 
         <section class="detail-interactions">
+
 
         <!-- 统计行 -->
 
@@ -172,7 +178,7 @@
 
                 <span>❤️</span>
 
-                <strong>{{ moment.like_count }}</strong>
+                <strong class="detail-like-count">{{ moment.like_count }}</strong>
 
                 点赞
 
@@ -182,7 +188,7 @@
 
                 <span>💬</span>
 
-                <strong>{{ moment.comment_count }}</strong>
+                <strong class="detail-comment-count">{{ moment.comment_count }}</strong>
 
                 评论
 
@@ -191,7 +197,7 @@
         </div>
 
 
-        <!-- 点赞按钮 -->
+        <!-- 点赞按钮：点击直接更新数量，页面不刷新 -->
 
         <div class="detail-like-row">
 
@@ -212,6 +218,8 @@
                 >
 
                     ❤️
+
+                    <span class="moment-action-count">{{ moment.like_count }}</span>
 
                     <span class="moment-action-label">
 
@@ -238,8 +246,7 @@
 
         {% if moment.likes %}
 
-        <div class="moment-like-list moment-interactive">
-
+        <div class="moment-like-list moment-interactive detail-like-list">
 
             <span class="like-section-title">
 
@@ -254,9 +261,9 @@
 
 
 
-        <!-- 评论输入 -->
+        <!-- 评论输入（默认展开） -->
 
-        <div class="moment-comment-panel moment-interactive">
+        <div class="moment-comment-panel moment-interactive detail-comment-panel">
 
             <div class="moment-reply-target" id="momentReplyTarget" hidden>
                 回复 <span id="momentReplyName"></span>
@@ -272,7 +279,6 @@
             >
 
 
-
                 <input
                     type="hidden"
                     name="reply_to_id"
@@ -281,9 +287,7 @@
                 >
 
 
-
                 <div class="moment-comment-input-row">
-
 
 
                     <textarea
@@ -296,8 +300,6 @@
                     ></textarea>
 
 
-
-
                     <button
                         type="submit"
                         class="moment-comment-submit"
@@ -308,13 +310,10 @@
                     </button>
 
 
-
                 </div>
 
 
-
             </form>
-
 
 
         </div>
@@ -322,7 +321,7 @@
 
 
 
-        <!-- 全部评论 -->
+        <!-- 全部评论（默认展开） -->
 
         <div class="moment-comment-list moment-interactive detail-comment-list">
 
@@ -376,40 +375,45 @@
 
 
 
-                <button
-                    type="button"
-                    class="inline-reply-button"
-                    data-reply-to="{{ comment.id }}"
-                    data-reply-nickname="{{ comment.nickname }}"
-                >
+                <span class="detail-comment-ops">
 
-                    回复
-
-                </button>
-
-
-
-                {% if is_admin %}
-
-                <form
-                    method="post"
-                    action="/admin/moment/comment/{{ comment.id }}/delete"
-                    class="inline-delete-form"
-                    onsubmit="return confirm('确定删除这条评论吗？');"
-                >
 
                     <button
-                        type="submit"
-                        class="inline-delete-button"
+                        type="button"
+                        class="inline-reply-button"
+                        data-reply-to="{{ comment.id }}"
+                        data-reply-nickname="{{ comment.nickname }}"
                     >
 
-                        删除
+                        回复
 
                     </button>
 
-                </form>
 
-                {% endif %}
+
+                    {% if is_admin %}
+
+                    <form
+                        method="post"
+                        action="/admin/moment/comment/{{ comment.id }}/delete"
+                        class="inline-delete-form"
+                        onsubmit="return confirm('确定删除这条评论吗？');"
+                    >
+
+                        <button
+                            type="submit"
+                            class="inline-delete-button"
+                        >
+
+                            删除
+
+                        </button>
+
+                    </form>
+
+                    {% endif %}
+
+                </span>
 
 
 
@@ -441,7 +445,7 @@
 
     </article>
 
-
+    </div>
 
 </div>
 

@@ -66,6 +66,26 @@
 
 
 
+/* ---------- 全屏工作页（新建/编辑文章等创作工作台） ---------- */
+
+
+.editor-page,
+.work-page {
+
+
+    width:100%;
+
+
+    max-width:none;
+
+
+    min-height:100vh;
+
+
+}
+
+
+
 /* ---------- Section ---------- */
 
 
@@ -608,18 +628,67 @@
 
     gap:22px;
 
+
+    width:100%;
+
+}
+
+
+.site-nav .nav-links {
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    justify-content:center;
+
+
+    gap:22px;
+
+
+    flex:1;
+
+
+    min-width:0;
+
+}
+
+
+.site-nav .brand {
+
+    display:flex;
+
+    align-items:flex-end;
+
+    gap:8px;
+
+    flex-shrink:0;
+
 }
 
 
 /* ---------- Tnine 站标 ---------- */
 
-.site-logo {
+.site-nav .site-logo {
 
 
-    font-size:24px;
+    font-family:
+        "Segoe UI Black",
+        "Arial Black",
+        "Noto Sans SC",
+        "Microsoft YaHei",
+        sans-serif;
 
 
-    font-weight:800;
+    font-size:21px;
+
+    line-height:1;
+
+
+    font-weight:900;
 
 
     letter-spacing:-.03em;
@@ -633,8 +702,7 @@
 
 
     transition:
-        color .25s ease,
-        transform .25s ease;
+        color .25s ease;
 
 
     display:flex;
@@ -649,16 +717,21 @@
 }
 
 
-.site-logo:hover {
+.site-nav .site-logo:hover {
 
 
     color:
         var(--color-primary);
 
 
-    transform:
-        translateY(-1px);
+}
 
+
+/* 站标不显示导航下划线 */
+
+.site-nav .site-logo::after {
+
+    display:none;
 
 }
 
@@ -684,7 +757,11 @@
 
 .site-slogan {
 
-    font-size:13px;
+    font-size:10px;
+
+    line-height:1;
+
+    margin-bottom:2px;
 
     color:
         var(--color-text-secondary, #666);
@@ -985,11 +1062,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
     cursor:pointer;
 
 
-    box-shadow:
-        0 2px 10px
-        rgba(124,58,237,.35);
-
-
 }
 
 
@@ -1263,5 +1335,274 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 
     display:block;
 
+
+}
+
+
+
+/* =================================
+  统一页面标题区（Page Header）
+  左侧：标题 + 标签（同一行）+ 介绍（纵向）
+  桌面端：标题与标签同行，标签跟随标题
+  移动端：自动换行，标题在上，标签换行在下
+================================= */
+
+
+.page-header {
+
+    display:flex;
+
+    align-items:flex-end;
+
+    justify-content:space-between;
+
+    gap:24px;
+
+    flex-wrap:wrap;
+
+    padding-top:56px;
+
+    padding-left:32px;
+
+    margin-bottom:44px;
+
+}
+
+
+
+.page-header-main {
+
+    min-width:0;
+
+    flex:1 1 auto;
+
+}
+
+
+
+.page-header-title-row {
+
+    display:flex;
+
+    align-items:center;
+
+    flex-wrap:wrap;
+
+    gap:14px;
+
+}
+
+
+
+.page-header-title {
+
+    margin:0;
+
+    font-size:28px;
+
+    font-weight:800;
+
+    letter-spacing:-0.02em;
+
+    line-height:1.2;
+
+    color:var(--color-text);
+
+}
+
+
+
+.page-header-desc-row {
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:16px;
+
+    margin-top:10px;
+
+}
+
+.page-header-desc-row .page-header-desc {
+
+    margin:0;
+
+    flex-shrink:0;
+
+}
+
+.page-header-desc {
+
+    margin:10px 0 0;
+
+    font-size:15px;
+
+    line-height:1.6;
+
+    color:var(--color-text-secondary);
+
+}
+
+
+
+.page-header-side {
+
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    flex-wrap:wrap;
+
+}
+
+
+
+.page-header-desc-row .article-tag-filter {
+
+    margin:0;
+
+    border:none;
+
+    padding:0;
+
+    background:transparent;
+
+    box-shadow:none;
+
+    flex:1 1 auto;
+
+    min-width:0;
+
+}
+
+
+
+.page-header-desc-row .article-tag-filter-list {
+
+    gap:8px;
+
+    padding-left:0;
+
+}
+
+
+
+/* 移动端：标题介绍在上，标签筛选换行在下 */
+
+@media(max-width:900px) {
+
+    .page-header {
+
+        flex-direction:column;
+
+        align-items:stretch;
+
+        gap:18px;
+
+        padding-top:40px;
+
+        padding-left:20px;
+
+        padding-right:20px;
+
+    }
+
+    .page-header-side {
+
+        width:100%;
+
+    }
+
+    .page-header-desc-row .article-tag-filter-list {
+
+        flex-wrap:wrap;
+
+    }
+
+}
+
+/* =========================================================
+   文章列表页：清除筛选与标签列对齐（grid 2x2）
+   行1: [标题] [清除筛选]
+   行2: [说明] [标签列表]
+   ========================================================= */
+.page-header-main.article-index-header {
+
+    display: grid;
+
+    grid-template-columns: auto minmax(0, 1fr);
+
+    column-gap: 16px;
+
+    row-gap: 10px;
+
+    align-items: start;
+
+}
+
+.article-index-header .page-header-title-row {
+
+    grid-column: 1;
+
+    grid-row: 1;
+
+}
+
+.article-index-header .article-tag-filter-clear {
+
+    grid-column: 2;
+
+    grid-row: 1;
+
+    justify-self: start;
+
+    align-self: center;
+
+}
+
+.article-index-header .page-header-desc {
+
+    grid-column: 1;
+
+    grid-row: 2;
+
+    margin: 0;
+
+    align-self: center;
+
+}
+
+.article-index-header .article-tag-filter {
+
+    grid-column: 2;
+
+    grid-row: 2;
+
+    margin: 0;
+
+    border: none;
+
+    padding: 0;
+
+    background: transparent;
+
+    box-shadow: none;
+
+    flex: 1 1 auto;
+
+    min-width: 0;
+
+}
+
+.article-index-header .article-tag-filter-list {
+
+    flex-wrap: wrap;
+
+    padding-left: 0;
 
 }

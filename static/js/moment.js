@@ -215,8 +215,9 @@ document.addEventListener(
 
                     if(!result.success){
 
-                        alert(
-                            "昵称保存失败"
+                        showToast(
+                            "昵称保存失败",
+                            "error"
                         );
 
                         return;
@@ -246,8 +247,9 @@ document.addEventListener(
                     );
 
 
-                    alert(
-                        "网络错误"
+                    showToast(
+                        "网络错误",
+                        "error"
                     );
 
                 }
@@ -445,6 +447,21 @@ document.addEventListener(
 
             }
 
+
+            /* 详情页统计行 */
+            const detailLikeCount =
+                card.querySelector(
+                    ".detail-like-count"
+                );
+
+
+            if(detailLikeCount){
+
+                detailLikeCount.textContent =
+                    result.like_count;
+
+            }
+
         }
 
 
@@ -532,9 +549,10 @@ document.addEventListener(
                         if(!result.success){
 
 
-                            alert(
+                            showToast(
                                 result.error ||
-                                "点赞失败"
+                                "点赞失败",
+                                "error"
                             );
 
 
@@ -728,6 +746,33 @@ document
             }
 
 
+            /* 详情页：移除"还没有评论"占位 */
+            const empty =
+                list?.querySelector(
+                    ".moment-comment-empty"
+                );
+
+            if(empty){
+
+                empty.remove();
+
+            }
+
+
+            /* 详情页：更新评论统计 */
+            const detailCommentCount =
+                card.querySelector(
+                    ".detail-comment-count"
+                );
+
+            if(detailCommentCount){
+
+                detailCommentCount.textContent =
+                    result.comment_count;
+
+            }
+
+
             /* 更新评论数 */
             const toggleCount =
                 card.querySelector(
@@ -910,9 +955,10 @@ document
                         if(!result.success){
 
 
-                            alert(
+                            showToast(
                                 result.error ||
-                                "评论失败"
+                                "评论失败",
+                                "error"
                             );
 
 
@@ -1014,6 +1060,57 @@ document
                 }
 
 
+
+            }
+        );
+
+
+        /* ==========================================
+        朋友圈卡片：整卡点击进入详情页
+        互动区（点赞/评论/编辑/删除/图片查看）不触发跳转
+        ========================================== */
+
+        document
+        .querySelectorAll(
+            ".moment-card-shell.is-clickable"
+        )
+        .forEach(
+            function(card){
+
+                card.addEventListener(
+                    "click",
+                    function(event){
+
+                        const url = card.dataset.url;
+
+                        if(!url){
+                            return;
+                        }
+
+                        const interactive = event.target.closest(
+                            ".moment-images, " +
+                            ".moment-actions, " +
+                            ".moment-admin-actions, " +
+                            ".moment-like-list, " +
+                            ".moment-comment-list, " +
+                            ".moment-comment-panel, " +
+                            "a, " +
+                            "button, " +
+                            "form, " +
+                            "input, " +
+                            "textarea"
+                        );
+
+                        if(interactive){
+                            return;
+                        }
+
+                        event.preventDefault();
+
+                        window.location.href = url;
+
+                    }
+                );
 
             }
         );

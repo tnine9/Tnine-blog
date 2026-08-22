@@ -13,6 +13,8 @@
 
     display: flex;
 
+    flex-direction: column;
+
     align-items: center;
 
     justify-content: center;
@@ -132,11 +134,23 @@ html[data-theme="dark"] .home-hero-bg {
 
     z-index: 2;
 
+    flex: 1 1 auto;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
     text-align: center;
 
-    padding: 24px;
+    padding: 24px 24px 0;
 
     max-width: 720px;
+
+    width: 100%;
 
     animation: heroFadeIn .9s ease both;
 
@@ -384,11 +398,11 @@ html[data-theme="dark"] .home-hero-bg {
 
 
 
-/* ---------- 滚动提示 ---------- */
+/* ---------- 滚动提示（固定在 Hero 最底部） ---------- */
 
 .home-hero-scroll {
 
-    margin-top: 56px;
+    position: static;
 
     display: flex;
 
@@ -398,6 +412,8 @@ html[data-theme="dark"] .home-hero-bg {
 
     gap: 8px;
 
+    margin-bottom: 28px;
+
     color: var(--color-text-muted);
 
     font-size: 13px;
@@ -405,6 +421,8 @@ html[data-theme="dark"] .home-hero-bg {
     cursor: pointer;
 
     animation: heroScrollHint 2s ease-in-out infinite;
+
+    z-index: 3;
 
 }
 
@@ -673,9 +691,11 @@ html[data-theme="dark"] .hero-tag {
 }
 
 
-/* ---------- 社交链接（底部小图标） ---------- */
+/* ---------- 社交链接（固定在 Hero 底部区域） ---------- */
 
 .home-hero-social {
+
+    position: static;
 
     display: flex;
 
@@ -683,7 +703,9 @@ html[data-theme="dark"] .hero-tag {
 
     justify-content: center;
 
-    margin-top: 34px;
+    margin: 40px 0 24px;
+
+    z-index: 3;
 
 }
 
@@ -801,19 +823,48 @@ html[data-theme="dark"] .hero-social-link {
 
 
 /* =========================================================
-   首页导航交互：初始隐藏，滚动后出现
+   首页导航交互：初始 display:none 不占空间，滚动后淡入下滑
    ========================================================= */
 
-.site-header.header-hidden {
+.home-nav {
 
-    transform: translateY(-100%);
-
-    transition: transform .35s ease;
+    display: none;
 
 }
 
-.site-header {
+.home-nav.header-visible {
 
-    transition: transform .35s ease;
+    display: block;
+
+    animation: homeNavIn .3s ease;
+
+}
+
+@keyframes homeNavIn {
+
+    from {
+
+        opacity: 0;
+
+        transform: translateY(-20px);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+    }
+
+}
+
+/* 时间线标题吸附：滚动到内容区时留出导航高度 + 页面间距，
+   保证标题不被固定导航遮挡（由 Hero 高度 + 导航高度 + 间距计算） */
+
+.home-content {
+
+    scroll-margin-top: calc(68px + 24px);
 
 }

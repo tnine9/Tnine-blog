@@ -4,7 +4,7 @@
 
 
 {% block title %}
-{{ site_name }}
+{{ page_title_display }}
 {% endblock %}
 
 
@@ -20,17 +20,21 @@
 
     <!-- 页面标题 -->
 
-    <section class="hero messages-hero">
+    <header class="page-header">
 
-        <h2>
-            留言
-        </h2>
+        <div class="page-header-main">
 
-        <p>
-            留下你的想法
-        </p>
+            <h1 class="page-header-title">
+                {{ page_title }}
+            </h1>
 
-    </section>
+            <p class="page-header-desc">
+                {{ page_description }}
+            </p>
+
+        </div>
+
+    </header>
 
 
 
@@ -121,77 +125,7 @@
 
 
 
-        <article
-            class="content-card message-card"
-            data-url="/message/{{ thread.id }}"
-        >
-
-
-
-            <div class="message-header">
-
-
-                <strong>
-
-                    {% if thread.messages %}
-
-                    {{ thread.messages[0].nickname or "匿名访客" }}
-
-                    {% else %}
-
-                    匿名访客
-
-                    {% endif %}
-
-                </strong>
-
-
-                {% if thread.is_private %}
-
-                <span class="message-private-badge">
-
-                    🔒 私密
-
-                </span>
-
-                {% endif %}
-
-
-                <span class="message-time">
-
-                    {{ thread.updated_at.strftime("%Y-%m-%d %H:%M") }}
-
-                </span>
-
-            </div>
-
-
-
-
-            <div class="message-content">
-
-                {% if thread.messages %}
-
-                {{ thread.messages[0].content }}
-
-                {% endif %}
-
-            </div>
-
-
-
-
-            <div class="message-meta">
-
-                <span>
-                    💬 {{ thread.messages|length }} 条消息
-                </span>
-
-            </div>
-
-
-
-        </article>
+        {% include "components/message_card.html" %}
 
 
 

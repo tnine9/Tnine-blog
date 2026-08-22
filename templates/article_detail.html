@@ -9,6 +9,14 @@
 
 <main class="container detail-page article-page">
 
+    <div class="article-detail-layout">
+
+        <!-- ==================================================
+             正文列（标题栏 + 详情卡片）
+             ================================================== -->
+
+        <div class="article-detail-main">
+
     <!-- ==================================================
          返回导航
          ================================================== -->
@@ -31,7 +39,6 @@
     <header
         class="article-sticky-header"
         id="articleStickyHeader"
-        title="返回顶部"
     >
 
         <div class="article-sticky-main">
@@ -50,42 +57,103 @@
             {% endif %}
 
 
-            <div class="article-sticky-meta">
+            <div class="article-sticky-topbar">
 
-                <span>
-                    {{ article.display_time.strftime("%Y-%m-%d") }}
-                </span>
+                <div class="article-sticky-meta">
 
-
-                <span class="article-sticky-stat">
-                    👁 {{ article.views }}
-                </span>
+                    <span>
+                        {{ article.display_time.strftime("%Y-%m-%d") }}
+                    </span>
 
 
-                <span class="article-sticky-stat" data-like-count="{{ article.like_count }}">
-                    ❤️ {{ article.like_count }}
-                </span>
+                    <span class="article-sticky-stat">
+                        👁 {{ article.views }}
+                    </span>
 
 
-                <span class="article-sticky-stat" data-comment-count="{{ article.comment_count }}">
-                    💬 {{ article.comment_count }}
-                </span>
+                    <span class="article-sticky-stat" data-like-count="{{ article.like_count }}">
+                        ❤️ {{ article.like_count }}
+                    </span>
 
 
-                {% if article.status == "draft" and is_admin %}
+                    <span class="article-sticky-stat" data-comment-count="{{ article.comment_count }}">
+                        💬 {{ article.comment_count }}
+                    </span>
 
-                <span class="article-draft-badge">
-                    草稿
-                </span>
+
+                    {% if article.status == "draft" and is_admin %}
+
+                    <span class="article-draft-badge">
+                        草稿
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                {% if is_admin %}
+
+                <div class="article-sticky-actions">
+
+                    <a
+                        href="/admin/edit/{{ article.id }}"
+                        class="detail-edit-button"
+                    >
+
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+
+                    </a>
+
+
+                    <form
+                        method="post"
+                        action="/admin/delete/{{ article.id }}"
+                        class="detail-delete-form"
+                        onsubmit="return confirm('确定要删除这篇文章吗？点赞、评论等互动数据将一并删除，且无法恢复。');"
+                    >
+
+                        <button
+                            type="submit"
+                            class="detail-delete-button"
+                        >
+
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+
+                        </button>
+
+                    </form>
+
+                </div>
 
                 {% endif %}
 
             </div>
 
+
+            {% if article.tags %}
+
+            <div class="article-sticky-tags">
+
+                {% for tag in article.tags %}
+
+                <a
+                    class="article-tag"
+                    href="/tag/{{ tag.name | urlencode }}"
+                >
+                    # {{ tag.name }}
+                </a>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
         </div>
 
 
-        <!-- 收缩状态 -->
+        <!-- 收缩状态：文章标题 编辑 删除 -->
 
         <div class="article-sticky-compact">
 
@@ -94,16 +162,41 @@
             </span>
 
 
-            <span class="compact-date">
-                {{ article.display_time.strftime("%Y-%m-%d") }}
-            </span>
+            {% if is_admin %}
+
+            <div class="article-sticky-actions">
+
+                <a
+                    href="/admin/edit/{{ article.id }}"
+                    class="detail-edit-button"
+                >
+
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+
+                </a>
 
 
-            <span class="compact-stats">
-                <span>👁 {{ article.views }}</span>
-                <span data-like-count="{{ article.like_count }}">❤️ {{ article.like_count }}</span>
-                <span data-comment-count="{{ article.comment_count }}">💬 {{ article.comment_count }}</span>
-            </span>
+                <form
+                    method="post"
+                    action="/admin/delete/{{ article.id }}"
+                    class="detail-delete-form"
+                    onsubmit="return confirm('确定要删除这篇文章吗？点赞、评论等互动数据将一并删除，且无法恢复。');"
+                >
+
+                    <button
+                        type="submit"
+                        class="detail-delete-button"
+                    >
+
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+
+                    </button>
+
+                </form>
+
+            </div>
+
+            {% endif %}
 
         </div>
 
@@ -163,45 +256,6 @@
                 </div>
 
             </div>
-
-
-            {% if is_admin %}
-
-            <div class="detail-card-actions">
-
-                <a
-                    href="/admin/edit/{{ article.id }}"
-                    class="detail-edit-button"
-                    title="编辑"
-                >
-
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-
-                </a>
-
-
-                <form
-                    method="post"
-                    action="/admin/delete/{{ article.id }}"
-                    class="detail-delete-form"
-                    onsubmit="return confirm('确定要删除这篇文章吗？点赞、评论等互动数据将一并删除，且无法恢复。');"
-                >
-
-                    <button
-                        type="submit"
-                        class="detail-delete-button"
-                        title="删除"
-                    >
-
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-
-                    </button>
-
-                </form>
-
-            </div>
-
-            {% endif %}
 
         </div>
 
@@ -486,22 +540,26 @@
 
     </article>
 
-
-    <!-- ==================================================
-         右侧文章导航
-         ================================================== -->
-
-    <aside class="toc-container">
-
-        <div class="toc-title">
-            文章目录
         </div>
 
-        <div class="toc-empty">
-            暂无目录
-        </div>
 
-    </aside>
+        <!-- ==================================================
+             右侧文章导航
+             ================================================== -->
+
+        <aside class="toc-container">
+
+            <div class="toc-title">
+                文章目录
+            </div>
+
+            <div class="toc-empty">
+                暂无目录
+            </div>
+
+        </aside>
+
+    </div>
 
 </main>
 
@@ -568,12 +626,20 @@ document.addEventListener(
 
 
         /*
-         * 点击标题栏回到顶部
+         * 点击标题栏空白处回到顶部（交互元素不触发）
          */
 
         header.addEventListener(
             "click",
-            function () {
+            function (event) {
+
+                if (
+                    event.target.closest(
+                        "a, button, form, .article-sticky-actions"
+                    )
+                ) {
+                    return;
+                }
 
                 window.scrollTo({
                     top: 0,

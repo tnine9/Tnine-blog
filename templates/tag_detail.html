@@ -13,17 +13,36 @@
 <section class="page-content">
 
 
-<header class="section-header">
+<header class="page-header">
 
 
-<div class="section-header-top">
+<div class="page-header-main">
 
 
-<h1 class="section-title">
+<h1 class="page-header-title">
 
 # {{ tag.name }}
 
 </h1>
+
+
+<p class="page-header-desc">
+
+{% if tag.description %}
+{{ tag.description }}
+{% else %}
+「{{ tag.name }}」标签下的全部文章
+{% endif %}
+
+（共 {{ articles | length }} 篇）
+
+</p>
+
+
+</div>
+
+
+<div class="page-header-side">
 
 
 <a
@@ -39,25 +58,12 @@ class="action-button"
 </div>
 
 
-<p class="text-secondary">
-
-{% if tag.description %}
-{{ tag.description }}
-{% else %}
-「{{ tag.name }}」标签下的全部文章
-{% endif %}
-
-（共 {{ articles | length }} 篇）
-
-</p>
-
-
 </header>
 
 
 <!-- 文章列表 -->
 
-<div class="article-grid">
+<div class="article-list">
 
 
 {% if articles %}
@@ -68,99 +74,11 @@ class="action-button"
 
 
 
-<article
-class="content-card article-card article-grid-card"
-data-url="/article/{{ article.id }}"
->
+{% set item = {"data": article} %}
 
+{% set active_tag = tag.name %}
 
-
-<div class="article-card-top">
-
-
-{% if article.status == "draft" and is_admin %}
-
-<span
-class="article-status article-status-draft"
->
-草稿
-</span>
-
-{% else %}
-
-<span
-class="article-status article-status-published"
->
-文章
-</span>
-
-{% endif %}
-
-
-
-<span class="article-card-date">
-
-{{ article.display_time.strftime("%Y-%m-%d") }}
-
-</span>
-
-
-</div>
-
-
-
-<h3 class="article-card-title">
-
-<a href="/article/{{ article.id }}">
-
-{{ article.title }}
-
-</a>
-
-</h3>
-
-
-
-{% if article.summary %}
-
-<p class="article-card-summary">
-
-{{ article.summary }}
-
-</p>
-
-{% endif %}
-
-
-
-{% if article.tags %}
-
-<div class="article-card-tags">
-
-{% for t in article.tags %}
-
-<a
-class="tag-chip
-{% if t.id == tag.id %}
-tag-chip-active
-{% endif %}
-"
-href="/tag/{{ t.name | urlencode }}"
->
-
-# {{ t.name }}
-
-</a>
-
-{% endfor %}
-
-</div>
-
-{% endif %}
-
-
-
-</article>
+{% include "components/article_card.html" %}
 
 
 

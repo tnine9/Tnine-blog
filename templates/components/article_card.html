@@ -1,124 +1,85 @@
-<article 
+<article
     class="content-card article-card"
+    {% if item.data.status == "published" %}
     data-url="/article/{{ item.data.id }}"
+    {% else %}
+    data-url="/admin/edit/{{ item.data.id }}"
+    {% endif %}
 >
 
-
-
-    <div class="article-card-top">
-
-        {% if item.data.status == "draft" and is_admin %}
-
-        <span class="article-draft-badge">
-            草稿
-        </span>
-
+    {% if is_admin %}
+    <div class="card-actions">
+        {% if item.data.status == "draft" %}
+        <a class="card-action card-action-publish" href="/admin/edit/{{ item.data.id }}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        </a>
         {% endif %}
-
-
-        <div class="article-date">
-
-            {{
-            item.data.display_time.strftime("%Y-%m-%d")
-            }}
-
-        </div>
-
+        {% if item.data.status == "published" %}
+        <a class="card-action card-action-edit" href="/admin/edit/{{ item.data.id }}">✎</a>
+        {% endif %}
+        <form method="post" action="/admin/delete/{{ item.data.id }}" class="card-action-form" onsubmit="return confirm('确定要删除这篇文章吗？');">
+            <button type="submit" class="card-action card-action-delete">🗑</button>
+        </form>
     </div>
+    {% endif %}
 
-
+    <!-- 状态 Badge 与日期 -->
+    <div class="article-card-top">
+        <span class="article-status-badge {{ 'published' if item.data.status == 'published' else 'draft' }}">
+            {{ "已发布" if item.data.status == "published" else "草稿" }}
+        </span>
+        {% if item.data.status == "published" %}
+        <span class="article-date">
+            {{ item.data.display_time.strftime("%Y-%m-%d") }}
+        </span>
+        {% endif %}
+    </div>
 
     <!-- 标题 -->
-
     <h2 class="article-title">
-
-        <a href="/article/{{ item.data.id }}">
-
+        <a href="{% if item.data.status == 'published' %}/article/{{ item.data.id }}{% else %}/admin/edit/{{ item.data.id }}{% endif %}">
             {{ item.data.title }}
-
         </a>
-
     </h2>
 
-
-
     <!-- 摘要 -->
-
     {% if item.data.summary %}
-
     <p class="article-summary">
-
         {{ item.data.summary }}
-
     </p>
-
     {% endif %}
-
-
 
     <!-- 互动统计 -->
-
     <div class="article-card-stats">
-
         <span class="article-stat">
-
             <span class="stat-icon">👁</span>
-
             {{ item.data.views }}
-
             <span class="stat-label">浏览</span>
-
         </span>
-
-
         <span class="article-stat">
-
             <span class="stat-icon">❤️</span>
-
             {{ item.data.like_count }}
-
             <span class="stat-label">点赞</span>
-
         </span>
-
-
         <span class="article-stat">
-
             <span class="stat-icon">💬</span>
-
             {{ item.data.comment_count }}
-
             <span class="stat-label">评论</span>
-
         </span>
-
     </div>
-
-
 
     <!-- 标签胶囊 -->
-
     {% if item.data.tags %}
-
     <div class="article-card-tags">
-
         {% for tag in item.data.tags %}
-
         <a
-            class="tag-chip"
+            class="tag-chip {% if active_tag is defined and tag.name == active_tag %}tag-chip-active{% endif %}"
             href="/tag/{{ tag.name }}"
         >
-
             {{ tag.name }}
-
         </a>
-
         {% endfor %}
-
     </div>
-
     {% endif %}
-
-
 
 </article>

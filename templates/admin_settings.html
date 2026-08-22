@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}
 网站设置 - {{ site_name }}
@@ -131,7 +131,6 @@
                         name="primary_color"
                         value="{{ site_primary_color or '#7C3AED' }}"
                         class="appearance-color-input"
-                        title="选择主色"
                     >
 
                     <button
@@ -254,7 +253,6 @@
                     <button
                         type="submit"
                         class="tag-toggle-chip{% if tag.show_on_home %} is-on{% endif %}"
-                        title="{% if tag.show_on_home %}点击隐藏{% else %}点击展示{% endif %}"
                     >
                         {{ tag.name }}
                     </button>
@@ -290,8 +288,7 @@
 
                 <button
                     type="submit"
-                    class="tag-create-btn"
-                    title="新增标签"
+                    class="btn btn-primary"
                 >
                     ✓
                 </button>
@@ -440,7 +437,7 @@
 
                 <button
                     type="submit"
-                    class="settings-save-btn"
+                    class="btn btn-primary"
                 >
                     保存页面信息
                 </button>
@@ -466,7 +463,7 @@
 
         padding: 32px 0 48px;
 
-        max-width: 900px;
+        max-width: var(--container-width);
 
     }
 
@@ -746,27 +743,7 @@
 
     }
 
-    .tag-create-btn {
-
-        width: 36px;
-
-        height: 36px;
-
-        border-radius: 10px;
-
-        background: #7C3AED;
-
-        color: #fff;
-
-        border: none;
-
-        font-size: 16px;
-
-        cursor: pointer;
-
-        flex-shrink: 0;
-
-    }
+    
 
     .settings-empty-text {
 
@@ -852,25 +829,7 @@
 
     }
 
-    .settings-save-btn {
-
-        font-size: 14px;
-
-        font-weight: 700;
-
-        color: #fff;
-
-        background: #7C3AED;
-
-        border: none;
-
-        border-radius: 10px;
-
-        padding: 10px 24px;
-
-        cursor: pointer;
-
-    }
+    
 
     @media (max-width: 640px) {
 

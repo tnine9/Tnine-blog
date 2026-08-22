@@ -2,14 +2,21 @@
 
 
 {% block title %}
-{{ site_name }}
+{{ page_title_display }}
+{% endblock %}
+
+{% block site_header %}
+{% endblock %}
+
+
+{% block site_footer %}
 {% endblock %}
 
 
 {% block extra_head %}
 
 <link rel="stylesheet"
-      href="{{ url_for('static', path='css/hero.css') }}?v=3">
+      href="{{ url_for('static', path='css/hero.css') }}?v=5">
 
 {% endblock %}
 
@@ -127,7 +134,6 @@
                 href="{{ link.url }}"
                 target="_blank"
                 rel="noopener"
-                title="{{ link.name }}"
                 aria-label="{{ link.name }}"
             >
 
@@ -171,223 +177,7 @@
 
 
 
-<!-- ==================================================
-     主页内容（时间线）
-     ================================================== -->
 
-<section class="home-content" id="homeContent">
-
-    <div class="container">
-
-
-
-        <!-- 内容区标题 -->
-
-        <header class="section-header home-content-head">
-
-            <h1 class="section-title">
-
-                时间线
-
-            </h1>
-
-            <p class="text-secondary">
-
-                文章与朋友圈，都在这里
-
-            </p>
-
-        </header>
-
-
-
-        <!-- 时间线 -->
-
-        <div class="timeline">
-
-
-
-            {% for item in timeline %}
-
-
-
-            <div class="timeline-item">
-
-
-
-                <!-- 左侧时间 -->
-
-                <div class="timeline-side">
-
-                    <div class="timeline-date">
-
-                        {% if item.type == "article" %}
-
-                        {{
-                        item.data.display_time.strftime("%Y-%m-%d")
-                        }}
-
-                        {% else %}
-
-                        {{
-                        item.data.created_at.strftime("%Y-%m-%d")
-                        }}
-
-                        {% endif %}
-
-                    </div>
-
-                    <div
-                        class="timeline-type timeline-type-{{ item.type }}"
-                    >
-
-                        {% if item.type == "article" %}
-                        文章
-                        {% elif item.type == "moment" %}
-                        动态
-                        {% else %}
-                        留言
-                        {% endif %}
-
-                    </div>
-
-                    <div class="timeline-dot"></div>
-
-                </div>
-
-
-
-                <!-- 右侧内容 -->
-
-                <div class="timeline-content">
-
-                    {% if item.type == "moment" %}
-
-                        {% include "components/moment_card.html" %}
-
-                    {% elif item.type == "article" %}
-
-                        {% include "components/article_card.html" %}
-
-                    {% elif item.type == "message" %}
-
-                    <article
-                        class="content-card message-card"
-                        data-url="/message/{{ item.data.id }}"
-                    >
-
-
-
-                        <div class="message-header">
-
-
-                            <strong>
-
-                                {% if item.data.messages %}
-
-                                {{ item.data.messages[0].nickname or "匿名访客" }}
-
-                                {% else %}
-
-                                匿名访客
-
-                                {% endif %}
-
-                            </strong>
-
-
-                            {% if item.data.is_private %}
-
-                            <span class="message-private-badge">
-
-                                🔒 私密
-
-                            </span>
-
-                            {% endif %}
-
-
-                            <span class="message-time">
-
-                                {{ item.data.updated_at.strftime("%Y-%m-%d %H:%M") }}
-
-                            </span>
-
-                        </div>
-
-
-
-
-                        <div class="message-content">
-
-                            {% if item.data.messages %}
-
-                            {{ item.data.messages[0].content }}
-
-                            {% endif %}
-
-                        </div>
-
-
-
-
-                        <div class="message-meta">
-
-                            <span>
-                                💬 {{ item.data.messages|length }} 条消息
-                            </span>
-
-                        </div>
-
-
-
-                    </article>
-
-                    {% endif %}
-
-                </div>
-
-
-
-            </div>
-
-
-
-            {% else %}
-
-
-
-            <!-- 空状态 -->
-
-            <div class="empty-state">
-
-                <div class="empty-state-title">
-
-                    这里还没有内容
-
-                </div>
-
-                <div class="empty-state-text">
-
-                    第一篇文章或第一条动态，等待你的记录
-
-                </div>
-
-            </div>
-
-
-
-            {% endfor %}
-
-
-
-        </div>
-
-
-
-    </div>
-
-</section>
 
 
 
@@ -403,50 +193,11 @@ document.addEventListener(
 
         const hero = document.getElementById("homeHero");
 
-        const content = document.getElementById("homeContent");
-
         const scrollHint = document.getElementById("heroScroll");
 
-        if (!hero || !content) {
+        if (!hero) {
 
             return;
-
-        }
-
-
-        /* 初始隐藏顶部导航，滚动后出现（仅首页） */
-
-        const siteHeader = document.querySelector(".site-header");
-
-        const headerShowThreshold = 24;
-
-        if (siteHeader) {
-
-            function syncHeader() {
-
-                if (window.scrollY > headerShowThreshold) {
-
-                    siteHeader.classList.remove("header-hidden");
-
-                } else {
-
-                    siteHeader.classList.add("header-hidden");
-
-                }
-
-            }
-
-            syncHeader();
-
-            window.addEventListener(
-
-                "scroll",
-
-                syncHeader,
-
-                { passive: true }
-
-            );
 
         }
 
@@ -477,32 +228,11 @@ document.addEventListener(
         }
 
 
-        /* 首页导航（/?view=timeline）：跳过全屏 hero，直接展示时间线内容 */
-
-        const urlParams = new URLSearchParams(window.location.search);
-
-        if (urlParams.get("view") === "timeline") {
-
-            hero.classList.add("is-hidden");
-
-            const contentTop = content.getBoundingClientRect().top + window.scrollY;
-
-            window.scrollTo({ top: contentTop, behavior: "auto" });
-
-        }
-
-
-        /* 滚轮下滑平滑过渡到内容区 */
+        /* 点击滚动提示：跳转到时间线首页 */
 
         function scrollToContent() {
 
-            content.scrollIntoView({
-
-                behavior: "smooth",
-
-                block: "start"
-
-            });
+            window.location.href = "/home";
 
         }
 
@@ -522,93 +252,75 @@ document.addEventListener(
         }
 
 
-        /* 轻划吸附：向下滚动超过阈值时，平滑吸附到内容区；
-           回到顶部附近时恢复 hero */
+        /* 向下滑动（滚轮）直接跳转到时间线首页 */
 
-        let lastY = window.scrollY;
-
-        let snapped = false;
-
-        let snapping = false;
-
-        const snapThreshold = 120;
-
-
-        function onScroll() {
-
-            const y = window.scrollY;
-
-            const delta = y - lastY;
-
-            lastY = y;
-
-
-            if (snapping) {
-
-                return;
-
-            }
-
-
-            /* 向下轻划，越过阈值即吸附到内容区 */
-
-            if (
-
-                delta > 4 &&
-
-                y > snapThreshold &&
-
-                !snapped
-
-            ) {
-
-                snapped = true;
-
-                snapping = true;
-
-                hero.classList.add("is-hidden");
-
-                scrollToContent();
-
-                setTimeout(
-
-                    function () {
-
-                        snapping = false;
-
-                    },
-
-                    800
-
-                );
-
-            } else if (
-
-                y <= snapThreshold &&
-
-                snapped
-
-            ) {
-
-                /* 回到顶部时恢复 hero */
-
-                snapped = false;
-
-                hero.classList.remove("is-hidden");
-
-            }
-
-        }
-
+        let lastWheel = 0;
 
         window.addEventListener(
+            "wheel",
+            function (event) {
 
-            "scroll",
+                const now = Date.now();
 
-            onScroll,
+                if (now - lastWheel < 800) {
 
+                    return;
+
+                }
+
+                if (event.deltaY > 30) {
+
+                    lastWheel = now;
+
+                    window.location.href = "/home";
+
+                }
+
+            },
             { passive: true }
+        );
 
+
+        /* 向下滑动（触摸）直接跳转到时间线首页 */
+
+        let touchStartY = null;
+
+        window.addEventListener(
+            "touchstart",
+            function (event) {
+
+                if (event.touches.length === 1) {
+
+                    touchStartY = event.touches[0].clientY;
+
+                }
+
+            },
+            { passive: true }
+        );
+
+        window.addEventListener(
+            "touchend",
+            function (event) {
+
+                if (touchStartY === null) {
+
+                    return;
+
+                }
+
+                const deltaY = touchStartY - event.changedTouches[0].clientY;
+
+                touchStartY = null;
+
+                if (deltaY > 60) {
+
+                    window.location.href = "/home";
+
+                }
+
+            },
+            { passive: true }
         );
 
     }

@@ -1,36 +1,65 @@
 /* =========================================================
-   Tnine 朋友圈
+   Tnine 朋友圈 - 卡片组件（独立，不复用文章卡片）
    ========================================================= */
-
-
-/* =========================================================
-   时间线
-   ========================================================= */
-
-
-.timeline {
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:20px;
-
-    padding-bottom:70px;
-
-}
-
-
-
 /* =========================================================
    动态卡片
    ========================================================= */
 
 
-.moment-card {
-
+.moment-card-shell {
 
     overflow:hidden;
+
+    position:relative;
+
+    background:
+        var(--color-surface);
+
+    border:
+        1px solid
+        var(--color-border);
+
+    border-radius:
+        var(--radius-lg);
+
+    box-shadow:
+        var(--shadow-sm);
+
+    width:100%;
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease;
+
+}
+
+
+/* 内容容器：卡片内 720px 居中 */
+
+.moment-card {
+
+    position:relative;
+
+    width:100%;
+
+    max-width:720px;
+
+    margin:0 auto;
+
+    padding-bottom:24px;
+
+}
+
+
+/* ---------- 卡片内容统一居中容器：与文章卡片对齐，内容区 720px ---------- */
+
+.moment-card-body {
+
+    width:100%;
+
+    max-width:720px;
+
+    margin:0 auto;
 
 }
 
@@ -199,7 +228,7 @@
 
 
     margin:
-        0 24px 10px;
+        0 auto 10px;
 
 
     max-width:560px;
@@ -809,13 +838,13 @@
 
 
     padding:
-        0 14px;
+        0 16px;
 
 
     border:none;
 
 
-    border-radius:7px;
+    border-radius:8px;
 
 
     background:
@@ -874,7 +903,7 @@
     .moment-images{
 
         margin:
-            0 18px 10px;
+            0 auto 10px;
 
     }
 
@@ -926,290 +955,6 @@
     }
 
 }
-
-/* =====================================================
-   发布朋友圈
-===================================================== */
-
-
-.moment-editor-card{
-
-
-background:
-var(--color-surface);
-
-
-border:
-1px solid var(--color-border);
-
-
-border-radius:
-var(--radius-lg);
-
-
-padding:30px;
-
-
-}
-
-
-
-
-.moment-editor-textarea{
-
-
-width:100%;
-
-
-padding:16px;
-
-
-border-radius:12px;
-
-
-border:
-1px solid var(--color-border-input);
-
-
-font-size:16px;
-
-
-resize:none;
-
-
-outline:none;
-
-
-}
-
-
-
-.moment-upload-area{
-
-
-display:flex;
-
-
-align-items:center;
-
-
-gap:15px;
-
-
-margin:20px 0;
-
-
-}
-
-
-
-
-.upload-button{
-
-
-padding:12px 20px;
-
-
-border-radius:10px;
-
-
-background:
-var(--color-primary);
-
-
-color:white;
-
-
-cursor:pointer;
-
-
-}
-
-
-
-.upload-tip{
-
-
-font-size:13px;
-
-
-color:
-var(--color-text-muted);
-
-}
-
-
-
-
-
-/* 图片预览 */
-
-
-.image-preview-grid{
-
-
-display:grid;
-
-
-grid-template-columns:
-repeat(3,100px);
-
-
-gap:12px;
-
-
-margin-bottom:20px;
-
-
-}
-
-
-
-
-.preview-item{
-
-
-position:relative;
-
-
-width:100px;
-
-
-height:100px;
-
-
-overflow:hidden;
-
-
-border-radius:10px;
-
-
-cursor:move;
-
-
-}
-
-
-
-.preview-item img{
-
-
-width:100%;
-
-
-height:100%;
-
-
-object-fit:cover;
-
-
-}
-
-
-
-
-
-.preview-actions{
-
-
-position:absolute;
-
-
-inset:0;
-
-
-display:flex;
-
-
-align-items:center;
-
-
-justify-content:center;
-
-
-gap:5px;
-
-
-background:
-rgba(0,0,0,.45);
-
-
-opacity:0;
-
-
-transition:.2s;
-
-
-}
-
-
-
-
-.preview-item:hover
-.preview-actions{
-
-
-opacity:1;
-
-
-}
-
-
-
-.preview-actions button{
-
-
-background:white;
-
-
-border:none;
-
-
-padding:4px 8px;
-
-
-border-radius:5px;
-
-
-cursor:pointer;
-
-
-font-size:12px;
-
-
-}
-
-
-/* 上传排序 */
-
-
-.preview-item.dragging{
-
-opacity:.5;
-
-}
-
-
-
-.image-ghost{
-
-
-opacity:.4;
-
-
-}
-
-
-
-.image-chosen{
-
-
-transform:
-scale(1.05);
-
-
-}
-
 
 /* =========================================================
    朋友圈 v3 新增样式
@@ -1329,236 +1074,214 @@ scale(1.05);
 
 
 
-/* ---------- 朋友圈详情页 ---------- */
+/* =========================================================
+   朋友圈 UI 修正（需求文档 V1.0）新增样式
+   ========================================================= */
 
-.moment-detail-page {
+/* ---------- 内容宽度：朋友圈列表外壳撑满容器，内部 720px ---------- */
 
-    max-width: var(--container-width);
+.moment-stream {
+
+    width: 100%;
+
+    max-width: none;
 
     margin: 0 auto;
 
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 32px;
+
 }
 
+/* ---------- 卡片点击进详情：整卡可点，hover 反馈（与文章卡片一致） ---------- */
 
+.moment-card-shell.is-clickable {
 
-.moment-detail-card {
+    cursor: pointer;
+
+}
+
+.moment-card-shell.is-clickable:hover {
+
+    box-shadow: var(--shadow-md);
+
+    transform: translateY(-6px);
+
+}
+
+/* 详情页外壳不参与 hover 上浮 */
+
+.moment-card-shell.moment-detail-shell:hover {
+
+    box-shadow: var(--shadow-sm);
+
+    transform: none;
+
+}
+
+/* 交互区（点赞/评论/编辑/删除/图片）禁止触发跳转 */
+
+.moment-card-shell .moment-images,
+
+.moment-card .moment-actions,
+
+.moment-card-shell .moment-admin-actions,
+
+.moment-card .moment-like-list,
+
+.moment-card .moment-comment-list,
+
+.moment-card .moment-comment-panel {
 
     cursor: default;
 
-    padding: 28px;
+}
+
+/* ---------- 头像统一：全站头像来源，圆形 object-fit:cover ---------- */
+
+.moment-avatar-img {
+
+    object-fit: cover;
+
+    display: block;
 
 }
 
+/* ---------- 文字区域：height 自动撑开，完整显示不折叠 ---------- */
 
+.moment-content {
 
-.moment-detail-card .moment-content-flex {
-
-    font-size: 16px;
-
-    margin: 12px 0;
+    height: auto;
 
 }
 
+/* ---------- Hover 管理按钮：管理员可见，默认隐藏 ---------- */
 
+.moment-admin-actions {
 
-.moment-detail-card .moment-time {
+    position: absolute;
 
-    color: var(--color-text-muted);
+    top: 12px;
 
-    font-size: 13px;
-
-    margin-bottom: 16px;
-
-}
-
-
-
-.moment-like-section {
-
-    border-top: 1px solid var(--color-border);
-
-    margin-top: 16px;
-
-    padding-top: 14px;
-
-}
-
-
-
-.moment-like-title {
-
-    font-size: 14px;
-
-    font-weight: 700;
-
-    margin-bottom: 10px;
+    right: 12px;
 
     display: flex;
-
-    align-items: center;
 
     gap: 6px;
 
-}
+    opacity: 0;
 
+    visibility: hidden;
 
+    transition: opacity .2s ease, visibility .2s ease;
 
-.moment-like-list {
-
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 10px;
+    z-index: 5;
 
 }
 
+.moment-card-shell.is-clickable:hover .moment-admin-actions,
 
+.moment-card-shell:hover .moment-admin-actions {
 
-.moment-like-item {
+    opacity: 1;
+
+    visibility: visible;
+
+}
+
+.moment-admin-btn {
+
+    position: relative;
 
     display: inline-flex;
 
     align-items: center;
 
-    gap: 6px;
+    justify-content: center;
 
-    background: var(--color-soft);
+    width: 32px;
 
-    border-radius: 999px;
+    height: 32px;
 
-    padding: 4px 12px;
+    border-radius: 50%;
 
-    font-size: 13px;
-
-    color: var(--color-text-secondary);
-
-}
-
-
-
-.moment-like-item .like-heart {
-
-    font-size: 12px;
-
-}
-
-
-
-.moment-comment-section {
-
-    border-top: 1px solid var(--color-border);
-
-    margin-top: 16px;
-
-    padding-top: 14px;
-
-}
-
-
-
-.moment-comment-title {
-
-    font-size: 14px;
-
-    font-weight: 700;
-
-    margin-bottom: 10px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-}
-
-
-
-.moment-detail-comment-input {
-
-    width: 100%;
-
-    resize: vertical;
-
-    border: 1px solid var(--color-border-input);
-
-    border-radius: var(--radius-sm);
-
-    padding: 12px;
-
-    font-family: var(--font-main);
-
-    font-size: 14px;
+    border: 1px solid var(--color-border);
 
     background: var(--color-surface-solid);
 
-    color: var(--color-text);
-
-    transition: var(--transition);
-
-    box-sizing: border-box;
-
-    min-height: 52px;
-
-    margin-bottom: 10px;
-
-}
-
-
-
-.moment-detail-comment-input:focus {
-
-    outline: none;
-
-    border-color: var(--color-primary);
-
-    box-shadow: 0 0 0 3px var(--color-focus-ring);
-
-}
-
-
-
-.moment-comment-actions {
-
-    display: flex;
-
-    justify-content: flex-end;
-
-    margin-bottom: 12px;
-
-}
-
-
-
-.moment-comment-submit {
-
-    padding: 8px 22px;
-
-    border: none;
-
-    border-radius: 999px;
-
-    background: var(--gradient-primary);
-
-    color: #fff;
-
-    font-size: 14px;
-
-    font-weight: 600;
+    color: var(--color-text-secondary);
 
     cursor: pointer;
 
     transition: var(--transition);
 
-    box-shadow: 0 6px 16px rgba(124,58,237,.30);
+}
+
+.moment-admin-btn:hover {
+
+    color: var(--color-primary);
+
+    border-color: var(--color-primary);
+
+    transform: translateY(-1px);
 
 }
 
+.moment-admin-btn.is-danger:hover {
 
+    color: #ef4444;
 
-.moment-comment-submit:hover {
+    border-color: #ef4444;
 
-    transform: translateY(-2px);
+    background: rgba(239, 68, 68, .08);
 
 }
+
+@media (max-width: 640px) {
+
+    .moment-admin-actions {
+
+        top: 8px;
+
+        right: 8px;
+
+    }
+
+}
+
+/* ---------- 页面顶部：朋友圈列表页 Page Header 强制纵向 ---------- */
+
+.page-header-vertical {
+
+    flex-direction: column !important;
+
+    align-items: flex-start !important;
+
+    gap: 6px !important;
+
+}
+
+/* =========================================================
+   首页时间线场景：朋友圈外壳卡片与文章卡片同宽
+   首页 .timeline-content 为 1fr 宽列，.moment-card-shell
+   撑满该列（与 .content-card 文章卡片一致），内部
+   .moment-card 再 720px 居中
+   ========================================================= */
+
+.timeline-content > .moment-card-shell {
+
+    width: 100%;
+
+}
+
+/* 首页时间线内朋友圈卡片之间的间距，与 /moments 列表一致 */
+
+.timeline-content > .moment-card-shell + .moment-card-shell {
+
+    margin-top: 32px;
+
+}
+

@@ -38,11 +38,7 @@
 }
 
 
-.admin-welcome {
 
-    padding:40px 0 30px;
-
-}
 
 
 
@@ -50,18 +46,10 @@
 
 @media(max-width:900px) {
 
-    .admin-welcome {
-
-        padding: 28px 0 20px;
-
-    }
+    
 
 
-    .admin-welcome h1 {
-
-        font-size: 24px;
-
-    }
+    
 
 
     .admin-stat-card {
@@ -80,22 +68,10 @@
 }
 
 
-.admin-welcome h1 {
-
-    margin-bottom:8px;
-
-    font-size:30px;
-
-    line-height:1.4;
-
-}
 
 
-.admin-welcome p {
 
-    color:var(--color-text-secondary);
 
-}
 
 
 
@@ -180,112 +156,19 @@
 
 
 
-.admin-primary-button {
-
-    display:inline-flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-
-    padding:
-        12px 20px;
-
-
-    border-radius:
-        var(--radius-sm);
-
-
-    background:
-        var(--color-primary);
-
-
-    color:white;
-
-
-    font-weight:600;
-
-    text-decoration:none;
-
-
-    transition:
-        var(--transition);
-
-}
 
 
 
-.admin-primary-button:hover {
-
-
-    background:
-        var(--color-primary-hover);
-
-
-    transform:
-        translateY(-1px);
-
-}
 
 
 
-.admin-secondary-button {
-
-    display:inline-flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-
-    padding:
-        12px 20px;
-
-
-    border-radius:
-        var(--radius-sm);
-
-
-    background:
-        var(--color-surface);
-
-
-    color:
-        var(--color-text);
-
-
-    font-weight:600;
-
-    text-decoration:none;
-
-
-    border:
-        1px solid var(--color-border);
-
-
-    transition:
-        var(--transition);
-
-}
 
 
 
-.admin-secondary-button:hover {
 
 
-    border-color:
-        var(--color-primary);
 
 
-    color:
-        var(--color-primary);
-
-
-    transform:
-        translateY(-1px);
-
-}
 
 
 
@@ -1066,63 +949,13 @@
 }
 
 
-.login-code-button {
 
 
-    flex-shrink:0;
 
 
-    padding:
-        0 16px;
 
 
-    border:1px solid
-        var(--color-primary, #7C3AED);
 
-
-    border-radius:
-        var(--radius-sm);
-
-
-    background:
-        var(--color-primary, #7C3AED);
-
-
-    color:#fff;
-
-
-    font-size:13px;
-
-
-    font-weight:600;
-
-
-    cursor:pointer;
-
-
-    transition:
-        opacity .2s ease;
-
-}
-
-
-.login-code-button:hover {
-
-
-    opacity:.88;
-
-}
-
-
-.login-code-button:disabled {
-
-
-    opacity:.55;
-
-
-    cursor:not-allowed;
-
-}
 
 
 .login-code-hint {
@@ -1226,43 +1059,9 @@
 
 }
 
-.admin-theme-button {
 
-    display:inline-flex;
 
-    align-items:center;
 
-    gap:8px;
-
-    padding:9px 18px;
-
-    border:1px solid var(--color-border);
-
-    border-radius:99px;
-
-    background:var(--color-surface);
-
-    color:var(--color-text-secondary);
-
-    font-size:13px;
-
-    font-weight:600;
-
-    cursor:pointer;
-
-    transition:var(--transition);
-
-}
-
-.admin-theme-button:hover {
-
-    color:var(--color-primary);
-
-    border-color:var(--color-primary-light);
-
-    background:var(--color-focus-ring);
-
-}
 
 .admin-theme-panel {
 
@@ -1460,39 +1259,9 @@
 
 }
 
-.admin-danger-button {
 
-    display: inline-flex;
 
-    align-items: center;
 
-    justify-content: center;
-
-    padding: 8px 16px;
-
-    border-radius: var(--radius-sm);
-
-    background: transparent;
-
-    color: var(--color-danger);
-
-    font-weight: 600;
-
-    border: 1px solid var(--color-danger);
-
-    cursor: pointer;
-
-    transition: var(--transition);
-
-}
-
-.admin-danger-button:hover {
-
-    background: var(--color-danger);
-
-    color: #fff;
-
-}
 
 .admin-checkbox {
 
@@ -1711,3 +1480,28 @@
     border-top: 1px dashed var(--color-border);
 
 }
+
+/* ==================================================
+   后台页头统一（复用前台 page-header 体系）
+   ================================================== */
+
+.container .page-header {
+
+    padding-top: 56px;
+
+    padding-left: 0;
+
+    margin-bottom: 44px;
+
+}
+
+@media(max-width:900px) {
+
+    .container .page-header {
+
+        padding-top: 40px;
+
+    }
+
+}
+

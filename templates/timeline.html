@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+{{ page_title_display }}
+{% endblock %}
+
+
+{% block content %}
+
+
+
+<section class="home-content" id="homeContent">
+
+    <div class="container">
+
+
+
+        <!-- 内容区标题 -->
+
+        <header class="page-header">
+
+            <div class="page-header-main">
+
+                <h1 class="page-header-title">
+                    {{ page_title }}
+                </h1>
+
+                <p class="page-header-desc">
+                    {{ page_description }}
+                </p>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- 时间线 -->
+
+        <div class="timeline">
+
+
+
+            {% for item in timeline %}
+
+
+
+            <div class="timeline-item">
+
+
+
+                <!-- 左侧时间 -->
+
+                <div class="timeline-side">
+
+                    <div class="timeline-date">
+
+                        {% if item.type == "article" %}
+
+                        {{
+                        item.data.display_time.strftime("%Y-%m-%d")
+                        }}
+
+                        {% else %}
+
+                        {{
+                        item.data.created_at.strftime("%Y-%m-%d")
+                        }}
+
+                        {% endif %}
+
+                    </div>
+
+                    <div
+                        class="timeline-type timeline-type-{{ item.type }}"
+                    >
+
+                        {% if item.type == "article" %}
+                        文章
+                        {% elif item.type == "moment" %}
+                        动态
+                        {% else %}
+                        留言
+                        {% endif %}
+
+                    </div>
+
+                    <div class="timeline-dot"></div>
+
+                </div>
+
+
+
+                <!-- 右侧内容 -->
+
+                <div class="timeline-content">
+
+                    {% if item.type == "moment" %}
+
+                        {% include "components/moment_card.html" %}
+
+                    {% elif item.type == "article" %}
+
+                        {% include "components/article_card.html" %}
+
+                    {% elif item.type == "message" %}
+
+                    <article
+                        class="content-card message-card"
+                        data-url="/message/{{ item.data.id }}"
+                    >
+
+
+
+                        <div class="message-header">
+
+
+                            <strong>
+
+                                {% if item.data.messages %}
+
+                                {{ item.data.messages[0].nickname or "匿名访客" }}
+
+                                {% else %}
+
+                                匿名访客
+
+                                {% endif %}
+
+                            </strong>
+
+
+                            {% if item.data.is_private %}
+
+                            <span class="message-private-badge">
+
+                                🔒 私密
+
+                            </span>
+
+                            {% endif %}
+
+
+                            <span class="message-time">
+
+                                {{ item.data.updated_at.strftime("%Y-%m-%d %H:%M") }}
+
+                            </span>
+
+                        </div>
+
+
+
+
+                        <div class="message-content">
+
+                            {% if item.data.messages %}
+
+                            {{ item.data.messages[0].content }}
+
+                            {% endif %}
+
+                        </div>
+
+
+
+
+                        <div class="message-meta">
+
+                            <span>
+                                💬 {{ item.data.messages|length }} 条消息
+                            </span>
+
+                        </div>
+
+
+
+                    </article>
+
+                    {% endif %}
+
+                </div>
+
+
+
+            </div>
+
+
+
+            {% else %}
+
+
+
+            <!-- 空状态 -->
+
+            <div class="empty-state">
+
+                <div class="empty-state-title">
+
+                    这里还没有内容
+
+                </div>
+
+                <div class="empty-state-text">
+
+                    第一篇文章或第一条动态，等待你的记录
+
+                </div>
+
+            </div>
+
+
+
+            {% endfor %}
+
+
+
+        </div>
+
+
+
+    </div>
+
+</section>
+
+
+{% endblock %}

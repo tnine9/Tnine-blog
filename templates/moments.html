@@ -2,7 +2,7 @@
 
 
 {% block title %}
-{{ site_name }}
+{{ page_title_display }}
 {% endblock %}
 
 
@@ -16,19 +16,23 @@
 
 
 
-    <!-- 页面标题 -->
+    <!-- 页面标题（纵向：标题 + 描述） -->
 
-    <section class="hero moments-hero">
+    <header class="page-header page-header-vertical">
 
-        <h2>
-            朋友圈
-        </h2>
+        <div class="page-header-main">
 
-        <p>
-            一些日常，一些碎片。
-        </p>
+            <h1 class="page-header-title">
+                {{ page_title }}
+            </h1>
 
-    </section>
+            <p class="page-header-desc">
+                {{ page_description }}
+            </p>
+
+        </div>
+
+    </header>
 
 
 
@@ -95,7 +99,6 @@
     type="button"
     class="moment-fab"
     id="momentCreateFab"
-    title="发朋友圈"
 >
 
     ＋

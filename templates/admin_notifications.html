@@ -9,21 +9,23 @@
 
 <main class="container admin-list-page">
 
-    <div class="admin-list-header">
+    <header class="page-header">
 
-        <div>
+        <div class="page-header-main">
 
-            <h1 class="admin-list-title">
+            <h1 class="page-header-title">
                 通知中心
             </h1>
 
-            <p class="admin-list-subtitle">
+            <p class="page-header-desc">
                 {{ unread_count }} 条未读通知
             </p>
 
         </div>
 
-        <div class="notification-tools">
+        <div class="page-header-side">
+
+            <div class="notification-tools">
 
             <a
                 href="/admin/notifications?scope=all"
@@ -57,7 +59,9 @@
 
         </div>
 
-    </div>
+        </div>
+
+    </header>
 
     {% if notifications %}
 
@@ -99,7 +103,6 @@
 
                     <span
                         class="notification-dot"
-                        title="未读"
                     ></span>
 
                     {% endif %}
@@ -125,7 +128,6 @@
                 <a
                     href="{{ target_url }}"
                     class="admin-view-link"
-                    title="查看详情"
                 >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </a>
@@ -141,7 +143,6 @@
                     <button
                         type="submit"
                         class="admin-view-link"
-                        title="标记已读"
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                     </button>

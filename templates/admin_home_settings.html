@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}
 首页设置 - {{ site_name }}
@@ -9,24 +9,32 @@
 
 <main class="container admin-home">
 
-    <section class="admin-welcome">
+    <header class="page-header">
 
-        <h1>
-            首页设置
-        </h1>
+        <div class="page-header-main">
 
-        <p>
-            配置 Hero 首屏：背景、头像、昵称、个签、标签、社交链接。
-        </p>
+            <h1 class="page-header-title">
+                首页设置
+            </h1>
 
-        <a
-            href="/admin"
-            class="admin-secondary-button"
-        >
-            ← 返回后台
-        </a>
+            <p class="page-header-desc">
+                配置 Hero 首屏：背景、头像、昵称、个签、标签、社交链接。
+            </p>
 
-    </section>
+        </div>
+
+        <div class="page-header-side">
+
+            <a
+                href="/admin"
+                class="btn btn-secondary"
+            >
+                ← 返回后台
+            </a>
+
+        </div>
+
+    </header>
 
 
     {% if request.query_params.get("error") == "avatar-format" %}
@@ -142,7 +150,7 @@
 
                 <button
                     type="submit"
-                    class="admin-primary-button"
+                    class="btn btn-primary"
                 >
                     保存资料
                 </button>
@@ -337,7 +345,7 @@
 
                 <button
                     type="submit"
-                    class="admin-primary-button"
+                    class="btn btn-primary"
                 >
                     保存背景设置
                 </button>
@@ -427,7 +435,7 @@
 
                         <button
                             type="submit"
-                            class="admin-secondary-button"
+                            class="btn btn-secondary"
                         >
                             设为当前
                         </button>
@@ -444,7 +452,7 @@
 
                         <button
                             type="submit"
-                            class="admin-danger-button"
+                            class="btn btn-danger"
                         >
                             删除
                         </button>
@@ -513,7 +521,7 @@
 
                 <button
                     type="submit"
-                    class="admin-primary-button"
+                    class="btn btn-primary"
                 >
                     上传背景
                 </button>
@@ -586,7 +594,7 @@
 
                         <button
                             type="submit"
-                            class="admin-secondary-button"
+                            class="btn btn-secondary"
                         >
                             {% if link.is_visible %}
                             隐藏
@@ -605,7 +613,7 @@
 
                         <button
                             type="submit"
-                            class="admin-danger-button"
+                            class="btn btn-danger"
                         >
                             删除
                         </button>
@@ -725,7 +733,7 @@
 
                 <button
                     type="submit"
-                    class="admin-primary-button"
+                    class="btn btn-primary"
                 >
                     添加链接
                 </button>

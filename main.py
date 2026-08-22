@@ -106,6 +106,9 @@ password_hasher = PasswordHash.recommended()
 # - 多 worker/多进程部署下请保证初始化在单进程完成（本地开发单进程即可）
 # ============================================================
 
+# 系统尚未初始化管理员账号时使用的默认站名/logo
+DEFAULT_SITE_NAME = "Tnine 博客"
+
 INIT_PASSWORD_LENGTH = 10
 
 INIT_CODE_LENGTH = 6
@@ -1148,10 +1151,13 @@ def get_common_context(request: Request):
 
     nickname = profile["nickname"] or ""
 
+    # 系统尚未初始化管理员账号时，使用默认站名与默认 logo
+    uninitialized = get_admin_init_state() is not None
+
     site_logo_text = (
         (nickname or "空")[0].upper()
         if nickname
-        else "T"
+        else (DEFAULT_SITE_NAME[0] if uninitialized else "T")
     )
 
     # 页面信息：按当前路径选择对应页面标题与说明
@@ -1181,6 +1187,17 @@ def get_common_context(request: Request):
         or ""
     )
 
+    # 完整页面标题：页面标题与站点名不同才拼接后缀，避免重复
+    site_name = nickname or (
+        DEFAULT_SITE_NAME if uninitialized else "空"
+    )
+
+    page_title_display = (
+        f"{page_title} - {site_name}"
+        if page_title != site_name
+        else page_title
+    )
+
     return {
         "is_admin": is_admin(request),
         "admin_username": request.session.get(
@@ -1190,7 +1207,7 @@ def get_common_context(request: Request):
             "admin_nickname",
             "",
         ),
-        "site_name": nickname or "空",
+        "site_name": site_name,
         "site_bio": profile["bio"],
         "site_logo_text": site_logo_text,
         "site_primary_color": get_setting_value(
@@ -1206,6 +1223,7 @@ def get_common_context(request: Request):
         "site_avatar": profile["avatar"],
         "page_title": page_title,
         "page_description": page_description,
+        "page_title_display": page_title_display,
     }
 
 
@@ -1437,6 +1455,31 @@ def get_liked_moment_ids(
 
 
 # ============================================================
+# 管理员初始化守卫中间件
+# 系统尚未初始化（admins 表为空）时，除静态资源与管理员
+# 登录页本身外，所有页面一律重定向到 /admin/login 开始初始化
+# ============================================================
+
+@app.middleware("http")
+async def admin_init_guard_middleware(request: Request, call_next):
+
+    path = request.url.path
+
+    # 放行静态资源与登录页（GET/POST），避免样式丢失与重定向循环
+    if path.startswith("/static") or path == "/admin/login":
+        return await call_next(request)
+
+    # admins 表为空 → 未初始化，统一跳转管理员登录页
+    if get_admin_init_state() is not None:
+        return RedirectResponse(
+            url="/admin/login",
+            status_code=302,
+        )
+
+    return await call_next(request)
+
+
+# ============================================================
 # 访客 ID 中间件
 # 首次访问任意页面即签发 365 天访客 Cookie
 # ============================================================
@@ -1482,6 +1525,48 @@ if not os.path.exists(MOMENT_IMAGE_DIR):
 
 @app.get("/")
 def home(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        context = get_common_context(request)
+
+        # ==========================
+        # Hero 首屏数据
+        # ==========================
+
+        hero_cfg = get_hero_config()
+
+        context["hero"] = {
+            "name": hero_cfg["name"],
+            "slogan": hero_cfg["slogan"],
+            "avatar": hero_cfg["avatar"],
+            "bg_mode": hero_cfg["bg_mode"],
+            "bg": get_hero_background(db, hero_cfg),
+            "tags": get_hero_tags(db),
+            "social_links": get_hero_social_links(db),
+        }
+
+
+        return templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context=context,
+        )
+
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
+# PUBLIC：时间线首页
+# ============================================================
+
+@app.get("/home")
+def home_timeline(request: Request):
 
     db = SessionLocal()
 
@@ -1620,26 +1705,10 @@ def home(request: Request):
             get_visitor_id(request),
         )
 
-        # ==========================
-        # Hero 首屏数据
-        # ==========================
-
-        hero_cfg = get_hero_config()
-
-        context["hero"] = {
-            "name": hero_cfg["name"],
-            "slogan": hero_cfg["slogan"],
-            "avatar": hero_cfg["avatar"],
-            "bg_mode": hero_cfg["bg_mode"],
-            "bg": get_hero_background(db, hero_cfg),
-            "tags": get_hero_tags(db),
-            "social_links": get_hero_social_links(db),
-        }
-
 
         return templates.TemplateResponse(
             request=request,
-            name="index.html",
+            name="timeline.html",
             context=context,
         )
 
@@ -1648,10 +1717,6 @@ def home(request: Request):
 
         db.close()
 
-
-# ============================================================
-# PUBLIC：文章详情
-# ============================================================
 @app.get("/article/{article_id}")
 def article_detail(
     request: Request,
@@ -2421,185 +2486,6 @@ def admin_home(
         )
 
     finally:
-        db.close()
-
-
-# ============================================================
-# AUTHENTICATED：文章管理列表（列表页即管理页）
-# ============================================================
-
-@app.get("/admin/articles")
-def admin_articles_page(
-    request: Request,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-
-    db = SessionLocal()
-
-    try:
-
-        articles = (
-            db.query(Article)
-            .options(
-                selectinload(Article.tags),
-                selectinload(Article.likes),
-                selectinload(Article.comments),
-            )
-            .order_by(
-                Article.created_at.desc()
-            )
-            .all()
-        )
-
-        context = get_common_context(request)
-
-        context["articles"] = articles
-
-        context["article_count"] = len(articles)
-
-        # 是否有草稿（新建文章流程提示）
-        context["has_draft"] = any(
-            not a.published_at
-            for a in articles
-        )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_articles.html",
-            context=context,
-        )
-
-    finally:
-
-        db.close()
-
-
-# ============================================================
-# AUTHENTICATED：朋友圈管理列表
-# ============================================================
-
-@app.get("/admin/moments")
-def admin_moments_page(
-    request: Request,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-
-    db = SessionLocal()
-
-    try:
-
-        moments = (
-            db.query(Moment)
-            .options(
-                selectinload(Moment.images),
-                selectinload(Moment.likes),
-                selectinload(Moment.comments),
-            )
-            .order_by(
-                Moment.created_at.desc()
-            )
-            .all()
-        )
-
-        context = get_common_context(request)
-
-        context["moments"] = moments
-
-        context["moment_count"] = len(moments)
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_moments.html",
-            context=context,
-        )
-
-    finally:
-
-        db.close()
-
-
-# ============================================================
-# AUTHENTICATED：留言管理列表
-# ============================================================
-
-@app.get("/admin/messages")
-def admin_messages_page(
-    request: Request,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-
-    db = SessionLocal()
-
-    try:
-
-        threads = (
-            db.query(MessageThread)
-            .options(
-                selectinload(
-                    MessageThread.messages
-                )
-            )
-            .order_by(
-                MessageThread.updated_at.desc()
-            )
-            .all()
-        )
-
-        context = get_common_context(request)
-
-        context["threads"] = threads
-
-        context["thread_count"] = len(threads)
-
-        # 未回复统计
-        unreplied = 0
-
-        for t in threads:
-
-            last = (
-                t.messages[-1]
-                if t.messages
-                else None
-            )
-
-            if (
-                last is not None
-                and last.sender_type == "visitor"
-            ):
-
-                unreplied += 1
-
-        context["unreplied_count"] = unreplied
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_messages.html",
-            context=context,
-        )
-
-    finally:
-
         db.close()
 
 
@@ -3434,18 +3320,11 @@ def admin_delete_visitor(
 @app.get("/admin/new")
 def new_article_page(
     request: Request,
-    force: int = 0,
 ):
     """
     新建文章页面。
 
-    使用统一编辑器：
-    article = None
-
-    Tnine v2 草稿检测流程：
-    - 无草稿 → 直接进入新增页
-    - 有草稿 → 展示"发现已有草稿 [查看草稿] [新文章]"确认页
-      （force=1 跳过提示，直接进入新增页）
+    直接进入统一编辑器（article = None）。
     """
 
     if require_admin(request) is None:
@@ -3459,30 +3338,6 @@ def new_article_page(
     db = SessionLocal()
 
     try:
-
-        drafts = (
-            db.query(Article)
-            .filter(
-                Article.published_at.is_(None)
-            )
-            .order_by(
-                Article.created_at.desc()
-            )
-            .all()
-        )
-
-        if (
-            drafts
-            and force != 1
-        ):
-
-            context["drafts"] = drafts
-
-            return templates.TemplateResponse(
-                request=request,
-                name="admin_new_article_confirm.html",
-                context=context,
-            )
 
         context["article"] = None
 
@@ -4079,7 +3934,7 @@ def edit_moment_page(
         if moment is None:
 
             return RedirectResponse(
-                url="/admin/moments",
+                url="/moments",
                 status_code=303,
             )
 
@@ -4133,7 +3988,7 @@ def update_moment(
             db.commit()
 
         return RedirectResponse(
-            url="/admin/moments",
+            url="/moments",
             status_code=303,
         )
 
@@ -4277,7 +4132,7 @@ def create_moment(
 
 
         return RedirectResponse(
-            url="/",
+            url="/home",
             status_code=303,
         )
 

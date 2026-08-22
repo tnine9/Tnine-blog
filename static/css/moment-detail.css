@@ -1,0 +1,661 @@
+/* =========================================================
+   Tnine 朋友圈 - 详情页（独立组件）
+   布局：居中内容 max-width:720px
+   结构：头像 昵称 → 正文 → 图片九宫格 → 发布时间
+        → 点赞 评论 → 评论列表
+   不使用文章详情页布局 / 1200px / TOC
+   ========================================================= */
+
+.moment-detail-page {
+
+    width: 100%;
+
+    max-width: var(--container-width);
+
+    margin: 0 auto;
+
+    padding-bottom: 60px;
+
+}
+
+/* ---------- 顶部返回 ---------- */
+
+.moment-detail-top {
+
+    margin-bottom: 16px;
+
+}
+
+.detail-back {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    color: var(--color-text-muted);
+
+    font-size: 14px;
+
+    text-decoration: none;
+
+    transition: color .2s ease;
+
+}
+
+.detail-back:hover {
+
+    color: var(--color-primary);
+
+}
+
+/* ---------- 详情卡片 ---------- */
+
+.moment-detail-card {
+
+    cursor: default;
+
+    padding: 28px;
+
+}
+
+/* ---------- 发布者：头像 + 昵称 ---------- */
+
+.detail-moment-header {
+
+    align-items: center;
+
+    gap: 12px;
+
+}
+
+.detail-avatar {
+
+    width: 44px;
+
+    height: 44px;
+
+    border-radius: 50%;
+
+    overflow: hidden;
+
+    flex-shrink: 0;
+
+    background: var(--color-soft);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    color: var(--color-text-secondary);
+
+}
+
+.detail-avatar .moment-avatar-img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+
+}
+
+.detail-user-name {
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+}
+
+/* 管理员操作（hover 显示，位于外壳右上角） */
+
+.detail-card-actions {
+
+    position: absolute;
+
+    top: 12px;
+
+    right: 12px;
+
+    z-index: 5;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+}
+
+.detail-delete-form {
+
+    margin: 0;
+
+}
+
+.detail-edit-button,
+.detail-delete-button {
+
+    width: 34px;
+
+    height: 34px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: var(--color-soft);
+
+    color: var(--color-text-muted);
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-decoration: none;
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transition: opacity .2s ease, visibility .2s ease, color .2s ease, background .2s ease;
+
+}
+
+.moment-card-shell.moment-detail-shell:hover .detail-edit-button,
+.moment-card-shell.moment-detail-shell:hover .detail-delete-button {
+
+    opacity: 1;
+
+    visibility: visible;
+
+}
+
+.detail-edit-button:hover {
+
+    color: var(--color-primary, #4a6cf7);
+
+    background: var(--color-primary-soft, #eef1fe);
+
+}
+
+.detail-delete-button:hover {
+
+    color: #fff;
+
+    background: var(--color-danger, #e74c3c);
+
+}
+
+/* ---------- 正文 ---------- */
+
+.detail-content {
+
+    font-size: 16px;
+
+    line-height: 1.8;
+
+    margin: 14px 0;
+
+    white-space: pre-wrap;
+
+    word-break: break-word;
+
+}
+
+/* ---------- 图片九宫格 ----------
+   复用 moment-card.css 的九宫格规则：
+   单图大图 / 两张并排 / 三张以上九宫格。
+   此处仅覆盖间距，保证居中 720px 内容宽度。
+   ---------- */
+
+.detail-images {
+
+    margin: 16px 0 4px;
+
+    max-width: 100%;
+
+}
+
+/* ---------- 发布时间 ---------- */
+
+.detail-time {
+
+    font-size: 13px;
+
+    color: var(--color-text-muted);
+
+    margin: 14px 0 4px;
+
+}
+
+/* ---------- 交互区 ---------- */
+
+.detail-interactions {
+
+    border-top: 1px solid var(--color-border);
+
+    margin-top: 18px;
+
+    padding-top: 16px;
+
+}
+
+/* 统计行 */
+
+.detail-stats {
+
+    display: flex;
+
+    gap: 24px;
+
+    margin-bottom: 14px;
+
+}
+
+.detail-stat {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    font-size: 14px;
+
+    color: var(--color-text-secondary);
+
+}
+
+.detail-stat strong {
+
+    font-size: 15px;
+
+    color: var(--color-text);
+
+}
+
+/* 点赞按钮 */
+
+.detail-like-row {
+
+    margin-bottom: 14px;
+
+}
+
+.detail-like-row .moment-action-button {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 8px 18px;
+
+    border: 1px solid var(--color-border);
+
+    border-radius: 999px;
+
+    background: var(--color-surface-solid, var(--color-surface));
+
+    color: var(--color-text);
+
+    font-size: 14px;
+
+    cursor: pointer;
+
+    transition: all .2s ease;
+
+}
+
+.detail-like-row .moment-action-button:hover {
+
+    border-color: var(--color-primary);
+
+    color: var(--color-primary);
+
+}
+
+.detail-like-row .moment-action-button.is-liked {
+
+    border-color: var(--color-primary);
+
+    color: var(--color-primary);
+
+    background: var(--color-primary-soft, var(--color-soft));
+
+}
+
+.moment-action-count {
+
+    font-weight: 700;
+
+}
+
+/* 赞过行 */
+
+.detail-like-list {
+
+    margin-bottom: 14px;
+
+}
+
+.like-section-title {
+
+    font-size: 13px;
+
+    color: var(--color-text-muted);
+
+}
+
+/* ---------- 评论输入（默认展开） ---------- */
+
+.detail-comment-panel {
+
+    margin-bottom: 14px;
+
+}
+
+.moment-reply-target {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 13px;
+
+    color: var(--color-primary);
+
+    margin-bottom: 8px;
+
+}
+
+.moment-reply-cancel {
+
+    border: none;
+
+    background: none;
+
+    color: var(--color-text-muted);
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+}
+
+.moment-reply-cancel:hover {
+
+    color: var(--color-text);
+
+}
+
+.moment-comment-input-row {
+
+    display: flex;
+
+    gap: 10px;
+
+    align-items: flex-end;
+
+}
+
+.moment-comment-input {
+
+    flex: 1;
+
+    min-height: 44px;
+
+    max-height: 140px;
+
+    padding: 10px 14px;
+
+    border: 1px solid var(--color-border-input);
+
+    border-radius: 12px;
+
+    background: var(--color-surface-solid, var(--color-surface));
+
+    color: var(--color-text);
+
+    font-size: 14px;
+
+    font-family: var(--font-main);
+
+    resize: none;
+
+    outline: none;
+
+    box-sizing: border-box;
+
+    transition: border-color .2s ease, box-shadow .2s ease;
+
+}
+
+.moment-comment-input:focus {
+
+    border-color: var(--color-primary);
+
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+
+}
+
+.moment-comment-submit {
+
+    padding: 9px 20px;
+
+    border: none;
+
+    border-radius: 999px;
+
+    background: var(--gradient-primary, var(--color-primary));
+
+    color: #fff;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: transform .2s ease;
+
+    flex-shrink: 0;
+
+}
+
+.moment-comment-submit:hover {
+
+    transform: translateY(-1px);
+
+}
+
+/* ---------- 评论列表（默认展开） ---------- */
+
+.detail-comment-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+}
+
+.detail-comment {
+
+    display: flex;
+
+    align-items: baseline;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    padding: 10px 14px;
+
+    background: var(--color-soft);
+
+    border-radius: 12px;
+
+    font-size: 14px;
+
+    line-height: 1.7;
+
+}
+
+.moment-comment-user {
+
+    font-weight: 700;
+
+    color: var(--color-text);
+
+}
+
+.moment-comment-replyto {
+
+    color: var(--color-primary);
+
+    font-size: 13px;
+
+}
+
+.moment-comment-content {
+
+    color: var(--color-text);
+
+    word-break: break-word;
+
+}
+
+/* 评论操作（回复 / 删除）：默认隐藏，Hover 显示 */
+
+.detail-comment-ops {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-left: auto;
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transition: opacity .2s ease, visibility .2s ease;
+
+}
+
+.detail-comment:hover .detail-comment-ops {
+
+    opacity: 1;
+
+    visibility: visible;
+
+}
+
+.inline-reply-button {
+
+    border: none;
+
+    background: none;
+
+    color: var(--color-text-muted);
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+    padding: 0;
+
+}
+
+.inline-reply-button:hover {
+
+    color: var(--color-primary);
+
+}
+
+.inline-delete-form {
+
+    margin: 0;
+
+    display: inline;
+
+}
+
+.inline-delete-button {
+
+    border: none;
+
+    background: none;
+
+    color: var(--color-text-muted);
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+    padding: 0;
+
+}
+
+.inline-delete-button:hover {
+
+    color: var(--color-danger, #e74c3c);
+
+}
+
+.moment-comment-empty {
+
+    padding: 16px;
+
+    text-align: center;
+
+    color: var(--color-text-muted);
+
+    font-size: 13px;
+
+    background: var(--color-soft);
+
+    border-radius: 12px;
+
+}
+
+/* ---------- 移动端 ---------- */
+
+@media (max-width: 768px) {
+
+    .moment-detail-page {
+
+        width: 100%;
+
+    }
+
+    .moment-detail-card {
+
+        padding: 20px 16px;
+
+    }
+
+}

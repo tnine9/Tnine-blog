@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}
 标签管理 - {{ site_name }}
@@ -9,24 +9,32 @@
 
 <main class="container admin-home">
 
-    <section class="admin-welcome">
+    <header class="page-header">
 
-        <h1>
-            标签管理
-        </h1>
+        <div class="page-header-main">
 
-        <p>
-            创建标签并与文章关联，首页 Hero 仅展示「首页展示」开启的标签。
-        </p>
+            <h1 class="page-header-title">
+                标签管理
+            </h1>
 
-        <a
-            href="/admin"
-            class="admin-secondary-button"
-        >
-            ← 返回后台
-        </a>
+            <p class="page-header-desc">
+                创建标签并与文章关联，首页 Hero 仅展示「首页展示」开启的标签。
+            </p>
 
-    </section>
+        </div>
+
+        <div class="page-header-side">
+
+            <a
+                href="/admin"
+                class="btn btn-secondary"
+            >
+                ← 返回后台
+            </a>
+
+        </div>
+
+    </header>
 
 
     {% if request.query_params.get("error") == "name-empty" %}
@@ -134,7 +142,7 @@
 
                 <button
                     type="submit"
-                    class="admin-primary-button"
+                    class="btn btn-primary"
                 >
                     创建标签
                 </button>
@@ -203,7 +211,7 @@
 
                     <a
                         href="/tag/{{ tag.name | urlencode }}"
-                        class="admin-secondary-button"
+                        class="btn btn-secondary"
                         target="_blank"
                     >
                         查看
@@ -216,7 +224,7 @@
 
                         <button
                             type="submit"
-                            class="admin-secondary-button"
+                            class="btn btn-secondary"
                         >
                             {% if tag.show_on_home %}
                             取消首页展示
@@ -235,7 +243,7 @@
 
                         <button
                             type="submit"
-                            class="admin-danger-button"
+                            class="btn btn-danger"
                         >
                             删除
                         </button>
@@ -359,7 +367,7 @@
 
                     <button
                         type="submit"
-                        class="admin-primary-button"
+                        class="btn btn-primary"
                     >
                         保存修改
                     </button>

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}
 {% if article %}
@@ -32,7 +32,7 @@
 
 {% block content %}
 
-<main class="container admin-page editor-page">
+<main class="container admin-page editor-page work-page">
 
     <!-- ==================================================
          顶部悬浮标题栏
@@ -41,12 +41,72 @@
     <header
         class="editor-sticky-header"
         id="editorStickyHeader"
-        title="返回顶部"
     >
 
         <!-- 完整状态 -->
 
         <div class="editor-sticky-main">
+
+            <div class="editor-sticky-topbar">
+
+                <div class="editor-sticky-meta">
+
+                    {% if article and article.status == "published" %}
+
+                    <span
+                        class="article-status article-status-published"
+                    >
+                        已发布
+                    </span>
+
+                    {% else %}
+
+                    <span
+                        class="article-status article-status-draft"
+                    >
+                        草稿
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="editor-sticky-actions">
+
+                    <span
+                        class="editor-save-status"
+                        id="editorSaveStatus"
+                    >
+                        {% if article %}已保存{% else %}尚未保存{% endif %}
+                    </span>
+
+
+                    <button
+                        type="submit"
+                        name="action"
+                        value="draft"
+                        class="btn btn-secondary"
+                        form="articleEditorForm"
+                    >
+                        保存草稿
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        name="action"
+                        value="publish"
+                        class="btn btn-primary"
+                        form="articleEditorForm"
+                    >
+                        发布
+                    </button>
+
+                </div>
+
+            </div>
+
 
             <input
                 type="text"
@@ -71,42 +131,108 @@
             >{% if article %}{{ article.summary }}{% endif %}</textarea>
 
 
-            <div class="editor-sticky-meta">
+            <div class="editor-sticky-tags">
 
-                {% if article %}
+                <span class="editor-tags-label">
+                    标签
+                </span>
 
-                    {% if article.status == "draft" %}
+                <div
+                    class="tag-picker"
+                    id="tagPicker"
+                >
 
-                    <span
-                        class="article-status article-status-draft"
+                    <div
+                        class="tag-picker-trigger"
+                        id="tagPickerTrigger"
+                        tabindex="0"
+                        role="combobox"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
                     >
-                        草稿
-                    </span>
 
-                    {% else %}
+                        <span class="tag-picker-label">
+                            选择标签
+                        </span>
 
-                    <span
-                        class="article-status article-status-published"
+                        <div
+                            class="tag-picker-selected"
+                            id="tagPickerSelected"
+                        >
+                            {% for tag in all_tags %}
+                            {% if tag.id in article_tag_ids %}
+                            <span
+                                class="tag-picker-chip"
+                                data-tag-id="{{ tag.id }}"
+                                data-tag-name="{{ tag.name }}"
+                            >
+                                {{ tag.name }}
+                                <span class="tag-picker-chip-remove">&times;</span>
+                            </span>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <span class="tag-picker-arrow">&#x25BE;</span>
+
+                    </div>
+
+                    <div
+                        class="tag-picker-dropdown"
+                        id="tagPickerDropdown"
+                        role="listbox"
                     >
-                        已发布
-                    </span>
 
-                    {% endif %}
+                        {% if all_tags %}
 
+                        <div
+                            class="tag-picker-all"
+                            id="tagPickerAll"
+                        >
 
-                    <span>
-                        {{ article.created_at.strftime("%Y-%m-%d") }}
-                    </span>
+                            {% for tag in all_tags %}
 
-                {% else %}
+                            <span
+                                class="tag-picker-tag{% if tag.id in article_tag_ids %} is-selected{% endif %}"
+                                data-tag-id="{{ tag.id }}"
+                                data-tag-name="{{ tag.name }}"
+                                role="option"
+                                aria-selected="{% if tag.id in article_tag_ids %}true{% else %}false{% endif %}"
+                            >
+                                {{ tag.name }}
+                            </span>
 
-                    <span
-                        class="article-status article-status-draft"
-                    >
-                        新文章
-                    </span>
+                            {% endfor %}
 
-                {% endif %}
+                        </div>
+
+                        {% else %}
+
+                        <p class="text-secondary" style="margin:12px;text-align:center;">
+                            暂无标签，请先到后台「标签管理」创建
+                        </p>
+
+                        {% endif %}
+
+                    </div>
+
+                    <!-- 隐藏的 checkbox 用于表单提交 -->
+                    <div id="tagPickerHiddenInputs">
+                        {% for tag in all_tags %}
+                        {% if tag.id in article_tag_ids %}
+                        <input
+                            type="checkbox"
+                            name="tag_ids"
+                            value="{{ tag.id }}"
+                            checked
+                            hidden
+                            form="articleEditorForm"
+                        >
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+
+                </div>
 
             </div>
 
@@ -117,6 +243,17 @@
 
         <div class="editor-sticky-compact">
 
+            <span class="compact-status">
+
+                {% if article and article.status == "published" %}
+                    已发布
+                {% else %}
+                    草稿
+                {% endif %}
+
+            </span>
+
+
             <span class="compact-title">
                 {% if article %}
                     {{ article.title }}
@@ -126,23 +263,30 @@
             </span>
 
 
-            <span class="compact-status">
+            <div class="editor-sticky-actions">
 
-                {% if article %}
+                <button
+                    type="submit"
+                    name="action"
+                    value="draft"
+                    class="btn btn-secondary"
+                    form="articleEditorForm"
+                >
+                    保存
+                </button>
 
-                    {% if article.status == "draft" %}
-                        草稿
-                    {% else %}
-                        已发布
-                    {% endif %}
 
-                {% else %}
+                <button
+                    type="submit"
+                    name="action"
+                    value="publish"
+                    class="btn btn-primary"
+                    form="articleEditorForm"
+                >
+                    发布
+                </button>
 
-                    新文章
-
-                {% endif %}
-
-            </span>
+            </div>
 
         </div>
 
@@ -188,115 +332,6 @@
 
                 </div>
 
-
-                <!-- ==================================================
-                     标签（多列多行选择 + 已选胶囊）
-                     ================================================== -->
-
-                <div class="form-group">
-
-                    <label>
-                        标签
-                    </label>
-
-                    <div
-                        class="editor-tags-selected"
-                        id="editorTagsSelected"
-                    >
-                        已选择：
-                    </div>
-
-                    <div class="editor-tags editor-tags-grid">
-
-                        {% for tag in all_tags %}
-
-                        <label
-                            class="editor-tag-option"
-                        >
-
-                            <input
-                                type="checkbox"
-                                name="tag_ids"
-                                value="{{ tag.id }}"
-                                data-tag-name="{{ tag.name }}"
-                                {% if tag.id in article_tag_ids %}
-                                checked
-                                {% endif %}
-                            >
-
-                            <span>
-                                {{ tag.name }}
-                            </span>
-
-                        </label>
-
-                        {% endfor %}
-
-                        {% if not all_tags %}
-
-                        <p
-                            class="text-secondary"
-                            style="margin:0;"
-                        >
-                            暂无标签，请先到后台「标签管理」创建
-                        </p>
-
-                        {% endif %}
-
-                    </div>
-
-                </div>
-
-
-                <!-- ==================================================
-                     底部固定操作栏
-                     ================================================== -->
-
-                <div class="editor-bottom-bar">
-
-                    <div class="editor-bottom-info">
-
-                        {% if article %}
-
-                            {% if article.status == "draft" %}
-                                当前是草稿
-                            {% else %}
-                                当前已发布
-                            {% endif %}
-
-                        {% else %}
-
-                            新文章
-
-                        {% endif %}
-
-                    </div>
-
-
-                    <div class="editor-bottom-actions">
-
-                        <button
-                            type="submit"
-                            name="action"
-                            value="draft"
-                            class="editor-draft-button"
-                        >
-                            保存草稿
-                        </button>
-
-
-                        <button
-                            type="submit"
-                            name="action"
-                            value="publish"
-                            class="editor-publish-button"
-                        >
-                            发布文章
-                        </button>
-
-                    </div>
-
-                </div>
 
             </form>
 
@@ -880,59 +915,371 @@ document.addEventListener(
 
 
         /*
-         * 标签：已选胶囊实时更新
+         * Tag Picker：下拉标签选择器
          */
 
-        const tagsSelectedBox =
-            document.getElementById(
-                "editorTagsSelected"
+        const tagPicker =
+            document.getElementById("tagPicker");
+
+        const tagPickerTrigger =
+            document.getElementById("tagPickerTrigger");
+
+        const tagPickerDropdown =
+            document.getElementById("tagPickerDropdown");
+
+        const tagPickerSelected =
+            document.getElementById("tagPickerSelected");
+
+        const tagPickerAll =
+            document.getElementById("tagPickerAll");
+
+        const tagPickerHidden =
+            document.getElementById("tagPickerHiddenInputs");
+
+
+        function isTagPickerOpen() {
+
+            return (
+                tagPickerDropdown &&
+                tagPickerDropdown.classList.contains("is-open")
             );
+        }
 
 
-        function updateEditorTagsSelected() {
+        function setTagPickerOpen(open) {
 
-            if (!tagsSelectedBox) {
+            if (!tagPickerDropdown) {
                 return;
             }
 
-            const checked =
-                document.querySelectorAll(
-                    'input[name="tag_ids"]:checked'
+            tagPickerDropdown.classList.toggle(
+                "is-open",
+                open
+            );
+
+            if (tagPickerTrigger) {
+
+                tagPickerTrigger.setAttribute(
+                    "aria-expanded",
+                    open ? "true" : "false"
+                );
+            }
+
+            /* 下拉展开时放开标题栏裁剪，避免面板被 overflow 遮挡 */
+            const header =
+                document.getElementById(
+                    "editorStickyHeader"
                 );
 
-            const names =
-                Array.from(checked).map(
+            if (header) {
+
+                header.classList.toggle(
+                    "has-open-picker",
+                    open
+                );
+            }
+        }
+
+
+        if (tagPickerTrigger) {
+
+            tagPickerTrigger.addEventListener(
+                "click",
+                function (event) {
+
+                    event.stopPropagation();
+
+                    setTagPickerOpen(
+                        !isTagPickerOpen()
+                    );
+                }
+            );
+
+            /* 键盘支持：Enter / 空格 开合 */
+            tagPickerTrigger.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (
+                        event.key === "Enter" ||
+                        event.key === " "
+                    ) {
+
+                        event.preventDefault();
+
+                        setTagPickerOpen(
+                            !isTagPickerOpen()
+                        );
+                    }
+                }
+            );
+        }
+
+
+        /* 点击外部关闭 */
+
+        document.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    tagPicker &&
+                    !tagPicker.contains(event.target)
+                ) {
+
+                    setTagPickerOpen(false);
+                }
+            }
+        );
+
+
+        /* 更新已选标签展示 */
+
+        function syncTagPickerUI() {
+
+            const selectedIds = new Set();
+
+            /* 读取隐藏 checkbox（表单真实提交数据） */
+
+            document
+                .querySelectorAll(
+                    'input[name="tag_ids"]:checked'
+                )
+                .forEach(
                     function (box) {
 
-                        return box.dataset.tagName ||
-                            box.value;
+                        selectedIds.add(
+                            Number(box.value)
+                        );
                     }
                 );
 
-            if (names.length === 0) {
+            /* 渲染 trigger 内已选胶囊 */
 
-                tagsSelectedBox.innerHTML =
-                    "已选择：<span class='text-secondary'>未选择任何标签</span>";
+            if (tagPickerSelected) {
 
-                return;
+                const names = [];
+
+                document
+                    .querySelectorAll(
+                        'input[name="tag_ids"]:checked'
+                    )
+                    .forEach(
+                        function (box) {
+
+                            names.push({
+                                id: Number(box.value),
+                                name: box.dataset.tagName || box.value,
+                            });
+                        }
+                    );
+
+                if (names.length === 0) {
+
+                    tagPickerSelected.innerHTML = "";
+
+                } else {
+
+                    tagPickerSelected.innerHTML =
+                        names
+                            .map(
+                                function (item) {
+
+                                    return (
+                                        "<span class='tag-picker-chip' " +
+                                        "data-tag-id='" + item.id + "' " +
+                                        "data-tag-name='" +
+                                        item.name
+                                            .replace(/&/g, "&amp;")
+                                            .replace(/"/g, "&quot;")
+                                            .replace(/</g, "&lt;")
+                                            .replace(/>/g, "&gt;") +
+                                        "'>" +
+                                        item.name
+                                            .replace(/&/g, "&amp;")
+                                            .replace(/</g, "&lt;")
+                                            .replace(/>/g, "&gt;") +
+                                        "<span class='tag-picker-chip-remove'>&times;</span>" +
+                                        "</span>"
+                                    );
+                                }
+                            )
+                            .join("");
+                }
             }
 
-            tagsSelectedBox.innerHTML =
-                "已选择：" +
-                names
-                    .map(
-                        function (name) {
+            /* 全部标签胶囊选中态 */
 
-                            return (
-                                "<span class='tag-chip'>" +
-                                name +
-                                "</span>"
+            if (tagPickerAll) {
+
+                tagPickerAll
+                    .querySelectorAll(
+                        ".tag-picker-tag"
+                    )
+                    .forEach(
+                        function (tagEl) {
+
+                            const id =
+                                Number(
+                                    tagEl.dataset.tagId
+                                );
+
+                            const isSelected =
+                                selectedIds.has(id);
+
+                            tagEl.classList.toggle(
+                                "is-selected",
+                                isSelected
+                            );
+
+                            tagEl.setAttribute(
+                                "aria-selected",
+                                isSelected
+                                    ? "true"
+                                    : "false"
                             );
                         }
-                    )
-                    .join("");
+                    );
+            }
         }
 
+
+        /* 胶囊移除按钮（事件委托） */
+
+        if (tagPicker) {
+
+            tagPicker.addEventListener(
+                "click",
+                function (event) {
+
+                    const removeBtn =
+                        event.target.closest(
+                            ".tag-picker-chip-remove"
+                        );
+
+                    if (!removeBtn) {
+                        return;
+                    }
+
+                    const chip =
+                        removeBtn.closest(
+                            ".tag-picker-chip"
+                        );
+
+                    if (!chip) {
+                        return;
+                    }
+
+                    const id =
+                        Number(
+                            chip.dataset.tagId
+                        );
+
+                    const box =
+                        document.querySelector(
+                            'input[name="tag_ids"][value="' +
+                            id +
+                            '"]'
+                        );
+
+                    if (box) {
+
+                        box.checked = false;
+
+                        box.dispatchEvent(
+                            new Event("change")
+                        );
+                    }
+
+                    event.stopPropagation();
+                }
+            );
+        }
+
+
+        /* 点击胶囊：选中 / 取消 */
+
+        if (tagPickerAll) {
+
+            tagPickerAll.addEventListener(
+                "click",
+                function (event) {
+
+                    const tagEl =
+                        event.target.closest(
+                            ".tag-picker-tag"
+                        );
+
+                    if (!tagEl) {
+                        return;
+                    }
+
+                    const id =
+                        tagEl.dataset.tagId;
+
+                    const name =
+                        tagEl.dataset.tagName || id;
+
+                    let box =
+                        document.querySelector(
+                            'input[name="tag_ids"][value="' +
+                            id +
+                            '"]'
+                        );
+
+                    if (!box) {
+
+                        /* 首次选中：动态创建隐藏 checkbox */
+
+                        box =
+                            document.createElement(
+                                "input"
+                            );
+
+                        box.type = "checkbox";
+
+                        box.name = "tag_ids";
+
+                        box.value = id;
+
+                        box.dataset.tagName = name;
+
+                        box.hidden = true;
+
+                        box.checked = true;
+
+                        box.setAttribute(
+                            "form",
+                            "articleEditorForm"
+                        );
+
+                        tagPickerHidden.appendChild(
+                            box
+                        );
+
+                        box.addEventListener(
+                            "change",
+                            syncTagPickerUI
+                        );
+
+                        syncTagPickerUI();
+
+                    } else {
+
+                        box.checked = !box.checked;
+
+                        box.dispatchEvent(
+                            new Event("change")
+                        );
+                    }
+
+                    event.stopPropagation();
+                }
+            );
+        }
+
+
+        /* 隐藏 checkbox 变更 → 同步 UI */
 
         document
             .querySelectorAll(
@@ -943,13 +1290,13 @@ document.addEventListener(
 
                     box.addEventListener(
                         "change",
-                        updateEditorTagsSelected
+                        syncTagPickerUI
                     );
                 }
             );
 
 
-        updateEditorTagsSelected();
+        syncTagPickerUI();
 
 
         /*
@@ -1060,12 +1407,22 @@ document.addEventListener(
 
 
         /*
-         * 点击标题栏回到顶部
+         * 点击标题栏空白处回到顶部（交互元素不触发）
          */
 
         header.addEventListener(
             "click",
-            function () {
+            function (event) {
+
+                if (
+                    event.target.closest(
+                        "input, textarea, button, " +
+                        ".tag-picker, .editor-sticky-actions, " +
+                        ".editor-save-status"
+                    )
+                ) {
+                    return;
+                }
 
                 window.scrollTo({
                     top: 0,
@@ -1074,6 +1431,33 @@ document.addEventListener(
 
             }
         );
+
+
+        /*
+         * 保存状态提示：表单提交时显示"保存中…"
+         */
+
+        const editorForm =
+            document.getElementById(
+                "articleEditorForm"
+            );
+
+        const saveStatus =
+            document.getElementById(
+                "editorSaveStatus"
+            );
+
+        if (editorForm && saveStatus) {
+
+            editorForm.addEventListener(
+                "submit",
+                function () {
+
+                    saveStatus.textContent =
+                        "保存中…";
+                }
+            );
+        }
 
 
         /*

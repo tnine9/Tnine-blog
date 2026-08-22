@@ -1,16 +1,56 @@
+<div
+    class="moment-card-shell{% if is_admin %} has-admin{% endif %} is-clickable"
+    data-url="/moment/{{ item.data.id }}"
+>
+
+    {% if is_admin %}
+    <div class="moment-admin-actions">
+        <a
+            class="moment-admin-btn"
+            href="/admin/moment/{{ item.data.id }}/edit"
+        >✎</a>
+        <form
+            method="post"
+            action="/admin/moment/{{ item.data.id }}/delete"
+            class="moment-admin-form"
+            onsubmit="return confirm('确定要删除这条朋友圈吗？');"
+        >
+            <button
+                type="submit"
+                class="moment-admin-btn is-danger"
+            >🗑</button>
+        </form>
+    </div>
+    {% endif %}
+
 <article
-    class="content-card moment-card"
+    class="moment-card{% if is_admin %} has-admin{% endif %}"
+    data-moment-card
 >
 
 
-    <!-- 用户信息 -->
+    <!-- 用户信息（卡片内容统一居中容器，720px 对齐） -->
+
+    <div class="moment-card-body">
 
     <div class="moment-header">
 
 
         <div class="moment-avatar">
 
+            {% if site_avatar %}
+
+            <img
+                class="moment-avatar-img"
+                src="{{ site_avatar }}"
+                alt="头像"
+            >
+
+            {% else %}
+
             {{ (item.data.nickname or "匿")[0] }}
+
+            {% endif %}
 
         </div>
 
@@ -42,11 +82,13 @@
 
 
 
-    <!-- 内容（高度随文字行数自适应） -->
+    <!-- 内容（完整显示，不折叠） -->
 
     {% if item.data.content %}
 
-    <div class="moment-content moment-content-flex">
+    <div
+        class="moment-content moment-content-flex"
+    >
 
         {{ item.data.content }}
 
@@ -64,7 +106,7 @@
 
 
 
-    <!-- 操作按钮 -->
+    <!-- 操作按钮（互动区，不触发卡片跳转） -->
 
     <div class="moment-actions moment-interactive">
 
@@ -429,5 +471,8 @@
     </div>
 
 
+    </div>
 
 </article>
+
+</div>

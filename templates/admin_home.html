@@ -13,23 +13,23 @@
          Dashboard 头部
          ================================================== -->
 
-    <section class="dashboard-header">
+    <header class="page-header">
 
-        <div>
+        <div class="page-header-main">
 
-            <h1 class="dashboard-title">
+            <h1 class="page-header-title">
                 {{ site_name }} 控制台
             </h1>
 
-            <p class="dashboard-subtitle">
+            <p class="page-header-desc">
                 欢迎回来，{{ admin_nickname or admin_username }} · 从这里管理你的全部内容
             </p>
 
         </div>
 
-        <!-- 切换主题（保留原有功能，已选主题全站生效） -->
+        <div class="page-header-side">
 
-        <div class="admin-theme-switch">
+            <div class="admin-theme-switch">
 
             <button
                 type="button"
@@ -114,7 +114,9 @@
 
         </div>
 
-    </section>
+        </div>
+
+    </header>
 
     <!-- ==================================================
          卡片工作台（无侧边导航，纯卡片入口）
@@ -125,7 +127,7 @@
         <!-- 文章卡片 -->
 
         <a
-            href="/admin/articles"
+            href="/articles"
             class="dashboard-card dashboard-card-article"
         >
 
@@ -170,7 +172,7 @@
         <!-- 朋友圈卡片 -->
 
         <a
-            href="/admin/moments"
+            href="/moments"
             class="dashboard-card dashboard-card-moment"
         >
 
@@ -210,7 +212,7 @@
         <!-- 留言卡片 -->
 
         <a
-            href="/admin/messages"
+            href="/messages"
             class="dashboard-card dashboard-card-message"
         >
 
@@ -404,41 +406,11 @@
 
     /* ============ Dashboard 卡片工作台 ============ */
 
-    .dashboard-header {
+    
 
-        display: flex;
+    
 
-        align-items: center;
-
-        justify-content: space-between;
-
-        gap: 24px;
-
-        margin: 32px 0 28px;
-
-    }
-
-    .dashboard-title {
-
-        font-size: 28px;
-
-        font-weight: 800;
-
-        margin: 0 0 6px;
-
-        color: var(--color-text);
-
-    }
-
-    .dashboard-subtitle {
-
-        margin: 0;
-
-        color: var(--color-text-secondary, #888);
-
-        font-size: 14px;
-
-    }
+    
 
     .dashboard-grid {
 
@@ -626,6 +598,8 @@
 
     /* 卡片主题色弱区分 */
 
+    .dashboard-card-write:hover { border-color: #7C3AED; }
+
     .dashboard-card-article:hover { border-color: #7C3AED; }
 
     .dashboard-card-moment:hover { border-color: #0EA5E9; }
@@ -642,13 +616,7 @@
 
     @media (max-width: 720px) {
 
-        .dashboard-header {
-
-            flex-direction: column;
-
-            align-items: flex-start;
-
-        }
+        
 
         .dashboard-grid {
 

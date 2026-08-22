@@ -1,0 +1,36 @@
+<article
+    class="content-card message-card"
+    data-url="/message/{{ thread.id }}"
+>
+    <div class="message-header">
+        <strong>
+            {% if thread.messages %}
+            {{ thread.messages[0].nickname or "匿名访客" }}
+            {% else %}
+            匿名访客
+            {% endif %}
+        </strong>
+
+        {% if thread.is_private %}
+        <span class="message-private-badge">
+            🔒 私密
+        </span>
+        {% endif %}
+
+        <span class="message-time">
+            {{ thread.updated_at.strftime("%Y-%m-%d %H:%M") }}
+        </span>
+    </div>
+
+    <div class="message-content">
+        {% if thread.messages %}
+        {{ thread.messages[0].content }}
+        {% endif %}
+    </div>
+
+    <div class="message-meta">
+        <span>
+            💬 {{ thread.messages|length }} 条消息
+        </span>
+    </div>
+</article>

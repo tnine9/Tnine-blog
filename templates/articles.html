@@ -2,7 +2,7 @@
 
 
 {% block title %}
-{{ site_name }}
+{{ page_title_display }}
 {% endblock %}
 
 
@@ -13,41 +13,73 @@
 <section class="page-content">
 
 
-<header class="section-header">
+<header class="page-header">
 
 
-<div class="section-header-top">
+<div class="page-header-main article-index-header">
 
 
-<h1 class="section-title">
-文章
-</h1>
+<div class="page-header-title-row">
 
+    <h1 class="page-header-title">
+        {{ page_title }}
+    </h1>
 
+</div>
 
-{% if is_admin %}
+{% if selected_tags %}
 
 <a
-href="/admin/new"
-class="action-button"
+    class="article-tag-filter-clear"
+    href="/articles"
 >
-
-＋ 新建文章
-
+    清除筛选
 </a>
 
 {% endif %}
 
+<p class="page-header-desc">
 
-
-</div>
-
-
-<p class="text-secondary">
-
-一些沉淀下来的文字
+    {{ page_description }}
 
 </p>
+
+{% if all_tags %}
+
+<div class="article-tag-filter">
+
+        <div class="article-tag-filter-list">
+
+            {% for tag in all_tags %}
+
+                {% if tag.name in selected_tags %}
+
+                {% set next_tags = selected_tags | reject("equalto", tag.name) | list %}
+
+                {% else %}
+
+                {% set next_tags = selected_tags + [tag.name] %}
+
+                {% endif %}
+
+                <a
+                    class="tag-chip {% if tag.name in selected_tags %}tag-chip-active{% endif %}"
+                    href="/articles?tags={{ next_tags | join(',') }}"
+                >
+
+                    {{ tag.name }}
+
+                </a>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
 
 
 </header>
@@ -55,72 +87,10 @@ class="action-button"
 
 
 <!-- ==================================================
-     标签筛选区域（多列多行胶囊，AND 逻辑）
+     文章小卡片列表
      ================================================== -->
 
-{% if all_tags %}
-
-<div class="article-tag-filter">
-
-    <div class="article-tag-filter-head">
-
-        <span>
-            标签筛选
-        </span>
-
-        {% if selected_tags %}
-
-        <a
-            class="article-tag-filter-clear"
-            href="/articles"
-        >
-            清除筛选
-        </a>
-
-        {% endif %}
-
-    </div>
-
-
-    <div class="article-tag-filter-list">
-
-        {% for tag in all_tags %}
-
-            {% if tag.name in selected_tags %}
-
-            {% set next_tags = selected_tags | reject("equalto", tag.name) | list %}
-
-            {% else %}
-
-            {% set next_tags = selected_tags + [tag.name] %}
-
-            {% endif %}
-
-            <a
-                class="tag-chip {% if tag.name in selected_tags %}tag-chip-active{% endif %}"
-                href="/articles?tags={{ next_tags | join(',') }}"
-                title="点击{{ '取消' if tag.name in selected_tags else '筛选' }}「{{ tag.name }}」"
-            >
-
-                {{ tag.name }}
-
-            </a>
-
-        {% endfor %}
-
-    </div>
-
-</div>
-
-{% endif %}
-
-
-
-<!-- ==================================================
-     文章时间线
-     ================================================== -->
-
-<div class="timeline">
+<div class="article-list">
 
 
 {% if articles %}
@@ -131,47 +101,9 @@ class="action-button"
 
 
 
-<div class="timeline-item">
+{% set item = {"data": article} %}
 
-
-
-    <!-- 左侧时间 -->
-
-    <div class="timeline-side">
-
-        <div class="timeline-date">
-
-            {{
-            article.display_time.strftime("%Y-%m-%d")
-            }}
-
-        </div>
-
-        <div
-            class="timeline-type timeline-type-article"
-        >
-            文章
-        </div>
-
-        <div class="timeline-dot"></div>
-
-    </div>
-
-
-
-    <!-- 右侧内容 -->
-
-    <div class="timeline-content">
-
-        {% set item = {"data": article} %}
-
-        {% include "components/article_card.html" %}
-
-    </div>
-
-
-
-</div>
+{% include "components/article_card.html" %}
 
 
 
@@ -228,7 +160,6 @@ class="action-button"
 <a
 href="/admin/new"
 class="moment-fab"
-title="新建文章"
 >
 
 ＋ 新建文章

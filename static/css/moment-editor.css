@@ -1,0 +1,336 @@
+/* =========================================================
+   Tnine 朋友圈 - 发布编辑器（独立组件）
+   定位：朋友圈是生活动态记录，不是后台表单
+   结构：朋友圈标题+介绍 → 头像 昵称 → 输入内容
+        → 图片九宫格 → 发布
+   ========================================================= */
+
+.moment-editor-page {
+
+    max-width: 720px;
+
+    margin: 0 auto;
+
+}
+
+/* ---------- 卡片 ---------- */
+
+.moment-editor-card {
+
+    background: var(--color-surface);
+
+    border: 1px solid var(--color-border);
+
+    border-radius: var(--radius-lg);
+
+    padding: 28px;
+
+    max-width: 720px;
+
+    margin: 0 auto;
+
+    box-shadow: var(--shadow-sm, none);
+
+}
+
+/* ---------- 发布者：头像 + 昵称 ---------- */
+
+.moment-editor-author {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 18px;
+
+}
+
+.moment-editor-avatar {
+
+    width: 44px;
+
+    height: 44px;
+
+    border-radius: 50%;
+
+    overflow: hidden;
+
+    flex-shrink: 0;
+
+    background: var(--color-soft);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    color: var(--color-text-secondary);
+
+}
+
+.moment-editor-avatar .moment-avatar-img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+
+}
+
+.moment-editor-author-name {
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+    color: var(--color-text);
+
+}
+
+/* ---------- 正文输入：自动增长高度，禁止固定高度 ---------- */
+
+.moment-editor-textarea {
+
+    width: 100%;
+
+    min-height: 96px;
+
+    padding: 16px;
+
+    border-radius: 12px;
+
+    border: 1px solid var(--color-border-input);
+
+    font-size: 16px;
+
+    font-family: var(--font-main);
+
+    line-height: 1.7;
+
+    color: var(--color-text);
+
+    background: var(--color-surface-solid, var(--color-surface));
+
+    resize: none;
+
+    outline: none;
+
+    overflow: hidden;
+
+    box-sizing: border-box;
+
+    transition: border-color .2s ease, box-shadow .2s ease;
+
+}
+
+.moment-editor-textarea:focus {
+
+    border-color: var(--color-primary);
+
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+
+}
+
+.moment-editor-textarea::placeholder {
+
+    color: var(--color-text-muted);
+
+}
+
+/* ---------- 图片九宫格（微信朋友圈式） ---------- */
+
+.moment-upload-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 8px;
+
+    margin: 20px 0 8px;
+
+    max-width: 480px;
+
+}
+
+.moment-upload-cell {
+
+    position: relative;
+
+    aspect-ratio: 1 / 1;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    background: var(--color-soft);
+
+}
+
+/* 未上传：添加占位格 */
+
+.moment-upload-cell.is-add {
+
+    border: 1.5px dashed var(--color-border);
+
+    background: var(--color-surface-solid, var(--color-surface));
+
+}
+
+.cell-add {
+
+    width: 100%;
+
+    height: 100%;
+
+    border: none;
+
+    background: none;
+
+    font-size: 30px;
+
+    line-height: 1;
+
+    color: var(--color-text-muted);
+
+    cursor: pointer;
+
+    transition: color .2s ease, background .2s ease;
+
+}
+
+.cell-add:hover {
+
+    color: var(--color-primary);
+
+    background: var(--color-soft);
+
+}
+
+/* 已上传：图片填充，hover 显示移除按钮 */
+
+.moment-upload-cell.is-image img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+
+}
+
+.cell-remove {
+
+    position: absolute;
+
+    top: 6px;
+
+    right: 6px;
+
+    width: 22px;
+
+    height: 22px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: rgba(0, 0, 0, .55);
+
+    color: #fff;
+
+    font-size: 12px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transition: opacity .2s ease, visibility .2s ease;
+
+}
+
+.moment-upload-cell.is-image:hover .cell-remove {
+
+    opacity: 1;
+
+    visibility: visible;
+
+}
+
+.upload-tip {
+
+    display: block;
+
+    font-size: 13px;
+
+    color: var(--color-text-muted);
+
+    margin-top: 4px;
+
+}
+
+/* ---------- 发布按钮 ---------- */
+
+.moment-editor-submit-row {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    margin-top: 24px;
+
+}
+
+.moment-editor-submit {
+
+    min-width: 120px;
+
+    padding: 12px 32px;
+
+    border: none;
+
+    border-radius: 999px;
+
+    background: var(--gradient-primary, var(--color-primary));
+
+    color: #fff;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: transform .2s ease, box-shadow .2s ease;
+
+}
+
+.moment-editor-submit:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 6px 16px rgba(124, 58, 237, .30);
+
+}
