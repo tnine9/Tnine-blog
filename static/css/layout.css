@@ -1659,3 +1659,205 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
     padding-left: 0;
 
 }
+
+/* =========================================================
+   全站导航移动端响应式
+   ========================================================= */
+
+/* 平板/小屏：压缩导航，隐藏 slogan，避免溢出 */
+@media (max-width: 900px) {
+
+    .site-header {
+
+        height: 60px;
+
+    }
+
+    .header-inner {
+
+        gap: 16px;
+
+    }
+
+    .site-nav {
+
+        gap: 12px;
+
+    }
+
+    .site-nav .brand {
+
+        gap: 6px;
+
+    }
+
+    .site-nav .site-logo {
+
+        font-size: 18px;
+
+        margin-right: 4px;
+
+    }
+
+    .site-slogan {
+
+        display: none;
+
+    }
+
+    .site-nav .nav-links {
+
+        gap: 14px;
+
+    }
+
+    .site-nav a {
+
+        font-size: 13px;
+
+    }
+
+    .site-nav a::after {
+
+        bottom: -9px;
+
+    }
+
+    .user-avatar {
+
+        width: 36px;
+
+        height: 36px;
+
+        font-size: 14px;
+
+    }
+
+}
+
+/* 手机窄屏：进一步压缩，保证四链接 + 头像 + 站标同行可放 */
+@media (max-width: 480px) {
+
+    .site-header {
+
+        height: 56px;
+
+    }
+
+    .site-nav {
+
+        gap: 8px;
+
+    }
+
+    .site-nav .site-logo {
+
+        font-size: 16px;
+
+    }
+
+    .site-nav .nav-links {
+
+        gap: 10px;
+
+    }
+
+    .site-nav a {
+
+        font-size: 12px;
+
+        letter-spacing: 0;
+
+    }
+
+    .user-avatar {
+
+        width: 32px;
+
+        height: 32px;
+
+        font-size: 13px;
+
+    }
+
+    .site-nav .nav-login {
+
+        padding: 6px 12px;
+
+        font-size: 12px;
+
+    }
+
+}
+
+/* =========================================================
+   时间线移动端响应式
+   ========================================================= */
+
+/* 小屏：压缩左侧日期列，保持时间线结构 */
+@media (max-width: 640px) {
+
+    .timeline-item {
+
+        grid-template-columns: 88px 1fr;
+
+        gap: 16px;
+
+    }
+
+    .timeline-side::after {
+
+        right: -9px;
+
+    }
+
+    .timeline-dot {
+
+        right: -18px;
+
+    }
+
+}
+
+/* 超小屏：日期列堆叠到内容上方 */
+@media (max-width: 420px) {
+
+    .timeline-item {
+
+        grid-template-columns: 1fr;
+
+        gap: 6px;
+
+    }
+
+    .timeline-side {
+
+        text-align: left;
+
+        padding-left: 24px;
+
+    }
+
+    .timeline-side::after {
+
+        left: 5px;
+
+        right: auto;
+
+        top: 4px;
+
+        bottom: -18px;
+
+    }
+
+    .timeline-dot {
+
+        left: 0;
+
+        right: auto;
+
+        top: 8px;
+
+    }
+
+}

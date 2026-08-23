@@ -1485,6 +1485,11 @@
     margin-bottom: 14px;
 }
 
+/* 防止卡片内容（长文本/表单）撑开 grid 列导致三栏宽度失衡 */
+.settings-grid > .dashboard-card {
+    min-width: 0;
+}
+
 .settings-grid > .dashboard-card:nth-child(1) { grid-area: appearance; }
 .settings-grid > .dashboard-card:nth-child(2) { grid-area: labels; }
 .settings-grid .dashboard-card-pages { grid-area: pages; }
@@ -1728,5 +1733,139 @@
     right: auto;
 
     min-width: 168px;
+
+}
+
+/* =========================================================
+   后台移动端响应式
+   ========================================================= */
+
+/* 窄屏：文章/数据列表项纵向堆叠，避免标题与操作按钮挤压 */
+@media (max-width: 640px) {
+
+    .admin-article-item {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 12px;
+
+        padding: 16px;
+
+    }
+
+    .admin-article-info h3 {
+
+        font-size: 15px;
+
+        white-space: normal;
+
+    }
+
+    .admin-article-actions {
+
+        width: 100%;
+
+        justify-content: flex-end;
+
+        gap: 12px;
+
+    }
+
+    .admin-section-header h2 {
+
+        font-size: 20px;
+
+    }
+
+    /* 表单与登录页 */
+    .article-form {
+
+        padding: 20px 16px;
+
+    }
+
+    .login-page {
+
+        padding: 40px 16px;
+
+    }
+
+    .login-code-row {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+    }
+
+    .login-code-button {
+
+        width: 100%;
+
+    }
+
+    /* 统计卡片：小屏两列、超小屏单列 */
+    .admin-stats {
+
+        grid-template-columns: repeat(2, 1fr);
+
+        gap: 12px;
+
+    }
+
+    .admin-stat-card {
+
+        padding: 16px;
+
+    }
+
+    .admin-stat-value {
+
+        font-size: 22px;
+
+    }
+
+}
+
+@media (max-width: 400px) {
+
+    .admin-stats {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}
+
+/* 后台列表页（通知/访客等）窄屏适配 */
+@media (max-width: 640px) {
+
+    .admin-list-item {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 10px;
+
+    }
+
+    .admin-list-actions {
+
+        width: 100%;
+
+        justify-content: flex-end;
+
+    }
+
+    .notification-tools {
+
+        flex-wrap: wrap;
+
+        gap: 10px;
+
+    }
 
 }
