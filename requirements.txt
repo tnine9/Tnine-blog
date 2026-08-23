@@ -5,7 +5,7 @@ fastapi==0.141.1
 uvicorn==0.52.1
 jinja2==3.1.6
 sqlalchemy==2.0.52
-pwdlib==0.3.1
+pwdlib[argon2]==0.3.1
 markdown==3.10.3
 nh3==0.3.6
 pillow==12.3.0
