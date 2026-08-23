@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from database import SessionLocal
 from models import Article
 
