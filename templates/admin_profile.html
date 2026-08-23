@@ -1,5 +1,8 @@
 ﻿{% extends "base.html" %}
 
+{% from "_social_icons.html" import social_icon %}
+
+
 {% block title %}
 个人资料 - {{ site_name }}
 {% endblock %}
@@ -8,6 +11,17 @@
 {% block content %}
 
 <main class="container profile-page">
+
+    <header class="detail-page-head">
+
+        <a
+            href="/admin"
+            class="detail-back"
+        >
+            ← 返回后台
+        </a>
+
+    </header>
 
     <div class="profile-header">
 
@@ -22,13 +36,6 @@
             </p>
 
         </div>
-
-        <a
-            href="/admin"
-            class="profile-back"
-        >
-            ← 返回控制台
-        </a>
 
     </div>
 
@@ -68,13 +75,21 @@
 
     {% endif %}
 
+    <div class="profile-cards-grid">
+
     <!-- ============ 基础资料卡片 ============ -->
 
     <section class="profile-card">
 
-        <h2 class="profile-card-title">
-            基础资料
-        </h2>
+        <div class="profile-card-head">
+
+            <span class="profile-card-icon">👤</span>
+
+            <h2 class="profile-card-title">
+                基础资料
+            </h2>
+
+        </div>
 
         <form
             method="post"
@@ -188,9 +203,15 @@
 
     <section class="profile-card">
 
-        <h2 class="profile-card-title">
-            管理员安全
-        </h2>
+        <div class="profile-card-head">
+
+            <span class="profile-card-icon">🔒</span>
+
+            <h2 class="profile-card-title">
+                管理员安全
+            </h2>
+
+        </div>
 
         <form
             method="post"
@@ -255,98 +276,49 @@
 
     <section class="profile-card">
 
-        <h2 class="profile-card-title">
-            社交链接
-        </h2>
+        <div class="profile-card-head">
+
+            <span class="profile-card-icon">🔗</span>
+
+            <h2 class="profile-card-title">
+                社交链接
+            </h2>
+
+        </div>
 
         <p class="profile-card-desc">
-            管理首页展示的联系方式，按创建顺序展示
+            点击图标可切换首页展示；悬停图标右上角出现红色小叉，点击删除
         </p>
 
         {% if social_links %}
 
-        <div class="social-link-list">
+        <div class="social-icon-grid">
 
             {% for link in social_links %}
 
-            <div class="social-link-item">
+            <div
+                class="social-icon-cell{% if not link.is_visible %} is-off{% endif %}"
+                data-id="{{ link.id }}"
+                data-visible="{{ '1' if link.is_visible else '0' }}"
+                title="{{ link.name }}"
+            >
 
-                <div class="social-link-info">
+                <span class="social-icon-badge">
+                    {{ social_icon(link.icon) }}
+                </span>
 
-                    <span class="social-link-icon">
-                        {{ link.icon[:1] | upper }}
-                    </span>
+                <span class="social-icon-name">
+                    {{ link.name }}
+                </span>
 
-                    <div>
-
-                        <strong>{{ link.name }}</strong>
-
-                        <span class="social-link-type">
-                            {% if link.link_type == 'qr' or link.qr_code %}
-                            二维码
-                            {% else %}
-                            链接
-                            {% endif %}
-                        </span>
-
-                        {% if link.qr_code %}
-
-                        <img
-                            src="{{ link.qr_code }}"
-                            alt="二维码"
-                            class="social-link-qr-thumb"
-                        >
-
-                        {% else %}
-
-                        <span class="social-link-url">
-                            {{ link.url }}
-                        </span>
-
-                        {% endif %}
-
-                    </div>
-
-                </div>
-
-                <div class="social-link-actions">
-
-                    <form
-                        method="post"
-                        action="/admin/profile/social/{{ link.id }}/toggle"
-                        class="inline-form"
-                    >
-
-                        <button
-                            type="submit"
-                            class="social-link-toggle{% if not link.is_visible %} is-off{% endif %}"
-                        >
-                            {% if link.is_visible %}
-                            首页展示中
-                            {% else %}
-                            已隐藏
-                            {% endif %}
-                        </button>
-
-                    </form>
-
-                    <form
-                        method="post"
-                        action="/admin/profile/social/{{ link.id }}/delete"
-                        class="inline-form"
-                    >
-
-                        <button
-                            type="submit"
-                            class="social-link-delete"
-                            onclick="return confirm('确定删除该联系方式？')"
-                        >
-                            删除
-                        </button>
-
-                    </form>
-
-                </div>
+                <button
+                    type="button"
+                    class="social-icon-del"
+                    data-id="{{ link.id }}"
+                    title="删除"
+                >
+                    ×
+                </button>
 
             </div>
 
@@ -391,7 +363,7 @@
                         id="link_type"
                         name="link_type"
                         class="profile-input"
-                        onchange="updateSocialMode()"
+                        onchange="updateSocialType()"
                     >
 
                         {% for t in social_link_types %}
@@ -406,36 +378,16 @@
 
                 </div>
 
-                <div class="profile-field">
-
-                    <label
-                        for="social_name"
-                        class="profile-field-label"
-                    >
-                        名称 <em>（留空自动使用类型默认名称）</em>
-                    </label>
-
-                    <input
-                        type="text"
-                        id="social_name"
-                        name="name"
-                        class="profile-input"
-                        placeholder="如：{{ site_name }} 的 GitHub"
-                        maxlength="50"
-                    >
-
-                </div>
-
                 <div class="profile-field social-mode-row">
 
                     <label class="social-mode-label">
 
                         <input
                             type="radio"
-                            name="show_mode"
+                            name="upload_type"
                             value="link"
                             checked
-                            onchange="updateSocialMode()"
+                            onchange="updateSocialType()"
                         >
 
                         链接
@@ -446,12 +398,25 @@
 
                         <input
                             type="radio"
-                            name="show_mode"
-                            value="qr"
-                            onchange="updateSocialMode()"
+                            name="upload_type"
+                            value="image"
+                            onchange="updateSocialType()"
                         >
 
-                        二维码
+                        图片
+
+                    </label>
+
+                    <label class="social-mode-label">
+
+                        <input
+                            type="radio"
+                            name="upload_type"
+                            value="text"
+                            onchange="updateSocialType()"
+                        >
+
+                        文本
 
                     </label>
 
@@ -466,7 +431,7 @@
                         for="link_value"
                         class="profile-field-label"
                     >
-                        地址
+                        链接地址
                     </label>
 
                     <input
@@ -482,24 +447,67 @@
 
                 <div
                     class="profile-field"
-                    id="qrField"
+                    id="imageField"
                     style="display:none"
                 >
 
                     <label
-                        for="qr_code"
+                        for="image_file"
                         class="profile-field-label"
                     >
-                        上传二维码图片
+                        上传图片
+                    </label>
+
+                    <div class="wechat-uploader">
+
+                        <label class="wechat-upload-btn" for="image_file">
+                            <input
+                                type="file"
+                                id="image_file"
+                                name="image_file"
+                                accept="image/*"
+                                class="wechat-upload-input"
+                                onchange="previewSocialImage(event)"
+                            >
+                            <span class="wechat-upload-plus">+</span>
+                            <img class="wechat-upload-preview" alt="" hidden>
+                        </label>
+
+                        <span class="wechat-upload-text" id="wechatUploadText">选择文件</span>
+
+                    </div>
+
+                    <p class="profile-field-hint">
+                        支持 jpg / png / webp，用于首页悬停展示图片
+                    </p>
+
+                </div>
+
+                <div
+                    class="profile-field"
+                    id="textField"
+                    style="display:none"
+                >
+
+                    <label
+                        for="text_value"
+                        class="profile-field-label"
+                    >
+                        文本内容
                     </label>
 
                     <input
-                        type="file"
-                        id="qr_code"
-                        name="qr_code"
-                        accept="image/*"
-                        class="profile-file-input"
+                        type="text"
+                        id="text_value"
+                        name="text_value"
+                        class="profile-input"
+                        placeholder="如：微信号 / 手机号 / 备注"
+                        maxlength="500"
                     >
+
+                    <p class="profile-field-hint">
+                        首页悬停展示该文本，点击可复制
+                    </p>
 
                 </div>
 
@@ -520,6 +528,8 @@
 
     </section>
 
+    </div>
+
 </main>
 
 {% endblock %}
@@ -529,31 +539,122 @@
 
 <script>
 
-    function updateSocialMode() {
+    function updateSocialType() {
 
         var mode = document.querySelector(
-            'input[name="show_mode"]:checked'
+            'input[name="upload_type"]:checked'
         ).value;
 
         var linkField = document.getElementById("linkValueField");
 
-        var qrField = document.getElementById("qrField");
+        var imageField = document.getElementById("imageField");
+
+        var textField = document.getElementById("textField");
+
+        linkField.style.display = "none";
+
+        imageField.style.display = "none";
+
+        textField.style.display = "none";
 
         if (mode === "link") {
 
             linkField.style.display = "";
 
-            qrField.style.display = "none";
+        } else if (mode === "image") {
+
+            imageField.style.display = "";
 
         } else {
 
-            linkField.style.display = "none";
-
-            qrField.style.display = "";
+            textField.style.display = "";
 
         }
 
     }
+
+    // 图片选择后：圆形按钮内预览缩略图，右侧文字显示文件名
+    function previewSocialImage(ev) {
+
+        var file = ev.target.files && ev.target.files[0];
+
+        var btn = document.querySelector(".wechat-upload-btn");
+
+        var preview = document.querySelector(".wechat-upload-preview");
+
+        var text = document.getElementById("wechatUploadText");
+
+        if (!file) return;
+
+        if (preview) {
+
+            preview.src = URL.createObjectURL(file);
+
+            preview.hidden = false;
+
+        }
+
+        if (btn) btn.classList.add("has-image");
+
+        if (text) text.textContent = file.name;
+
+    }
+
+    // 点击图标切换首页展示状态
+    document.addEventListener("click", function (ev) {
+
+        if (ev.target.closest(".social-icon-del")) return;
+
+        var cell = ev.target.closest(".social-icon-cell");
+
+        if (!cell) return;
+
+        var id = cell.getAttribute("data-id");
+
+        fetch("/admin/profile/social/" + id + "/toggle", {
+            method: "POST"
+        }).then(function (res) {
+
+            if (res.ok) {
+
+                var off = cell.classList.toggle("is-off");
+
+                cell.setAttribute("data-visible", off ? "0" : "1");
+
+            }
+
+        });
+
+    });
+
+    // 悬停图标右上角红色小叉删除
+    document.addEventListener("click", function (ev) {
+
+        var btn = ev.target.closest(".social-icon-del");
+
+        if (!btn) return;
+
+        ev.stopPropagation();
+
+        var id = btn.getAttribute("data-id");
+
+        if (!confirm("确定删除该联系方式？")) return;
+
+        fetch("/admin/profile/social/" + id + "/delete", {
+            method: "POST"
+        }).then(function (res) {
+
+            if (res.ok) {
+
+                var cell = btn.closest(".social-icon-cell");
+
+                if (cell) cell.remove();
+
+            }
+
+        });
+
+    });
 
 </script>
 
@@ -605,18 +706,6 @@
         font-size: 13px;
 
         color: var(--color-text-secondary, #999);
-
-    }
-
-    .profile-back {
-
-        font-size: 13px;
-
-        font-weight: 600;
-
-        color: #7C3AED;
-
-        text-decoration: none;
 
     }
 
@@ -676,6 +765,20 @@
 
     }
 
+    /* 小卡片网格（控制台首页风格） */
+
+    .profile-cards-grid {
+
+        display: grid;
+
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+
+        gap: 20px;
+
+        align-items: start;
+
+    }
+
     .profile-card {
 
         background: var(--color-card, #fff);
@@ -684,19 +787,49 @@
 
         border-radius: 16px;
 
-        padding: 24px 26px;
+        padding: 22px 22px 20px;
 
-        margin-bottom: 20px;
+        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+
+    }
+
+    .profile-card:hover {
+
+        transform: translateY(-2px);
+
+        box-shadow: 0 10px 28px rgba(124, 58, 237, .1);
+
+        border-color: rgba(124, 58, 237, .5);
+
+    }
+
+    .profile-card-head {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 10px;
+
+        margin-bottom: 14px;
+
+    }
+
+    .profile-card-icon {
+
+        font-size: 20px;
+
+        line-height: 1;
 
     }
 
     .profile-card-title {
 
-        font-size: 18px;
+        font-size: 17px;
 
         font-weight: 800;
 
-        margin: 0 0 14px;
+        margin: 0;
 
         color: var(--color-text);
 
@@ -704,7 +837,7 @@
 
     .profile-card-desc {
 
-        margin: -8px 0 16px;
+        margin: -4px 0 16px;
 
         font-size: 13px;
 
@@ -852,67 +985,75 @@
 
     }
 
-    
+    /* 社交链接图标网格 */
 
-    /* 社交链接 */
-
-    .social-link-list {
+    .social-icon-grid {
 
         display: flex;
 
-        flex-direction: column;
+        flex-wrap: wrap;
 
-        gap: 10px;
+        gap: 8px;
 
         margin-bottom: 16px;
 
     }
 
-    .social-link-item {
+    .social-icon-cell {
+
+        position: relative;
 
         display: flex;
 
+        flex-direction: column;
+
         align-items: center;
 
-        justify-content: space-between;
+        gap: 4px;
 
-        gap: 12px;
+        width: 64px;
 
-        background: var(--color-bg, #fafafa);
+        padding: 8px 4px 8px;
 
         border-radius: 12px;
 
-        padding: 12px 14px;
+        cursor: pointer;
+
+        transition: background .2s ease, transform .2s ease;
 
     }
 
-    .social-link-info {
+    .social-icon-cell:hover {
 
-        display: flex;
+        background: var(--color-bg, #fafafa);
 
-        align-items: center;
-
-        gap: 12px;
-
-        min-width: 0;
+        transform: translateY(-2px);
 
     }
 
-    .social-link-icon {
+    .social-icon-cell.is-off .social-icon-name {
+
+        color: var(--color-text-secondary, #aaa);
+
+    }
+
+    .social-icon-badge {
 
         width: 36px;
 
         height: 36px;
 
-        border-radius: 10px;
+        border-radius: 50%;
 
-        background: #7C3AED;
+        background: var(--color-surface-solid, #fff);
 
-        color: #fff;
+        color: var(--color-text-secondary);
+
+        border: 1px solid rgba(124, 58, 237, .35);
 
         font-size: 16px;
 
-        font-weight: 800;
+        font-weight: 700;
 
         display: flex;
 
@@ -920,39 +1061,45 @@
 
         justify-content: center;
 
-        flex-shrink: 0;
+        transition: opacity .2s ease, filter .2s ease, border-color .2s ease, color .2s ease;
 
     }
 
-    .social-link-info strong {
+    .social-icon-badge svg {
+
+        width: 16px;
+
+        height: 16px;
 
         display: block;
 
-        font-size: 14px;
+    }
 
-        color: var(--color-text);
+    .social-icon-cell:hover .social-icon-badge {
+
+        border-color: var(--color-primary, #7C3AED);
+
+        color: var(--color-primary, #7C3AED);
 
     }
 
-    .social-link-type {
+    .social-icon-cell.is-off .social-icon-badge {
 
-        font-size: 11px;
+        opacity: .35;
 
-        color: #7C3AED;
+        filter: grayscale(1);
 
-        font-weight: 600;
+        border-color: var(--color-border, #eee);
 
     }
 
-    .social-link-url {
-
-        display: block;
+    .social-icon-name {
 
         font-size: 12px;
 
-        color: var(--color-text-secondary, #999);
+        color: var(--color-text);
 
-        max-width: 260px;
+        max-width: 100%;
 
         overflow: hidden;
 
@@ -962,85 +1109,55 @@
 
     }
 
-    .social-link-qr-thumb {
+    /* hover 显示右上角红色小叉 */
 
-        display: block;
+    .social-icon-del {
 
-        width: 40px;
+        position: absolute;
 
-        height: 40px;
+        top: -7px;
 
-        border-radius: 6px;
+        right: -7px;
 
-        margin-top: 4px;
+        width: 20px;
 
-        object-fit: cover;
+        height: 20px;
 
-    }
+        border-radius: 50%;
 
-    .social-link-actions {
+        background: #dc2626;
 
-        display: flex;
+        color: #fff;
+
+        border: 2px solid var(--color-card, #fff);
+
+        font-size: 13px;
+
+        line-height: 1;
+
+        font-weight: 700;
+
+        cursor: pointer;
+
+        display: none;
 
         align-items: center;
 
-        gap: 8px;
+        justify-content: center;
 
-        flex-shrink: 0;
-
-    }
-
-    .inline-form {
-
-        margin: 0;
+        padding: 0;
 
     }
 
-    .social-link-toggle {
+    .social-icon-cell:hover .social-icon-del {
 
-        font-size: 12px;
-
-        font-weight: 600;
-
-        color: #16a34a;
-
-        background: rgba(34, 197, 94, .1);
-
-        border: none;
-
-        border-radius: 999px;
-
-        padding: 5px 12px;
-
-        cursor: pointer;
+        display: flex;
 
     }
 
-    .social-link-toggle.is-off {
+    .social-icon-del:hover {
 
-        color: var(--color-text-secondary, #888);
-
-        background: var(--color-bg, #eee);
-
-    }
-
-    .social-link-delete {
-
-        font-size: 12px;
-
-        font-weight: 600;
-
-        color: #dc2626;
-
-        background: rgba(239, 68, 68, .08);
-
-        border: none;
-
-        border-radius: 999px;
-
-        padding: 5px 12px;
-
-        cursor: pointer;
+        background: #b91c1c;
 
     }
 
@@ -1061,6 +1178,8 @@
         border-radius: 12px;
 
         padding: 12px 14px;
+
+        margin-top: 4px;
 
     }
 
@@ -1086,7 +1205,9 @@
 
         display: flex;
 
-        gap: 20px;
+        flex-wrap: wrap;
+
+        gap: 18px;
 
     }
 
@@ -1106,6 +1227,104 @@
 
     }
 
+    /* 仿微信 + 号图片上传 */
+
+    .wechat-uploader {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 14px;
+
+    }
+
+    .wechat-upload-btn {
+
+        position: relative;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        width: 64px;
+
+        height: 64px;
+
+        border-radius: 50%;
+
+        background: #fff;
+
+        border: 1px solid var(--color-border, #e2e8f0);
+
+        cursor: pointer;
+
+        overflow: hidden;
+
+        transition: border-color .2s ease, box-shadow .2s ease;
+
+        flex-shrink: 0;
+
+    }
+
+    .wechat-upload-btn:hover {
+
+        border-color: var(--color-primary, #7C3AED);
+
+        box-shadow: 0 2px 10px rgba(124, 58, 237, .15);
+
+    }
+
+    .wechat-upload-input {
+
+        display: none;
+
+    }
+
+    .wechat-upload-plus {
+
+        font-size: 28px;
+
+        font-weight: 300;
+
+        line-height: 1;
+
+        color: #94a3b8;
+
+        pointer-events: none;
+
+    }
+
+    .wechat-upload-preview {
+
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+
+    }
+
+    .wechat-upload-btn.has-image .wechat-upload-plus {
+
+        display: none;
+
+    }
+
+    .wechat-upload-text {
+
+        font-size: 14px;
+
+        color: var(--color-text-secondary, #999);
+
+    }
+
     @media (max-width: 640px) {
 
         .profile-avatar-row {
@@ -1116,11 +1335,9 @@
 
         }
 
-        .social-link-item {
+        .profile-cards-grid {
 
-            flex-direction: column;
-
-            align-items: flex-start;
+            grid-template-columns: 1fr;
 
         }
 

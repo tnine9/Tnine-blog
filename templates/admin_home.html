@@ -18,103 +18,15 @@
         <div class="page-header-main">
 
             <h1 class="page-header-title">
-                {{ site_name }} 控制台
+                控制台
             </h1>
 
             <p class="page-header-desc">
-                欢迎回来，{{ admin_nickname or admin_username }} · 从这里管理你的全部内容
+                欢迎回来，{{ admin_nickname or admin_username }}
             </p>
 
         </div>
 
-        <div class="page-header-side">
-
-            <div class="admin-theme-switch">
-
-            <button
-                type="button"
-                class="admin-theme-button"
-                id="adminThemeButton"
-                aria-haspopup="true"
-                aria-expanded="false"
-            >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
-
-                    <circle cx="12" cy="12" r="4"></circle>
-
-                    <line x1="12" y1="2" x2="12" y2="4"></line>
-
-                    <line x1="12" y1="20" x2="12" y2="22"></line>
-
-                    <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
-
-                    <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
-
-                    <line x1="2" y1="12" x2="4" y2="12"></line>
-
-                    <line x1="20" y1="12" x2="22" y2="12"></line>
-
-                    <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
-
-                    <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
-
-                </svg>
-
-                切换主题
-
-            </button>
-
-            <div
-                class="admin-theme-panel"
-                id="adminThemePanel"
-                role="menu"
-            >
-
-                <div class="admin-theme-panel-title">
-                    选择全站主题
-                </div>
-
-                <button
-                    type="button"
-                    class="theme-option{% if theme == 'light' %} is-selected{% endif %}"
-                    data-theme="light"
-                    role="menuitem"
-                >
-                    <span class="theme-swatch theme-swatch-light"></span>
-                    浅色
-                    {% if theme == 'light' %}
-                    <span class="theme-check">✓</span>
-                    {% endif %}
-                </button>
-
-                <button
-                    type="button"
-                    class="theme-option{% if theme == 'dark' %} is-selected{% endif %}"
-                    data-theme="dark"
-                    role="menuitem"
-                >
-                    <span class="theme-swatch theme-swatch-dark"></span>
-                    深色
-                    {% if theme == 'dark' %}
-                    <span class="theme-check">✓</span>
-                    {% endif %}
-                </button>
-
-            </div>
-
-        </div>
-
-        </div>
 
     </header>
 
@@ -382,8 +294,101 @@
             <div class="dashboard-card-summary">
 
                 <span class="summary-text">
-                    外观 · Hero · 标签 · 页面信息
+                    外观 · 标签 · 页面信息 · 邮箱
                 </span>
+
+            </div>
+
+            <div class="home-theme-wrap">
+
+                <button
+                    type="button"
+                    class="home-theme-trigger"
+                    id="homeThemeTrigger"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                >
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        width="15"
+                        height="15"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+
+                        <circle cx="12" cy="12" r="4"></circle>
+
+                        <line x1="12" y1="2" x2="12" y2="4"></line>
+
+                        <line x1="12" y1="20" x2="12" y2="22"></line>
+
+                        <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
+
+                        <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
+
+                        <line x1="2" y1="12" x2="4" y2="12"></line>
+
+                        <line x1="20" y1="12" x2="22" y2="12"></line>
+
+                        <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
+
+                        <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
+
+                    </svg>
+
+                    切换主题
+
+                    <svg
+                        class="home-theme-caret"
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+
+                        <polyline points="6 9 12 15 18 9"></polyline>
+
+                    </svg>
+
+                </button>
+
+                <div
+                    class="home-theme-dropdown"
+                    id="homeThemeDropdown"
+                    role="menu"
+                >
+
+                    <button
+                        type="button"
+                        class="home-theme-option{% if theme == 'light' %} is-selected{% endif %}"
+                        data-theme="light"
+                        role="menuitem"
+                    >
+                        <span class="home-theme-swatch home-theme-swatch-light"></span>
+                        浅色
+                        <span class="home-theme-check">✓</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="home-theme-option{% if theme == 'dark' %} is-selected{% endif %}"
+                        data-theme="dark"
+                        role="menuitem"
+                    >
+                        <span class="home-theme-swatch home-theme-swatch-dark"></span>
+                        深色
+                        <span class="home-theme-check">✓</span>
+                    </button>
+
+                </div>
 
             </div>
 
@@ -400,232 +405,4 @@
 {% endblock %}
 
 
-{% block extra_head %}
-
-<style>
-
-    /* ============ Dashboard 卡片工作台 ============ */
-
-    
-
-    
-
-    
-
-    .dashboard-grid {
-
-        display: grid;
-
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-
-        gap: 20px;
-
-        padding-bottom: 48px;
-
-    }
-
-    .dashboard-card {
-
-        position: relative;
-
-        display: block;
-
-        background: var(--color-card, #fff);
-
-        border: 1px solid var(--color-border, #eee);
-
-        border-radius: 16px;
-
-        padding: 22px 20px 18px;
-
-        text-decoration: none;
-
-        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-
-    }
-
-    .dashboard-card:hover {
-
-        transform: translateY(-3px);
-
-        box-shadow: 0 10px 28px rgba(124, 58, 237, .12);
-
-        border-color: #7C3AED;
-
-    }
-
-    .dashboard-card-head {
-
-        display: flex;
-
-        align-items: center;
-
-        gap: 10px;
-
-        margin-bottom: 18px;
-
-    }
-
-    .dashboard-card-icon {
-
-        font-size: 22px;
-
-        line-height: 1;
-
-    }
-
-    .dashboard-card-label {
-
-        font-size: 17px;
-
-        font-weight: 700;
-
-        color: var(--color-text);
-
-    }
-
-    .dashboard-notification-badge {
-
-        margin-left: auto;
-
-        background: #7C3AED;
-
-        color: #fff;
-
-        font-size: 12px;
-
-        font-weight: 700;
-
-        min-width: 20px;
-
-        height: 20px;
-
-        border-radius: 10px;
-
-        display: inline-flex;
-
-        align-items: center;
-
-        justify-content: center;
-
-        padding: 0 6px;
-
-    }
-
-    .dashboard-card-stats {
-
-        display: flex;
-
-        flex-wrap: wrap;
-
-        gap: 10px 18px;
-
-        margin-bottom: 14px;
-
-    }
-
-    .dashboard-card-stat {
-
-        display: flex;
-
-        flex-direction: column;
-
-    }
-
-    .stat-value {
-
-        font-size: 24px;
-
-        font-weight: 800;
-
-        color: var(--color-text);
-
-        line-height: 1.2;
-
-    }
-
-    .stat-label {
-
-        font-size: 12px;
-
-        color: var(--color-text-secondary, #999);
-
-        margin-top: 2px;
-
-    }
-
-    .dashboard-card-summary {
-
-        margin-bottom: 14px;
-
-    }
-
-    .summary-text {
-
-        font-size: 13px;
-
-        color: var(--color-text-secondary, #888);
-
-        display: -webkit-box;
-
-        -webkit-line-clamp: 2;
-
-        -webkit-box-orient: vertical;
-
-        overflow: hidden;
-
-    }
-
-    .summary-text.muted {
-
-        opacity: .6;
-
-    }
-
-    .dashboard-card-foot {
-
-        font-size: 13px;
-
-        font-weight: 600;
-
-        color: #7C3AED;
-
-        border-top: 1px dashed var(--color-border, #eee);
-
-        padding-top: 12px;
-
-    }
-
-    /* 卡片主题色弱区分 */
-
-    .dashboard-card-write:hover { border-color: #7C3AED; }
-
-    .dashboard-card-article:hover { border-color: #7C3AED; }
-
-    .dashboard-card-moment:hover { border-color: #0EA5E9; }
-
-    .dashboard-card-message:hover { border-color: #10B981; }
-
-    .dashboard-card-visitor:hover { border-color: #F59E0B; }
-
-    .dashboard-card-notification:hover { border-color: #EF4444; }
-
-    .dashboard-card-profile:hover { border-color: #EC4899; }
-
-    .dashboard-card-settings:hover { border-color: #6366F1; }
-
-    @media (max-width: 720px) {
-
-        
-
-        .dashboard-grid {
-
-            grid-template-columns: 1fr;
-
-        }
-
-    }
-
-</style>
-
-{% endblock %}
+{% block extra_head %}{% endblock %}

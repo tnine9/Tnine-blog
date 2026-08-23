@@ -47,10 +47,6 @@
 
             {% if need_initialization %}
 
-            <!-- ==================================================
-                 首次初始化登录：初始密码 + 一次性初始化验证码（自动填充）
-                 ================================================== -->
-
             <div class="login-init-notice">
 
                 <div class="login-init-item">
@@ -83,94 +79,13 @@
 
             </div>
 
+            {% endif %}
 
             <form
                 method="post"
                 action="/admin/login"
                 class="article-form"
             >
-
-                <input
-                    type="hidden"
-                    name="mode"
-                    value="init"
-                >
-
-                <div class="form-group">
-
-                    <label for="password">
-                        初始密码
-                    </label>
-
-                    <input
-                        type="text"
-                        id="password"
-                        name="password"
-                        value="{{ initial_password }}"
-                        autocomplete="off"
-                        readonly
-                    >
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="code">
-                        初始化验证码
-                    </label>
-
-                    <input
-                        type="text"
-                        id="code"
-                        name="code"
-                        value="{{ initial_code }}"
-                        autocomplete="off"
-                        readonly
-                    >
-
-                </div>
-
-
-                <button type="submit">
-                    完成初始化并登录
-                </button>
-
-            </form>
-
-            {% else %}
-
-            <!-- ==================================================
-                 正常登录：密码 + 邮箱验证码
-                 ================================================== -->
-
-            <form
-                method="post"
-                action="/admin/login"
-                class="article-form"
-            >
-
-                <input
-                    type="hidden"
-                    name="mode"
-                    value="normal"
-                >
-
-                <div class="form-group">
-
-                    <label for="username">
-                        用户名
-                    </label>
-
-                    <input
-                        type="text"
-                        id="username"
-                        value="admin"
-                        disabled
-                    >
-
-                </div>
-
 
                 <div class="form-group">
 
@@ -182,8 +97,13 @@
                         type="password"
                         id="password"
                         name="password"
+                        {% if need_initialization %}
+                        value="{{ initial_password }}"
+                        readonly
+                        {% else %}
                         placeholder="请输入管理员密码"
                         autocomplete="current-password"
+                        {% endif %}
                         required
                     >
 
@@ -193,7 +113,11 @@
                 <div class="form-group">
 
                     <label for="code">
+                        {% if need_initialization %}
+                        初始化验证码
+                        {% else %}
                         邮箱验证码
+                        {% endif %}
                     </label>
 
                     <div class="login-code-row">
@@ -202,22 +126,37 @@
                             type="text"
                             id="code"
                             name="code"
+                            {% if need_initialization %}
+                            value="{{ initial_code }}"
+                            readonly
+                            {% else %}
                             placeholder="请输入邮箱验证码"
                             autocomplete="one-time-code"
+                            {% endif %}
                             required
                         >
 
+                        {% if not need_initialization %}
+
                         <button
                             type="button"
-                            class="login-code-button"
+                            class="btn btn-primary login-code-button"
                             id="sendCodeButton"
                         >
                             获取验证码
                         </button>
 
+                        {% endif %}
+
                     </div>
 
-                    {% if mail_to %}
+                    {% if need_initialization %}
+
+                    <p class="login-code-hint">
+                        点击下方按钮完成初始化并登录，初始化验证码仅能使用一次。
+                    </p>
+
+                    {% elif mail_to %}
 
                     <p class="login-code-hint">
                         验证码将发送至管理员邮箱：{{ mail_to }}
@@ -230,13 +169,18 @@
                 </div>
 
 
-                <button type="submit">
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    {% if need_initialization %}
+                    完成初始化并登录
+                    {% else %}
                     登录
+                    {% endif %}
                 </button>
 
             </form>
-
-            {% endif %}
 
         </div>
 

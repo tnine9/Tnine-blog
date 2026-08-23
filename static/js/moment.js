@@ -1065,75 +1065,78 @@ document
         );
 
 
-        /* ==========================================
-        朋友圈卡片：整卡点击进入详情页
-        互动区（点赞/评论/编辑/删除/图片查看）不触发跳转
-        ========================================== */
 
-        document
-        .querySelectorAll(
-            ".moment-card-shell.is-clickable"
-        )
-        .forEach(
-            function(card){
-
-                card.addEventListener(
-                    "click",
-                    function(event){
-
-                        const url = card.dataset.url;
-
-                        if(!url){
-                            return;
-                        }
-
-                        const interactive = event.target.closest(
-                            ".moment-images, " +
-                            ".moment-actions, " +
-                            ".moment-admin-actions, " +
-                            ".moment-like-list, " +
-                            ".moment-comment-list, " +
-                            ".moment-comment-panel, " +
-                            "a, " +
-                            "button, " +
-                            "form, " +
-                            "input, " +
-                            "textarea"
-                        );
-
-                        if(interactive){
-                            return;
-                        }
-
-                        event.preventDefault();
-
-                        window.location.href = url;
-
-                    }
-                );
-
-            }
-        );
-
-
-        /* ==========================================
-        暴露给其它页面内联脚本使用：
-        - article_detail.html 文章点赞/评论
-        - messages.html 留言发布
-        - message_detail.html 留言回复
-        这些函数在 DOMContentLoaded 闭包内定义，
-        必须挂到 window 才能被其它回调访问。
-        ========================================== */
-
-        window.executeWithNickname =
-            executeWithNickname;
-
-        window.openNicknameModal =
-            openNicknameModal;
 
 
     }
 );
+
+    /* ==========================================
+    朋友圈卡片：整卡点击进入详情页
+    互动区（点赞/评论/编辑/删除/图片查看）不触发跳转
+    ========================================== */
+
+    document
+    .querySelectorAll(
+        ".moment-card-shell.is-clickable"
+    )
+    .forEach(
+        function(card){
+
+            card.addEventListener(
+                "click",
+                function(event){
+
+                    const url = card.dataset.url;
+
+                    if(!url){
+                        return;
+                    }
+
+                    const interactive = event.target.closest(
+                        ".moment-images, " +
+                        ".moment-actions, " +
+                        ".moment-admin-actions, " +
+                        ".moment-like-list, " +
+                        ".moment-comment-list, " +
+                        ".moment-comment-panel, " +
+                        "a, " +
+                        "button, " +
+                        "form, " +
+                        "input, " +
+                        "textarea"
+                    );
+
+                    if(interactive){
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    window.location.href = url;
+
+                }
+            );
+
+        }
+    );
+
+
+    /* ==========================================
+    暴露给其它页面内联脚本使用：
+    - article_detail.html 文章点赞/评论
+    - messages.html 留言发布
+    - message_detail.html 留言回复
+    这些函数在 DOMContentLoaded 闭包内定义，
+    必须挂到 window 才能被其它回调访问。
+    ========================================== */
+
+    window.executeWithNickname =
+        executeWithNickname;
+
+    window.openNicknameModal =
+        openNicknameModal;
+
 
 
 

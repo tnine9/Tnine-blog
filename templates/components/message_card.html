@@ -20,13 +20,29 @@
         <span class="message-time">
             {{ thread.updated_at.strftime("%Y-%m-%d %H:%M") }}
         </span>
-    </div>
 
-    <div class="message-content">
-        {% if thread.messages %}
-        {{ thread.messages[0].content }}
+        {% if is_admin %}
+        <span class="message-head-actions">
+            <form
+                method="post"
+                action="/admin/message/{{ thread.id }}/delete"
+                class="message-delete-form"
+                onsubmit="return confirm('确定删除该留言会话？');"
+            >
+                <button
+                    type="submit"
+                    class="message-delete-button"
+                >
+                    <i class="iconfont icon-shanchu"></i>
+                </button>
+            </form>
+        </span>
         {% endif %}
     </div>
+
+    <div class="message-content">{% if thread.messages %}{{ thread.messages[0].content }}{% endif %}</div>
+
+    <div class="message-divider"></div>
 
     <div class="message-meta">
         <span>

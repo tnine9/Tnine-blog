@@ -11,23 +11,25 @@
     <div class="card-actions">
         {% if item.data.status == "draft" %}
         <a class="card-action card-action-publish" href="/admin/edit/{{ item.data.id }}">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            <i class="iconfont icon-fabu"></i>
         </a>
         {% endif %}
         {% if item.data.status == "published" %}
-        <a class="card-action card-action-edit" href="/admin/edit/{{ item.data.id }}">✎</a>
+        <a class="card-action card-action-edit" href="/admin/edit/{{ item.data.id }}"><i class="iconfont icon-a-huaban1fuben3"></i></a>
         {% endif %}
         <form method="post" action="/admin/delete/{{ item.data.id }}" class="card-action-form" onsubmit="return confirm('确定要删除这篇文章吗？');">
-            <button type="submit" class="card-action card-action-delete">🗑</button>
+            <button type="submit" class="card-action card-action-delete"><i class="iconfont icon-shanchu"></i></button>
         </form>
     </div>
     {% endif %}
 
-    <!-- 状态 Badge 与日期 -->
+    <!-- 状态 Badge 与日期（首页时间线隐藏状态，仅保留日期） -->
     <div class="article-card-top">
+        {% if hide_article_status is not defined or not hide_article_status %}
         <span class="article-status-badge {{ 'published' if item.data.status == 'published' else 'draft' }}">
             {{ "已发布" if item.data.status == "published" else "草稿" }}
         </span>
+        {% endif %}
         {% if item.data.status == "published" %}
         <span class="article-date">
             {{ item.data.display_time.strftime("%Y-%m-%d") }}

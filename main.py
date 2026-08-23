@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -26,7 +26,6 @@ from models import (
     Tag,
     ArticleTag,
     SocialLink,
-    HeroBackground,
     Notification,
 )
 
@@ -34,18 +33,19 @@ import notifications_service
 
 from fastapi import UploadFile, File
 import os
+import sys
 import shutil
 import uuid
 import secrets
-import random
 import smtplib
 import hashlib
 import hmac
 import base64
+import time
 from datetime import datetime
 from email.mime.text import MIMEText
+from email.header import Header
 from email.utils import formataddr
-from urllib.parse import quote
 
 
 # ============================================================
@@ -195,7 +195,21 @@ def get_admin_init_state():
 
         print(
             "[Tnine] 系统尚未初始化管理员账号，"
-            "已生成初始密码与一次性初始化验证码。"
+            "已生成初始密码与一次性初始化验证码。",
+            file=sys.stderr,
+            flush=True,
+        )
+
+        print(
+            f"[Tnine] 初始密码: {password}",
+            file=sys.stderr,
+            flush=True,
+        )
+
+        print(
+            f"[Tnine] 初始化验证码: {code}",
+            file=sys.stderr,
+            flush=True,
         )
 
     return _admin_init_state
@@ -519,6 +533,39 @@ def send_login_code_mail(
 
     config = get_mail_config(db)
 
+    print(
+        "[Tnine] 登录验证码："
+        + code
+        + "（收件邮箱："
+        + (config["to_addr"] or "未配置")
+        + "）",
+        file=sys.stderr,
+        flush=True,
+    )
+
+    # 兜底：服务可能运行在后台/隐藏控制台，print 不可见，同步写入日志文件
+    try:
+        _log_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "logs"
+        )
+        os.makedirs(_log_dir, exist_ok=True)
+        with open(
+            os.path.join(_log_dir, "login_codes.log"),
+            "a",
+            encoding="utf-8",
+        ) as _f:
+            _f.write(
+                "["
+                + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                + "] 登录验证码："
+                + code
+                + "（收件邮箱："
+                + (config["to_addr"] or "未配置")
+                + "）\n"
+            )
+    except Exception:
+        pass
+
     dev_code = None
 
     if not config["configured"]:
@@ -537,15 +584,16 @@ def send_login_code_mail(
 
             print(
                 "[Tnine][开发模式] 登录验证码未通过 SMTP 发送："
-                + reason
+                + reason,
+                file=sys.stderr,
+                flush=True,
             )
 
             print(
-                "[Tnine][开发模式] 登录验证码："
-                + code
-                + "（收件邮箱："
-                + (config["to_addr"] or "未配置")
-                + "）"
+                "[Tnine][开发模式] 收件邮箱："
+                + (config["to_addr"] or "未配置"),
+                file=sys.stderr,
+                flush=True,
             )
 
         return {
@@ -564,7 +612,19 @@ def send_login_code_mail(
 
     try:
 
-        if config["use_tls"]:
+        # 465/994/995 等端口为 SSL 直连端口（QQ/163 等主流邮箱），
+        # 必须使用 SMTP_SSL；其余端口（587/25）才走 STARTTLS。
+        use_ssl = config["port"] in (465, 994, 995) or not config["use_tls"]
+
+        if use_ssl:
+
+            server = smtplib.SMTP_SSL(
+                config["host"],
+                config["port"],
+                timeout=15,
+            )
+
+        else:
 
             server = smtplib.SMTP(
                 config["host"],
@@ -573,14 +633,6 @@ def send_login_code_mail(
             )
 
             server.starttls()
-
-        else:
-
-            server = smtplib.SMTP_SSL(
-                config["host"],
-                config["port"],
-                timeout=15,
-            )
 
         server.login(
             config["username"],
@@ -619,9 +671,9 @@ def send_login_code_mail(
 
             dev_code = code
 
-            print("[Tnine][开发模式] " + reason)
+            print("[Tnine][开发模式] " + reason, file=sys.stderr, flush=True)
 
-            print("[Tnine][开发模式] 登录验证码：" + code)
+            print("[Tnine][开发模式] 登录验证码：" + code, file=sys.stderr, flush=True)
 
         return {
             "ok": False,
@@ -635,6 +687,12 @@ def send_login_code_mail(
 # ============================================================
 
 LOGIN_CODE_TTL_SECONDS = 5 * 60
+
+# 登录验证码发送限流：同一客户端 60 秒内最多发送一次
+# （进程内内存记录，单实例部署即可）
+LOGIN_CODE_SEND_INTERVAL_SECONDS = 60
+
+_login_code_send_times = {}
 
 _login_codes = {}
 
@@ -857,14 +915,8 @@ def set_setting_value(key: str, value: str):
 
 # ============================================================
 # Hero 首屏系统
-# 配置存储于 Setting 表，背景资源存储于 hero_backgrounds 表
+# 配置存储于 Setting 表
 # ============================================================
-
-HERO_BG_MODES = ("theme", "upload", "auto", "network")
-
-HERO_AUTO_PERIODS = ("daily", "weekly", "random")
-
-HERO_NETWORK_SOURCES = ("unsplash",)
 
 HERO_UPLOAD_DIR = os.path.join(
     os.path.dirname(__file__),
@@ -893,21 +945,39 @@ def get_hero_config(db=None):
         "name": profile["nickname"] or "空",
         "slogan": profile["bio"],
         "avatar": get_setting_value("hero_avatar", ""),
-        "bg_mode": get_setting_value("hero_bg_mode", "theme"),
-        "auto_period": get_setting_value("hero_auto_period", "daily"),
-        "network_source": get_setting_value(
-            "hero_network_source",
-            "unsplash",
-        ),
-        "network_keyword": get_setting_value(
-            "hero_network_keyword",
-            "minimal",
-        ),
-        "network_period": get_setting_value(
-            "hero_network_period",
-            "24",
-        ),
     }
+
+
+def get_hero_social_links(db):
+    """
+    获取 Hero 展示的社交链接（is_visible=True，按排序）。
+    """
+
+    return (
+        db.query(SocialLink)
+        .filter(SocialLink.is_visible.is_(True))
+        .order_by(
+            SocialLink.sort_order.asc(),
+            SocialLink.id.asc(),
+        )
+        .all()
+    )
+
+
+def get_hero_tags(db):
+    """
+    获取 Hero 展示的标签（show_on_home=True，按排序）。
+    """
+
+    return (
+        db.query(Tag)
+        .filter(Tag.show_on_home.is_(True))
+        .order_by(
+            Tag.sort_order.asc(),
+            Tag.id.asc(),
+        )
+        .all()
+    )
 
 
 # ============================================================
@@ -946,159 +1016,36 @@ SOCIAL_LINK_TYPES = [
         "icon": "website",
     },
     {
-        "value": "other",
-        "label": "其他",
-        "icon": "other",
+        "value": "x",
+        "label": "X",
+        "icon": "x",
+    },
+    {
+        "value": "telegram",
+        "label": "Telegram",
+        "icon": "telegram",
+    },
+    {
+        "value": "weibo",
+        "label": "微博",
+        "icon": "weibo",
+    },
+    {
+        "value": "douyin",
+        "label": "抖音",
+        "icon": "douyin",
+    },
+    {
+        "value": "facebook",
+        "label": "Facebook",
+        "icon": "facebook",
+    },
+    {
+        "value": "phone",
+        "label": "手机号码",
+        "icon": "phone",
     },
 ]
-
-
-def get_hero_social_links(db):
-    """
-    获取 Hero 展示的社交链接（is_visible=True，按排序）。
-    """
-
-    return (
-        db.query(SocialLink)
-        .filter(SocialLink.is_visible.is_(True))
-        .order_by(
-            SocialLink.sort_order.asc(),
-            SocialLink.id.asc(),
-        )
-        .all()
-    )
-
-
-def get_hero_tags(db):
-    """
-    获取 Hero 展示的标签（show_on_home=True，按排序）。
-    """
-
-    return (
-        db.query(Tag)
-        .filter(Tag.show_on_home.is_(True))
-        .order_by(
-            Tag.sort_order.asc(),
-            Tag.id.asc(),
-        )
-        .all()
-    )
-
-
-def get_hero_background(db, cfg):
-    """
-    根据背景模式返回当前 Hero 背景渲染信息。
-
-    返回 dict：
-    - kind: none（跟随主题） / image / video / network
-    - url: 资源路径（image/video）
-    - title: 资源标题
-    - network_url: 网络图库接口地址（kind=network 时）
-    """
-
-    mode = cfg.get("bg_mode", "theme")
-
-    # 4.1 跟随网站主题：无需背景资源
-    if mode == "theme":
-
-        return {
-            "kind": "none",
-            "url": "",
-            "title": "",
-        }
-
-    # 4.2 自定义上传背景：使用 is_active 资源
-    if mode == "upload":
-
-        bg = (
-            db.query(HeroBackground)
-            .filter(HeroBackground.is_active.is_(True))
-            .first()
-        )
-
-        if bg:
-
-            return {
-                "kind": bg.kind,
-                "url": bg.file_path,
-                "title": bg.title,
-            }
-
-        return {
-            "kind": "none",
-            "url": "",
-            "title": "",
-        }
-
-    # 4.3 自动切换背景：按周期从图片资源中选取
-    if mode == "auto":
-
-        backgrounds = (
-            db.query(HeroBackground)
-            .filter(HeroBackground.kind == "image")
-            .order_by(
-                HeroBackground.sort_order.asc(),
-                HeroBackground.id.asc(),
-            )
-            .all()
-        )
-
-        if not backgrounds:
-
-            return {
-                "kind": "none",
-                "url": "",
-                "title": "",
-            }
-
-        period = cfg.get("auto_period", "daily") or "daily"
-
-        if period == "random":
-
-            bg = random.choice(backgrounds)
-
-        elif period == "weekly":
-
-            iso_year, iso_week, _ = datetime.now().isocalendar()
-
-            bg = backgrounds[
-                (iso_year * 100 + iso_week) % len(backgrounds)
-            ]
-
-        else:
-
-            bg = backgrounds[
-                datetime.now().toordinal() % len(backgrounds)
-            ]
-
-        return {
-            "kind": bg.kind,
-            "url": bg.file_path,
-            "title": bg.title,
-        }
-
-    # 4.4 网络图库背景：接口占位实现，前端加载失败回退主题默认背景
-    if mode == "network":
-
-        keyword = (
-            cfg.get("network_keyword", "minimal") or "minimal"
-        ).strip()
-
-        return {
-            "kind": "network",
-            "url": "",
-            "title": keyword,
-            "network_url": (
-                "/api/hero/network-image"
-                "?keyword=" + quote(keyword)
-            ),
-        }
-
-    return {
-        "kind": "none",
-        "url": "",
-        "title": "",
-    }
 
 
 def get_admin_profile(db=None):
@@ -1218,6 +1165,10 @@ def get_common_context(request: Request):
             "site_font",
             "default",
         ),
+        "site_icp": get_setting_value(
+            "site_icp",
+            "",
+        ),
         "visitor_id": get_visitor_id(request),
         "theme": get_site_theme(),
         "site_avatar": profile["avatar"],
@@ -1230,6 +1181,18 @@ def get_common_context(request: Request):
 # ============================================================
 # 页面信息配置（网站设置卡片 8 字段）
 # ============================================================
+
+# 页面信息默认值：首页 / 文章 / 朋友圈 / 留言板
+PAGE_INFO_DEFAULTS = {
+    "home_title": "首页",
+    "home_description": "欢迎来到我的博客",
+    "article_title": "文章",
+    "article_description": "记录与分享",
+    "moment_title": "朋友圈",
+    "moment_description": "分享生活点滴",
+    "message_title": "留言板",
+    "message_description": "欢迎留下你的足迹",
+}
 
 def get_page_info():
     """
@@ -1542,8 +1505,6 @@ def home(request: Request):
             "name": hero_cfg["name"],
             "slogan": hero_cfg["slogan"],
             "avatar": hero_cfg["avatar"],
-            "bg_mode": hero_cfg["bg_mode"],
-            "bg": get_hero_background(db, hero_cfg),
             "tags": get_hero_tags(db),
             "social_links": get_hero_social_links(db),
         }
@@ -1909,14 +1870,13 @@ def admin_login_page(
 
 # ============================================================
 # GUEST：管理员登录提交
-# mode=init   ：首次初始化登录（初始密码 + 一次性初始化验证码）
-# mode=normal ：正常登录（正式密码 + 邮箱验证码）
+# 后端自动判断：系统未初始化 → 初始化登录（初始密码 + 一次性初始化验证码）
+#               已初始化   → 正常登录（正式密码 + 邮箱验证码）
 # ============================================================
 
 @app.post("/admin/login")
 def admin_login(
     request: Request,
-    mode: str = Form("normal"),
     password: str = Form(...),
     code: str = Form(...),
 ):
@@ -1927,7 +1887,7 @@ def admin_login(
 
         try:
 
-            if mode == "init":
+            if get_admin_init_state() is not None:
 
                 return _handle_init_login(
                     request, db, password, code,
@@ -2026,7 +1986,9 @@ def _handle_init_login(
     clear_admin_init_state()
 
     print(
-        "[Tnine] 管理员账号初始化完成：admin（初始密码已作为正式密码）"
+        "[Tnine] 管理员账号初始化完成：admin（初始密码已作为正式密码）",
+        file=sys.stderr,
+        flush=True,
     )
 
     _create_admin_session(request, admin)
@@ -2141,6 +2103,40 @@ def admin_send_login_code(
             content={"ok": False, "detail": "已登录，无需验证码"},
         )
 
+    # ========================================================
+    # 60 秒发送限流（进程内内存记录，单实例部署即可）
+    # ========================================================
+
+    client_key = (
+        request.client.host
+        if request.client is not None
+        else "unknown"
+    )
+
+    now = time.time()
+
+    last_send = _login_code_send_times.get(
+        client_key,
+        0.0,
+    )
+
+    remaining = int(
+        LOGIN_CODE_SEND_INTERVAL_SECONDS
+        - (now - last_send)
+    )
+
+    if remaining > 0:
+
+        return JSONResponse(
+            content={
+                "ok": False,
+                "detail": f"发送过于频繁，请 {remaining} 秒后再试",
+                "dev_code": None,
+            }
+        )
+
+    _login_code_send_times[client_key] = now
+
     db = SessionLocal()
 
     try:
@@ -2165,52 +2161,9 @@ def admin_send_login_code(
 
 
 # ============================================================
-# AUTHENTICATED：邮箱配置（后台）
+# AUTHENTICATED：邮箱配置（后台，表单集成在网站设置页）
 # 配置 SMTP 发件邮箱 + 管理员收件邮箱，用于发送登录验证码
 # ============================================================
-
-@app.get("/admin/settings/email")
-def admin_email_settings_page(
-    request: Request,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    db = SessionLocal()
-
-    try:
-
-        config = get_mail_config(db)
-
-        context = get_common_context(request)
-
-        context["config"] = config
-
-        context["has_saved_password"] = bool(
-            _get_setting_value(
-                db, EMAIL_SMTP_PASSWORD_ENC_KEY, "",
-            )
-        )
-
-        context["error"] = None
-
-        context["notice"] = None
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_email_settings.html",
-            context=context,
-        )
-
-    finally:
-
-        db.close()
-
 
 @app.post("/admin/settings/email")
 def admin_email_settings_save(
@@ -2250,26 +2203,9 @@ def admin_email_settings_save(
 
         if not smtp_host or not smtp_username or not from_addr:
 
-            context = get_common_context(request)
-
-            context["config"] = get_mail_config(db)
-
-            context["has_saved_password"] = bool(
-                _get_setting_value(
-                    db, EMAIL_SMTP_PASSWORD_ENC_KEY, "",
-                )
-            )
-
-            context["error"] = (
-                "SMTP 主机、发件邮箱（SMTP 用户名）、发件人地址为必填项"
-            )
-
-            context["notice"] = None
-
-            return templates.TemplateResponse(
-                request=request,
-                name="admin_email_settings.html",
-                context=context,
+            return RedirectResponse(
+                url="/admin/settings?error=email-required",
+                status_code=303,
             )
 
         _set_setting_value(db, EMAIL_SMTP_HOST_KEY, smtp_host)
@@ -2310,7 +2246,7 @@ def admin_email_settings_save(
         db.commit()
 
         return RedirectResponse(
-            url="/admin/settings/email",
+            url="/admin/settings?notice=email-saved",
             status_code=303,
         )
 
@@ -2792,9 +2728,9 @@ def admin_profile_password_save(
 async def admin_profile_social_add(
     request: Request,
     link_type: str = Form("github"),
-    name: str = Form(""),
+    upload_type: str = Form("link"),
     link_value: str = Form(""),
-    show_mode: str = Form("link"),
+    text_value: str = Form(""),
 ):
 
     if require_admin(request) is None:
@@ -2817,36 +2753,31 @@ async def admin_profile_social_add(
             SOCIAL_LINK_TYPES[0],
         )
 
-        # 默认名称：类型标签；用户填写则使用用户名称
-        link_name = (
-            (name or "").strip()[:50]
-            or type_cfg["label"]
-        )
+        # 名称：使用类型默认名称（不再手工输入）
+        link_name = type_cfg["label"]
 
-        link_value = (link_value or "").strip()[:500]
+        if upload_type == "image":
 
-        if show_mode == "qr":
-
-            # 二维码：解析上传二维码图片
+            # 图片：解析上传图片（二维码 / 微信码等）
             form = await request.form()
 
-            qr_file = form.get("qr_code")
+            image_file = form.get("image_file")
 
-            qr_url = ""
+            image_url = ""
 
             if (
-                qr_file
-                and getattr(qr_file, "filename", "")
+                image_file
+                and getattr(image_file, "filename", "")
             ):
 
-                filename = qr_file.filename or ""
+                filename = image_file.filename or ""
 
                 ext = os.path.splitext(filename)[1].lower()
 
                 if ext not in HERO_ALLOWED_IMAGE:
 
                     return RedirectResponse(
-                        url="/admin/profile?error=qr-format",
+                        url="/admin/profile?error=image-format",
                         status_code=303,
                     )
 
@@ -2856,7 +2787,7 @@ async def admin_profile_social_add(
                 )
 
                 save_name = (
-                    "qr_"
+                    "social_"
                     + uuid.uuid4().hex[:12]
                     + ext
                 )
@@ -2866,24 +2797,56 @@ async def admin_profile_social_add(
                     save_name,
                 )
 
-                content = await qr_file.read()
+                content = await image_file.read()
 
                 with open(save_path, "wb") as f:
 
                     f.write(content)
 
-                qr_url = (
+                image_url = (
                     "/static/uploads/hero/" + save_name
+                )
+
+            if not image_url:
+
+                return RedirectResponse(
+                    url="/admin/profile?error=image-empty",
+                    status_code=303,
                 )
 
             link = SocialLink(
                 name=link_name,
                 icon=type_cfg["icon"],
-                url=link_value,
+                url="",
                 is_visible=True,
                 sort_order=0,
-                link_type=link_type,
-                qr_code=qr_url or None,
+                link_type="image",
+                qr_code=image_url,
+            )
+
+            db.add(link)
+
+            db.commit()
+
+        elif upload_type == "text":
+
+            text_value = (text_value or "").strip()[:500]
+
+            if not text_value:
+
+                return RedirectResponse(
+                    url="/admin/profile?error=text-empty",
+                    status_code=303,
+                )
+
+            link = SocialLink(
+                name=link_name,
+                icon=type_cfg["icon"],
+                url=text_value,
+                is_visible=True,
+                sort_order=0,
+                link_type="text",
+                qr_code=None,
             )
 
             db.add(link)
@@ -2891,6 +2854,8 @@ async def admin_profile_social_add(
             db.commit()
 
         else:
+
+            link_value = (link_value or "").strip()[:500]
 
             if not link_value:
 
@@ -2905,7 +2870,7 @@ async def admin_profile_social_add(
                 url=link_value,
                 is_visible=True,
                 sort_order=0,
-                link_type=link_type,
+                link_type="link",
                 qr_code=None,
             )
 
@@ -3454,7 +3419,7 @@ def create_article(
         # ====================================================
 
         return RedirectResponse(
-            url=f"/article/{article.id}",
+            url="/articles",
             status_code=303,
         )
 
@@ -3636,7 +3601,7 @@ def update_article(
 
 
         return RedirectResponse(
-            url=f"/article/{article.id}",
+            url="/articles",
             status_code=303,
         )
 
@@ -4536,6 +4501,7 @@ def comment_moment(
 
 
         reply_to_nickname = None
+        reply_to_content = None
 
         if (
             reply_to_id is not None
@@ -4543,6 +4509,7 @@ def comment_moment(
         ):
 
             reply_to_nickname = reply_target.nickname
+            reply_to_content = reply_target.content
 
 
         return JSONResponse(
@@ -4554,6 +4521,7 @@ def comment_moment(
                 "comment_count": comment_count,
                 "reply_to_id": reply_to_id,
                 "reply_to_nickname": reply_to_nickname,
+                "reply_to_content": reply_to_content,
                 "created_at": comment.created_at.strftime("%Y-%m-%d %H:%M"),
             }
         )
@@ -4851,6 +4819,7 @@ def comment_article(
 
 
         reply_to_nickname = None
+        reply_to_content = None
 
         if (
             reply_to_id is not None
@@ -4858,6 +4827,7 @@ def comment_article(
         ):
 
             reply_to_nickname = reply_target.nickname
+            reply_to_content = reply_target.content
 
 
         return JSONResponse(
@@ -4869,6 +4839,7 @@ def comment_article(
                 "comment_count": comment_count,
                 "reply_to_id": reply_to_id,
                 "reply_to_nickname": reply_to_nickname,
+                "reply_to_content": reply_to_content,
                 "created_at": comment.created_at.strftime("%Y-%m-%d %H:%M"),
             }
         )
@@ -5833,592 +5804,7 @@ def delete_message_item(
 
 
 # ============================================================
-# PUBLIC：网络图库背景占位接口
-# 说明：
-# - 需求 4.4 允许接口占位实现
-# - 返回 302 重定向到免费图库（picsum.photos，按关键词生成稳定 seed）
-# - 真实部署可替换为 Unsplash API 等实现
-# - 前端加载失败时回退主题默认背景，不影响页面加载速度
-# ============================================================
-
-@app.get("/api/hero/network-image")
-def hero_network_image(
-    keyword: str = "minimal",
-):
-
-    seed = hashlib.md5(
-        keyword.encode("utf-8")
-    ).hexdigest()[:8]
-
-    return RedirectResponse(
-        url=f"https://picsum.photos/seed/{seed}/1600/900",
-        status_code=302,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：首页设置（Hero 首屏）
-# ============================================================
-
-@app.get("/admin/home")
-def admin_home_settings_page(
-    request: Request,
-):
-
-    if require_admin(request) is None:
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    db = SessionLocal()
-
-    try:
-
-        context = get_common_context(request)
-
-        hero_cfg = get_hero_config(db)
-
-        context["hero_cfg"] = hero_cfg
-
-        context["backgrounds"] = (
-            db.query(HeroBackground)
-            .order_by(
-                HeroBackground.sort_order.asc(),
-                HeroBackground.id.asc(),
-            )
-            .all()
-        )
-
-        context["social_links"] = (
-            db.query(SocialLink)
-            .order_by(
-                SocialLink.sort_order.asc(),
-                SocialLink.id.asc(),
-            )
-            .all()
-        )
-
-        context["hero_bg_modes"] = HERO_BG_MODES
-
-        context["hero_auto_periods"] = HERO_AUTO_PERIODS
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_home_settings.html",
-            context=context,
-        )
-
-    finally:
-
-        db.close()
-
-
-# ============================================================
-# AUTHENTICATED：保存首页资料（昵称 / 个签 / 头像）
-# ============================================================
-
-@app.post("/admin/home/profile")
-async def admin_home_profile_save(
-    request: Request,
-    hero_name: str = Form(""),
-    hero_slogan: str = Form(""),
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    # 保存昵称与个签
-    set_setting_value(
-        "hero_name",
-        (hero_name or "").strip()[:50] or "Tnine",
-    )
-
-    set_setting_value(
-        "hero_slogan",
-        (hero_slogan or "").strip()[:200],
-    )
-
-    # 处理头像上传（可选）
-    form = await request.form()
-
-    avatar_file = form.get("avatar")
-
-    if (
-        avatar_file
-        and getattr(avatar_file, "filename", "")
-    ):
-
-        filename = avatar_file.filename or ""
-
-        ext = os.path.splitext(filename)[1].lower()
-
-        if ext not in HERO_ALLOWED_IMAGE:
-
-            return RedirectResponse(
-                url="/admin/home?error=avatar-format",
-                status_code=303,
-            )
-
-        os.makedirs(HERO_UPLOAD_DIR, exist_ok=True)
-
-        save_name = (
-            "avatar_"
-            + uuid.uuid4().hex[:12]
-            + ext
-        )
-
-        save_path = os.path.join(
-            HERO_UPLOAD_DIR,
-            save_name,
-        )
-
-        content = await avatar_file.read()
-
-        with open(save_path, "wb") as f:
-
-            f.write(content)
-
-        set_setting_value(
-            "hero_avatar",
-            "/static/uploads/hero/" + save_name,
-        )
-
-    return RedirectResponse(
-        url="/admin/home",
-        status_code=303,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：上传 Hero 背景资源
-# ============================================================
-
-@app.post("/admin/home/background-upload")
-async def admin_home_background_upload(
-    request: Request,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    form = await request.form()
-
-    bg_file = form.get("background_file")
-
-    title = (
-        form.get("background_title") or ""
-    ).strip()[:100]
-
-    if (
-        not bg_file
-        or not getattr(bg_file, "filename", "")
-    ):
-
-        return RedirectResponse(
-            url="/admin/home?error=background-missing",
-            status_code=303,
-        )
-
-    filename = bg_file.filename or ""
-
-    ext = os.path.splitext(filename)[1].lower()
-
-    if ext in HERO_ALLOWED_IMAGE:
-
-        kind = "image"
-
-    elif ext in HERO_ALLOWED_VIDEO:
-
-        kind = "video"
-
-    else:
-
-        return RedirectResponse(
-            url="/admin/home?error=background-format",
-            status_code=303,
-        )
-
-    os.makedirs(HERO_UPLOAD_DIR, exist_ok=True)
-
-    save_name = (
-        "bg_"
-        + uuid.uuid4().hex[:12]
-        + ext
-    )
-
-    save_path = os.path.join(
-        HERO_UPLOAD_DIR,
-        save_name,
-    )
-
-    content = await bg_file.read()
-
-    with open(save_path, "wb") as f:
-
-        f.write(content)
-
-    db = SessionLocal()
-
-    try:
-
-        bg = HeroBackground(
-            kind=kind,
-            source="upload",
-            file_path="/static/uploads/hero/" + save_name,
-            title=title or filename,
-        )
-
-        db.add(bg)
-
-        db.commit()
-
-        db.refresh(bg)
-
-        # 首次上传自动设为当前背景
-        active_count = (
-            db.query(HeroBackground)
-            .filter(HeroBackground.is_active.is_(True))
-            .count()
-        )
-
-        if active_count == 0:
-
-            bg.is_active = True
-
-            db.commit()
-
-    finally:
-
-        db.close()
-
-    return RedirectResponse(
-        url="/admin/home",
-        status_code=303,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：设为当前 Hero 背景
-# ============================================================
-
-@app.post("/admin/home/background/{bg_id}/activate")
-def admin_home_background_activate(
-    request: Request,
-    bg_id: int,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    db = SessionLocal()
-
-    try:
-
-        bg = (
-            db.query(HeroBackground)
-            .filter(HeroBackground.id == bg_id)
-            .first()
-        )
-
-        if bg is None:
-
-            return RedirectResponse(
-                url="/admin/home",
-                status_code=303,
-            )
-
-        # 清除旧的当前背景
-        (
-            db.query(HeroBackground)
-            .filter(HeroBackground.is_active.is_(True))
-            .update({"is_active": False})
-        )
-
-        bg.is_active = True
-
-        db.commit()
-
-    finally:
-
-        db.close()
-
-    return RedirectResponse(
-        url="/admin/home",
-        status_code=303,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：删除 Hero 背景资源
-# ============================================================
-
-@app.post("/admin/home/background/{bg_id}/delete")
-def admin_home_background_delete(
-    request: Request,
-    bg_id: int,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    db = SessionLocal()
-
-    try:
-
-        bg = (
-            db.query(HeroBackground)
-            .filter(HeroBackground.id == bg_id)
-            .first()
-        )
-
-        if bg is None:
-
-            return RedirectResponse(
-                url="/admin/home",
-                status_code=303,
-            )
-
-        # 删除磁盘文件（仅限 hero 上传目录内的资源）
-        file_name = os.path.basename(
-            bg.file_path or ""
-        )
-
-        if (
-            file_name
-            and (
-                file_name.startswith("bg_")
-                or file_name.startswith("avatar_")
-            )
-        ):
-
-            disk_path = os.path.join(
-                HERO_UPLOAD_DIR,
-                file_name,
-            )
-
-            if os.path.exists(disk_path):
-
-                os.remove(disk_path)
-
-        db.delete(bg)
-
-        db.commit()
-
-    finally:
-
-        db.close()
-
-    return RedirectResponse(
-        url="/admin/home",
-        status_code=303,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：保存 Hero 背景设置（模式 / 自动切换 / 网络图库）
-# ============================================================
-
-@app.post("/admin/home/background-settings")
-def admin_home_background_settings_save(
-    request: Request,
-    bg_mode: str = Form("theme"),
-    auto_period: str = Form("daily"),
-    network_source: str = Form("unsplash"),
-    network_keyword: str = Form("minimal"),
-    network_period: str = Form("24"),
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    if bg_mode not in HERO_BG_MODES:
-
-        bg_mode = "theme"
-
-    if auto_period not in HERO_AUTO_PERIODS:
-
-        auto_period = "daily"
-
-    set_setting_value("hero_bg_mode", bg_mode)
-
-    set_setting_value("hero_auto_period", auto_period)
-
-    set_setting_value(
-        "hero_network_source",
-        network_source,
-    )
-
-    set_setting_value(
-        "hero_network_keyword",
-        (network_keyword or "").strip()[:50] or "minimal",
-    )
-
-    set_setting_value(
-        "hero_network_period",
-        (network_period or "").strip()[:10] or "24",
-    )
-
-    return RedirectResponse(
-        url="/admin/home",
-        status_code=303,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：新增社交链接
-# ============================================================
-
-@app.post("/admin/home/social")
-def admin_home_social_create(
-    request: Request,
-    name: str = Form(...),
-    icon: str = Form("link"),
-    url: str = Form(""),
-    sort_order: int = Form(0),
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    db = SessionLocal()
-
-    try:
-
-        link = SocialLink(
-            name=(name or "").strip()[:50] or "链接",
-            icon=(icon or "link").strip()[:30],
-            url=(url or "").strip()[:500],
-            sort_order=sort_order,
-            is_visible=True,
-        )
-
-        db.add(link)
-
-        db.commit()
-
-    finally:
-
-        db.close()
-
-    return RedirectResponse(
-        url="/admin/home",
-        status_code=303,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：社交链接显示切换
-# ============================================================
-
-@app.post("/admin/home/social/{link_id}/toggle")
-def admin_home_social_toggle(
-    request: Request,
-    link_id: int,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    db = SessionLocal()
-
-    try:
-
-        link = (
-            db.query(SocialLink)
-            .filter(SocialLink.id == link_id)
-            .first()
-        )
-
-        if link is not None:
-
-            link.is_visible = not link.is_visible
-
-            db.commit()
-
-    finally:
-
-        db.close()
-
-    return RedirectResponse(
-        url="/admin/home",
-        status_code=303,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：删除社交链接
-# ============================================================
-
-@app.post("/admin/home/social/{link_id}/delete")
-def admin_home_social_delete(
-    request: Request,
-    link_id: int,
-):
-
-    if require_admin(request) is None:
-
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    db = SessionLocal()
-
-    try:
-
-        link = (
-            db.query(SocialLink)
-            .filter(SocialLink.id == link_id)
-            .first()
-        )
-
-        if link is not None:
-
-            db.delete(link)
-
-            db.commit()
-
-    finally:
-
-        db.close()
-
-    return RedirectResponse(
-        url="/admin/home",
-        status_code=303,
-    )
-
-
-# ============================================================
-# AUTHENTICATED：网站设置卡片（外观 / 标签 / 页面信息）
+# AUTHENTICATED：网站设置卡片（外观 / 标签 / 页面信息 / 邮箱）
 # Tnine v2：卡片式配置
 # ============================================================
 
@@ -6440,62 +5826,70 @@ def admin_settings_page(
 
         context = get_common_context(request)
 
-        # ---------- 外观：Hero 配置摘要 ----------
-        hero_cfg = get_hero_config(db)
-
-        context["hero_cfg"] = hero_cfg
-
-        context["hero_bg_modes"] = HERO_BG_MODES
-
-        context["hero_auto_periods"] = (
-            HERO_AUTO_PERIODS
-        )
-
-        context["background_count"] = (
-            db.query(HeroBackground)
-            .count()
-        )
-
         # ---------- 标签 ----------
         tags = (
             db.query(Tag)
             .order_by(
-                Tag.id.asc()
+                Tag.sort_order.asc(),
+                Tag.id.asc(),
             )
             .all()
         )
 
         context["tags"] = tags
 
-        # ---------- 页面信息 8 字段 ----------
+        # 每个标签关联的文章数（>0 禁止删除）
+        context["tag_counts"] = {}
+
+        for tag in tags:
+
+            context["tag_counts"][tag.id] = (
+                db.query(ArticleTag)
+                .filter(ArticleTag.tag_id == tag.id)
+                .count()
+            )
+
+        # ---------- 页面信息 8 字段（空字段回写默认值） ----------
+        for key, default in PAGE_INFO_DEFAULTS.items():
+
+            if not get_setting_value(key, ""):
+
+                set_setting_value(key, default)
+
         context["page_info"] = {
-            "home_title": get_setting_value(
-                "home_title", ""
-            ),
-            "home_description": get_setting_value(
-                "home_description", ""
-            ),
-            "article_title": get_setting_value(
-                "article_title", ""
-            ),
-            "article_description": get_setting_value(
-                "article_description", ""
-            ),
-            "moment_title": get_setting_value(
-                "moment_title", ""
-            ),
-            "moment_description": get_setting_value(
-                "moment_description", ""
-            ),
-            "message_title": get_setting_value(
-                "message_title", ""
-            ),
-            "message_description": get_setting_value(
-                "message_description", ""
-            ),
+            key: get_setting_value(key, "")
+            for key in PAGE_INFO_DEFAULTS
+        }
+
+        # ---------- 邮箱配置 ----------
+        mail_config = get_mail_config(db)
+
+        context["mail_config"] = mail_config
+
+        context["has_saved_password"] = bool(
+            _get_setting_value(
+                db, EMAIL_SMTP_PASSWORD_ENC_KEY, "",
+            )
+        )
+
+        # ---------- 页面标题默认值（留空时回写指定文案） ----------
+        context["page_title_defaults"] = {
+            "home_title": PAGE_INFO_DEFAULTS["home_title"],
+            "article_title": PAGE_INFO_DEFAULTS["article_title"],
+            "moment_title": PAGE_INFO_DEFAULTS["moment_title"],
+            "message_title": PAGE_INFO_DEFAULTS["message_title"],
         }
 
         context["site_theme"] = get_site_theme()
+
+        # 操作结果提示（email-required / email-saved / tag-in-use 等）
+        context["error"] = request.query_params.get(
+            "error", None
+        )
+
+        context["notice"] = request.query_params.get(
+            "notice", None
+        )
 
         return templates.TemplateResponse(
             request=request,
@@ -6543,10 +5937,13 @@ def admin_settings_pages_save(
         "message_description": message_description,
     }.items():
 
-        set_setting_value(
-            key,
-            (value or "").strip()[:200],
-        )
+        val = (value or "").strip()[:200]
+
+        if not val:
+
+            val = PAGE_INFO_DEFAULTS.get(key, "")
+
+        set_setting_value(key, val)
 
     return RedirectResponse(
         url="/admin/settings",
@@ -6563,6 +5960,7 @@ def admin_settings_appearance_save(
     request: Request,
     primary_color: str = Form(""),
     font: str = Form(""),
+    icp: str = Form(""),
 ):
 
     if require_admin(request) is None:
@@ -6590,62 +5988,17 @@ def admin_settings_appearance_save(
             font,
         )
 
+    icp = (icp or "").strip()
+
+    set_setting_value(
+        "site_icp",
+        icp[:100],
+    )
+
     return RedirectResponse(
         url="/admin/settings",
         status_code=303,
     )
-
-
-# ============================================================
-# AUTHENTICATED：标签管理
-# ============================================================
-
-@app.get("/admin/tags")
-def admin_tags_page(
-    request: Request,
-):
-
-    if require_admin(request) is None:
-        return RedirectResponse(
-            url="/admin/login",
-            status_code=303,
-        )
-
-    db = SessionLocal()
-
-    try:
-
-        context = get_common_context(request)
-
-        context["tags"] = (
-            db.query(Tag)
-            .order_by(
-                Tag.sort_order.asc(),
-                Tag.id.asc(),
-            )
-            .all()
-        )
-
-        # 每个标签关联的文章数
-        context["tag_counts"] = {}
-
-        for tag in context["tags"]:
-
-            context["tag_counts"][tag.id] = (
-                db.query(ArticleTag)
-                .filter(ArticleTag.tag_id == tag.id)
-                .count()
-            )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_tags.html",
-            context=context,
-        )
-
-    finally:
-
-        db.close()
 
 
 # ============================================================
@@ -6673,7 +6026,7 @@ def admin_tag_create(
     if not tag_name:
 
         return RedirectResponse(
-            url="/admin/tags?error=name-empty",
+            url="/admin/settings?error=name-empty",
             status_code=303,
         )
 
@@ -6690,7 +6043,7 @@ def admin_tag_create(
         if exists is not None:
 
             return RedirectResponse(
-                url="/admin/tags?error=duplicate",
+                url="/admin/settings?error=duplicate",
                 status_code=303,
             )
 
@@ -6710,7 +6063,7 @@ def admin_tag_create(
         db.close()
 
     return RedirectResponse(
-        url="/admin/tags",
+        url="/admin/settings",
         status_code=303,
     )
 
@@ -6741,7 +6094,7 @@ def admin_tag_edit(
     if not tag_name:
 
         return RedirectResponse(
-            url="/admin/tags?error=name-empty",
+            url="/admin/settings?error=name-empty",
             status_code=303,
         )
 
@@ -6758,7 +6111,7 @@ def admin_tag_edit(
         if tag is None:
 
             return RedirectResponse(
-                url="/admin/tags",
+                url="/admin/settings",
                 status_code=303,
             )
 
@@ -6774,7 +6127,7 @@ def admin_tag_edit(
         if duplicate is not None:
 
             return RedirectResponse(
-                url="/admin/tags?error=duplicate",
+                url="/admin/settings?error=duplicate",
                 status_code=303,
             )
 
@@ -6793,14 +6146,14 @@ def admin_tag_edit(
         db.close()
 
     return RedirectResponse(
-        url="/admin/tags",
+        url="/admin/settings",
         status_code=303,
     )
 
 
 # ============================================================
 # AUTHENTICATED：删除标签
-# 删除仅移除标签本身与关联关系，不删除文章
+# 有文章关联的标签禁止删除；删除仅移除标签本身与关联关系
 # ============================================================
 
 @app.post("/admin/tags/{tag_id}/delete")
@@ -6828,6 +6181,20 @@ def admin_tag_delete(
 
         if tag is not None:
 
+            # 有文章关联的标签禁止删除（前端隐藏删除按钮，后端兜底拦截）
+            article_count = (
+                db.query(ArticleTag)
+                .filter(ArticleTag.tag_id == tag.id)
+                .count()
+            )
+
+            if article_count > 0:
+
+                return RedirectResponse(
+                    url="/admin/settings?error=tag-in-use",
+                    status_code=303,
+                )
+
             # SQLite 未强制外键时先手动清理关联，避免残留
             db.query(ArticleTag).filter(
                 ArticleTag.tag_id == tag.id
@@ -6842,7 +6209,7 @@ def admin_tag_delete(
         db.close()
 
     return RedirectResponse(
-        url="/admin/tags",
+        url="/admin/settings",
         status_code=303,
     )
 
@@ -6885,7 +6252,7 @@ def admin_tag_toggle(
         db.close()
 
     return RedirectResponse(
-        url="/admin/tags",
+        url="/admin/settings",
         status_code=303,
     )
 
@@ -6954,3 +6321,76 @@ def tag_detail_page(
     finally:
 
         db.close()
+
+
+# ============================================================
+# 圆形 favicon（透明底圆形 PNG，动态跟随站点头像）
+# ============================================================
+
+@app.get("/favicon.png")
+def favicon_png():
+
+    avatar = get_setting_value("hero_avatar", "")
+
+    if not avatar:
+
+        return Response(status_code=204)
+
+    # avatar 形如 /static/uploads/hero/xxx.jpg，仅允许该前缀且禁止穿越
+    rel = avatar.lstrip("/")
+
+    if (
+        not rel.startswith("static/uploads/hero/")
+        or ".." in rel
+    ):
+
+        return Response(status_code=204)
+
+    path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        rel,
+    )
+
+    if not os.path.exists(path):
+
+        return Response(status_code=204)
+
+    try:
+
+        from PIL import Image, ImageDraw
+        import io as _io
+
+        img = Image.open(path).convert("RGBA")
+
+        size = min(img.size)
+
+        left = (img.width - size) // 2
+
+        top = (img.height - size) // 2
+
+        img = img.crop((left, top, left + size, top + size))
+
+        mask = Image.new("L", (size, size), 0)
+
+        draw = ImageDraw.Draw(mask)
+
+        draw.ellipse((0, 0, size, size), fill=255)
+
+        img.putalpha(mask)
+
+        img = img.resize((64, 64), Image.LANCZOS)
+
+        buf = _io.BytesIO()
+
+        img.save(buf, format="PNG")
+
+        return Response(
+            content=buf.getvalue(),
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+    except Exception:
+
+        return Response(status_code=204)
+

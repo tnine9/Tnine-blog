@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}
 网站设置 - {{ site_name }}
@@ -9,6 +9,17 @@
 
 <main class="container settings-page">
 
+    <header class="detail-page-head">
+
+        <a
+            href="/admin"
+            class="detail-back"
+        >
+            ← 返回后台
+        </a>
+
+    </header>
+
     <div class="settings-header">
 
         <div>
@@ -18,27 +29,64 @@
             </h1>
 
             <p class="settings-subtitle">
-                外观 · Hero · 标签 · 页面信息
+                外观 · 标签 · 页面信息 · 邮箱
             </p>
 
         </div>
 
-        <a
-            href="/admin"
-            class="settings-back"
-        >
-            ← 返回控制台
-        </a>
+    </div>
+
+    {% if error %}
+
+    <div class="settings-alert settings-alert-error">
+
+        {% if error == 'email-required' %}
+            SMTP 主机、发件邮箱（SMTP 用户名）、发件人地址为必填项
+        {% elif error == 'tag-in-use' %}
+            该标签已有文章关联，无法删除
+        {% elif error == 'name-empty' %}
+            标签名称不能为空
+        {% elif error == 'duplicate' %}
+            同名标签已存在
+        {% else %}
+            {{ error }}
+        {% endif %}
 
     </div>
 
+    {% endif %}
+
+    {% if notice %}
+
+    <div class="settings-alert settings-alert-notice">
+
+        {% if notice == 'email-saved' %}
+            邮箱配置已保存
+        {% elif notice == 'tag-created' %}
+            标签已创建
+        {% else %}
+            {{ notice }}
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+    <!-- ============ 设置卡片网格（复用控制台首页 dashboard-card） ============ -->
+
+    <section class="dashboard-grid settings-grid">
+
     <!-- ============ 外观设置卡片 ============ -->
 
-    <section class="settings-card">
+    <div class="dashboard-card dashboard-card-settings">
 
-        <h2 class="settings-card-title">
-            外观设置
-        </h2>
+        <div class="dashboard-card-head">
+
+            <span class="dashboard-card-icon">🎨</span>
+
+            <span class="dashboard-card-label">外观设置</span>
+
+        </div>
 
         <div class="settings-card-body">
 
@@ -49,67 +97,96 @@
                     <span>明暗模式，全站生效</span>
                 </div>
 
-                <div class="theme-switch-group">
+                <div class="home-theme-wrap">
 
-                    <form
-                        method="post"
-                        action="/admin/theme"
-                        class="theme-switch-form"
+                    <button
+                        type="button"
+                        class="home-theme-trigger"
+                        aria-haspopup="true"
+                        aria-expanded="false"
                     >
 
-                        <input
-                            type="hidden"
-                            name="theme"
-                            value="light"
+                        <svg
+                            viewBox="0 0 24 24"
+                            width="15"
+                            height="15"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
                         >
 
-                        <button
-                            type="submit"
-                            class="theme-switch-btn{% if site_theme == 'light' %} is-active{% endif %}"
+                            <circle cx="12" cy="12" r="4"></circle>
+
+                            <line x1="12" y1="2" x2="12" y2="4"></line>
+
+                            <line x1="12" y1="20" x2="12" y2="22"></line>
+
+                            <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
+
+                            <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
+
+                            <line x1="2" y1="12" x2="4" y2="12"></line>
+
+                            <line x1="20" y1="12" x2="22" y2="12"></line>
+
+                            <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
+
+                            <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
+
+                        </svg>
+
+                        切换主题
+
+                        <svg
+                            class="home-theme-caret"
+                            viewBox="0 0 24 24"
+                            width="14"
+                            height="14"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
                         >
+
+                            <polyline points="6 9 12 15 18 9"></polyline>
+
+                        </svg>
+
+                    </button>
+
+                    <div
+                        class="home-theme-dropdown"
+                        role="menu"
+                    >
+
+                        <button
+                            type="button"
+                            class="home-theme-option{% if site_theme == 'light' %} is-selected{% endif %}"
+                            data-theme="light"
+                            role="menuitem"
+                        >
+                            <span class="home-theme-swatch home-theme-swatch-light"></span>
                             浅色
+                            <span class="home-theme-check">✓</span>
                         </button>
-
-                    </form>
-
-                    <form
-                        method="post"
-                        action="/admin/theme"
-                        class="theme-switch-form"
-                    >
-
-                        <input
-                            type="hidden"
-                            name="theme"
-                            value="dark"
-                        >
 
                         <button
-                            type="submit"
-                            class="theme-switch-btn{% if site_theme == 'dark' %} is-active{% endif %}"
+                            type="button"
+                            class="home-theme-option{% if site_theme == 'dark' %} is-selected{% endif %}"
+                            data-theme="dark"
+                            role="menuitem"
                         >
+                            <span class="home-theme-swatch home-theme-swatch-dark"></span>
                             深色
+                            <span class="home-theme-check">✓</span>
                         </button>
 
-                    </form>
+                    </div>
 
                 </div>
-
-            </div>
-
-            <div class="settings-row">
-
-                <div class="settings-row-label">
-                    <strong>Hero 首屏</strong>
-                    <span>背景图片 / 视频 / 背景模式 / 自动切换（{{ background_count }} 个背景资源）</span>
-                </div>
-
-                <a
-                    href="/admin/home"
-                    class="settings-link-btn"
-                >
-                    进入 Hero 设置 →
-                </a>
 
             </div>
 
@@ -135,9 +212,9 @@
 
                     <button
                         type="submit"
-                        class="settings-link-btn"
+                        class="btn btn-primary"
                     >
-                        保存主色
+                        保存
                     </button>
 
                 </form>
@@ -220,20 +297,57 @@
 
             </div>
 
+            <div class="settings-row">
+
+                <div class="settings-row-label">
+                    <strong>备案号</strong>
+                    <span>显示在页脚版权位置，留空则显示 © 2026</span>
+                </div>
+
+                <form
+                    method="post"
+                    action="/admin/settings/appearance"
+                    class="appearance-color-form"
+                >
+
+                    <input
+                        type="text"
+                        name="icp"
+                        value="{{ site_icp or '' }}"
+                        class="appearance-icp-input"
+                        placeholder="如：京ICP备00000000号"
+                        maxlength="100"
+                    >
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        保存
+                    </button>
+
+                </form>
+
+            </div>
+
         </div>
 
-    </section>
+    </div>
 
     <!-- ============ 标签设置卡片 ============ -->
 
-    <section class="settings-card">
+    <div class="dashboard-card dashboard-card-settings">
 
-        <h2 class="settings-card-title">
-            标签设置
-        </h2>
+        <div class="dashboard-card-head">
+
+            <span class="dashboard-card-icon">🏷️</span>
+
+            <span class="dashboard-card-label">标签设置</span>
+
+        </div>
 
         <p class="settings-card-desc">
-            点击标签切换是否在首页 Hero 展示，按创建顺序排列
+            点击标签切换首页展示；悬停标签可删除（已有文章的标签不可删除）
         </p>
 
         <div class="settings-card-body">
@@ -244,20 +358,41 @@
 
                 {% for tag in tags %}
 
-                <form
-                    method="post"
-                    action="/admin/tags/{{ tag.id }}/toggle"
-                    class="tag-toggle-form"
-                >
+                <div class="tag-item">
 
-                    <button
-                        type="submit"
-                        class="tag-toggle-chip{% if tag.show_on_home %} is-on{% endif %}"
+                    <form
+                        method="post"
+                        action="/admin/tags/{{ tag.id }}/toggle"
+                        class="tag-toggle-form"
                     >
-                        {{ tag.name }}
-                    </button>
 
-                </form>
+                        <button
+                            type="submit"
+                            class="tag-toggle-chip{% if tag.show_on_home %} is-on{% endif %}"
+                        >
+                            {{ tag.name }}
+                        </button>
+
+                    </form>
+
+                    <form
+                        method="post"
+                        action="/admin/tags/{{ tag.id }}/delete"
+                        class="tag-del-form"
+                        data-count="{{ tag_counts.get(tag.id, 0) }}"
+                    >
+
+                        <button
+                            type="submit"
+                            class="tag-del-btn"
+                            title="删除标签"
+                        >
+                            ×
+                        </button>
+
+                    </form>
+
+                </div>
 
                 {% endfor %}
 
@@ -297,18 +432,22 @@
 
         </div>
 
-    </section>
+    </div>
 
-    <!-- ============ 页面信息设置卡片 ============ -->
+    <!-- ============ 页面信息设置卡片（第二列） ============ -->
 
-    <section class="settings-card">
+    <div class="dashboard-card dashboard-card-settings dashboard-card-pages">
 
-        <h2 class="settings-card-title">
-            页面信息
-        </h2>
+        <div class="dashboard-card-head">
+
+            <span class="dashboard-card-icon">📄</span>
+
+            <span class="dashboard-card-label">页面信息</span>
+
+        </div>
 
         <p class="settings-card-desc">
-            统一管理各页面标题与说明，共 8 个字段
+            统一管理各页面标题与说明，共 8 个字段；标题留空时默认显示站点名
         </p>
 
         <form
@@ -331,6 +470,7 @@
                             type="text"
                             name="home_title"
                             value="{{ page_info.home_title }}"
+                            placeholder="留空默认 {{ page_title_defaults.home_title }}"
                             maxlength="100"
                         >
                     </label>
@@ -359,6 +499,7 @@
                             type="text"
                             name="article_title"
                             value="{{ page_info.article_title }}"
+                            placeholder="留空默认 {{ page_title_defaults.article_title }}"
                             maxlength="100"
                         >
                     </label>
@@ -387,6 +528,7 @@
                             type="text"
                             name="moment_title"
                             value="{{ page_info.moment_title }}"
+                            placeholder="留空默认 {{ page_title_defaults.moment_title }}"
                             maxlength="100"
                         >
                     </label>
@@ -415,6 +557,7 @@
                             type="text"
                             name="message_title"
                             value="{{ page_info.message_title }}"
+                            placeholder="留空默认 {{ page_title_defaults.message_title }}"
                             maxlength="100"
                         >
                     </label>
@@ -445,6 +588,199 @@
             </div>
 
         </form>
+
+    </div>
+
+    <!-- ============ 邮箱配置卡片（第三列） ============ -->
+
+    <div class="dashboard-card dashboard-card-settings dashboard-card-email">
+
+        <div class="dashboard-card-head">
+
+            <span class="dashboard-card-icon">✉️</span>
+
+            <span class="dashboard-card-label">邮箱配置</span>
+
+        </div>
+
+        <p class="settings-card-desc">
+            配置 SMTP 发件邮箱与管理员收件邮箱，用于发送登录验证码。未单独配置收件邮箱时，默认收件邮箱 = 发件邮箱。
+        </p>
+
+        <div class="settings-card-body">
+
+            <form
+                method="post"
+                action="/admin/settings/email"
+                class="article-form email-config-form"
+            >
+
+                <div class="form-group">
+
+                    <label for="smtp_host">
+                        SMTP 主机
+                    </label>
+
+                    <input
+                        type="text"
+                        id="smtp_host"
+                        name="smtp_host"
+                        value="{{ mail_config.host }}"
+                        placeholder="如 smtp.qq.com / smtp.163.com"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="smtp_port">
+                        SMTP 端口
+                    </label>
+
+                    <input
+                        type="number"
+                        id="smtp_port"
+                        name="smtp_port"
+                        value="{{ mail_config.port }}"
+                        placeholder="465（SSL）或 587（TLS）"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="smtp_username">
+                        发件邮箱（SMTP 用户名）
+                    </label>
+
+                    <input
+                        type="text"
+                        id="smtp_username"
+                        name="smtp_username"
+                        value="{{ mail_config.username }}"
+                        placeholder="发件邮箱地址"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="smtp_password">
+                        邮箱密码 / 授权码
+                    </label>
+
+                    <input
+                        type="password"
+                        id="smtp_password"
+                        name="smtp_password"
+                        placeholder="{% if has_saved_password %}已保存（留空表示不修改）{% else %}请输入邮箱授权码{% endif %}"
+                        autocomplete="new-password"
+                    >
+
+                    <p class="login-code-hint">
+                        密码加密存储，不会明文保存。留空表示保持原密码不变。
+                    </p>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="from_addr">
+                        发件人地址
+                    </label>
+
+                    <input
+                        type="email"
+                        id="from_addr"
+                        name="from_addr"
+                        value="{{ mail_config.from_addr }}"
+                        placeholder="发件邮箱地址"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="to_addr">
+                        管理员收件邮箱
+                    </label>
+
+                    <input
+                        type="email"
+                        id="to_addr"
+                        name="to_addr"
+                        value="{{ mail_config.to_addr }}"
+                        placeholder="留空则默认使用发件邮箱"
+                    >
+
+                    <p class="login-code-hint">
+                        登录验证码将发送到此邮箱。留空时默认收件邮箱 = 发件邮箱。
+                    </p>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label class="login-check-label">
+
+                        <input
+                            type="checkbox"
+                            id="use_tls"
+                            name="use_tls"
+                            value="1"
+                            {% if mail_config.use_tls %}checked{% endif %}
+                        >
+
+                        使用 TLS（端口 587 时勾选；端口 465 使用 SSL 时不勾选）
+
+                    </label>
+
+                </div>
+
+                <div class="page-info-actions">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        保存邮箱配置
+                    </button>
+
+                </div>
+
+            </form>
+
+            {% if mail_config.configured %}
+
+            <div class="email-status-tip is-ok">
+
+                <p>
+                    当前邮箱配置可用，登录验证码将发送至：
+                    <strong>{{ mail_config.to_addr }}</strong>
+                </p>
+
+            </div>
+
+            {% else %}
+
+            <div class="email-status-tip">
+
+                <p>
+                    当前未配置完整 SMTP（或使用环境变量）。
+                    开发模式下验证码会在服务端日志与登录页提示中显示。
+                </p>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
 
     </section>
 
@@ -503,43 +839,39 @@
 
     }
 
-    .settings-back {
+    .settings-alert {
 
         font-size: 13px;
 
-        font-weight: 600;
+        border-radius: 10px;
 
-        color: #7C3AED;
+        padding: 10px 16px;
 
-        text-decoration: none;
-
-    }
-
-    .settings-card {
-
-        background: var(--color-card, #fff);
-
-        border: 1px solid var(--color-border, #eee);
-
-        border-radius: 16px;
-
-        padding: 24px 26px;
-
-        margin-bottom: 20px;
+        margin-bottom: 16px;
 
     }
 
-    .settings-card-title {
+    .settings-alert-error {
 
-        font-size: 18px;
+        color: #b91c1c;
 
-        font-weight: 800;
+        background: rgba(220, 38, 38, .08);
 
-        margin: 0 0 4px;
-
-        color: var(--color-text);
+        border: 1px solid rgba(220, 38, 38, .3);
 
     }
+
+    .settings-alert-notice {
+
+        color: #15803d;
+
+        background: rgba(22, 163, 74, .08);
+
+        border: 1px solid rgba(22, 163, 74, .3);
+
+    }
+
+    /* 卡片复用控制台首页 dashboard-card（见 admin.css），此处仅保留卡片内控件样式 */
 
     .settings-card-desc {
 
@@ -619,6 +951,66 @@
 
     }
 
+    /* 主色 / 备案号表单：选择器与按钮垂直居中对齐 */
+
+    .appearance-color-form {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 10px;
+
+        margin: 0;
+
+    }
+
+    .appearance-color-input {
+
+        width: 40px;
+
+        height: 32px;
+
+        padding: 0;
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 8px;
+
+        background: var(--color-bg, #f7f7f7);
+
+        cursor: pointer;
+
+    }
+
+    .appearance-icp-input {
+
+        width: 220px;
+
+        font-size: 13px;
+
+        padding: 8px 12px;
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 10px;
+
+        background: var(--color-bg, #f7f7f7);
+
+        color: var(--color-text, #222);
+
+        outline: none;
+
+        transition: border-color .2s ease;
+
+    }
+
+    .appearance-icp-input:focus {
+
+        border-color: #7C3AED;
+
+    }
+
     .theme-switch-group {
 
         display: flex;
@@ -677,6 +1069,18 @@
 
     }
 
+    .tag-item {
+
+        position: relative;
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 4px;
+
+    }
+
     .tag-toggle-form {
 
         margin: 0;
@@ -685,7 +1089,7 @@
 
     .tag-toggle-chip {
 
-        font-size: 13px;
+        font-size: 12px;
 
         font-weight: 600;
 
@@ -697,7 +1101,7 @@
 
         border-radius: 999px;
 
-        padding: 6px 16px;
+        padding: 5px 10px;
 
         cursor: pointer;
 
@@ -712,6 +1116,70 @@
         border-color: #7C3AED;
 
         background: rgba(124, 58, 237, .1);
+
+    }
+
+    /* hover 显示标签右上角红色小叉（与社交链接删除按钮一致） */
+
+    .tag-del-form {
+
+        margin: 0;
+
+        position: absolute;
+
+        top: -7px;
+
+        right: -7px;
+
+        z-index: 2;
+
+        display: none;
+
+    }
+
+    .tag-item:hover .tag-del-form {
+
+        display: block;
+
+    }
+
+    .tag-del-btn {
+
+        width: 20px;
+
+        height: 20px;
+
+        border-radius: 50%;
+
+        background: #dc2626;
+
+        color: #fff;
+
+        border: 2px solid var(--color-card, #fff);
+
+        font-size: 13px;
+
+        line-height: 1;
+
+        font-weight: 700;
+
+        cursor: pointer;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        padding: 0;
+
+        transition: background .2s ease;
+
+    }
+
+    .tag-del-btn:hover {
+
+        background: #b91c1c;
 
     }
 
@@ -743,8 +1211,6 @@
 
     }
 
-    
-
     .settings-empty-text {
 
         font-size: 13px;
@@ -761,9 +1227,9 @@
 
         display: grid;
 
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
 
-        gap: 18px;
+        gap: 14px;
 
         margin-bottom: 18px;
 
@@ -829,7 +1295,119 @@
 
     }
 
-    
+    /* 邮箱配置 */
+
+    .email-config-form {
+
+        max-width: 560px;
+
+    }
+
+    .email-config-form .form-group {
+
+        margin-bottom: 14px;
+
+    }
+
+    .email-config-form .form-group label {
+
+        font-size: 13px;
+
+        font-weight: 600;
+
+        color: var(--color-text);
+
+        display: block;
+
+        margin-bottom: 6px;
+
+    }
+
+    .email-config-form .form-group input {
+
+        width: 100%;
+
+        font-size: 13px;
+
+        padding: 9px 12px;
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 8px;
+
+        background: var(--color-card, #fff);
+
+        color: var(--color-text);
+
+        box-sizing: border-box;
+
+    }
+
+    .email-config-form .login-code-hint {
+
+        font-size: 12px;
+
+        color: var(--color-text-secondary, #999);
+
+        margin: 6px 0 0;
+
+    }
+
+    .email-config-form .login-check-label {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #888);
+
+        cursor: pointer;
+
+    }
+
+    .email-config-form .login-check-label input {
+
+        width: auto;
+
+    }
+
+    .email-status-tip {
+
+        margin-top: 16px;
+
+        font-size: 13px;
+
+        color: var(--color-text-secondary, #888);
+
+        background: var(--color-bg, #fafafa);
+
+        border: 1px solid var(--color-border, #eee);
+
+        border-radius: 10px;
+
+        padding: 12px 16px;
+
+    }
+
+    .email-status-tip.is-ok {
+
+        color: #15803d;
+
+        background: rgba(22, 163, 74, .06);
+
+        border-color: rgba(22, 163, 74, .25);
+
+    }
+
+    .email-status-tip p {
+
+        margin: 0;
+
+    }
 
     @media (max-width: 640px) {
 
@@ -851,4 +1429,19 @@
 
 </style>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    /* 标签删除校验：已有文章的标签不可删除，前端提示并阻止提交（后端仍兜底校验） */
+    document.querySelectorAll('.tag-del-form').forEach(function (form) {
+        form.addEventListener('submit', function (ev) {
+            var count = parseInt(form.getAttribute('data-count') || '0', 10);
+            if (count > 0) {
+                ev.preventDefault();
+                alert('已有 ' + count + ' 篇文章使用该标签，不可删除');
+            }
+        });
+    });
+</script>
 {% endblock %}

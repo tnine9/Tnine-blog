@@ -606,27 +606,6 @@ html[data-theme="dark"] .home-hero-bg {
 }
 
 
-/* ---------- 视频背景 ---------- */
-
-.home-hero-video {
-
-    position: absolute;
-
-    inset: 0;
-
-    width: 100%;
-
-    height: 100%;
-
-    object-fit: cover;
-
-    z-index: 0;
-
-    filter: brightness(.6) saturate(1.05);
-
-}
-
-
 /* ---------- 标签胶囊 ---------- */
 
 .home-hero-tags {
@@ -866,5 +845,139 @@ html[data-theme="dark"] .hero-social-link {
 .home-content {
 
     scroll-margin-top: calc(68px + 24px);
+
+}
+
+/* ========== 社交链接悬停气泡（图片 / 文本） ========== */
+
+.hero-social-pop {
+
+    position: relative;
+
+    cursor: pointer;
+
+}
+
+.hero-social-pop-bubble {
+
+    position: absolute;
+
+    bottom: calc(100% + 14px);
+
+    left: 50%;
+
+    transform: translateX(-50%) translateY(6px);
+
+    background: var(--color-card, #fff);
+
+    color: var(--color-text, #333);
+
+    border: 1px solid var(--color-border, #eee);
+
+    border-radius: 12px;
+
+    padding: 8px 14px;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
+    white-space: nowrap;
+
+    max-width: 260px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .14);
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    pointer-events: none;
+
+    transition: opacity .22s ease, transform .22s ease, visibility .22s ease;
+
+    z-index: 20;
+
+}
+
+.hero-social-pop:hover .hero-social-pop-bubble {
+
+    opacity: 1;
+
+    visibility: visible;
+
+    transform: translateX(-50%) translateY(0);
+
+}
+
+.hero-social-pop-bubble::after {
+
+    content: "";
+
+    position: absolute;
+
+    top: 100%;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    border: 7px solid transparent;
+
+    border-top-color: var(--color-card, #fff);
+
+    filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .06));
+
+}
+
+.hero-social-pop-img {
+
+    padding: 8px;
+
+}
+
+.hero-social-pop-img img {
+
+    display: block;
+
+    max-width: 180px;
+
+    max-height: 180px;
+
+    border-radius: 8px;
+
+}
+
+/* 点击文本气泡复制成功提示 */
+
+.hero-social-pop-copied::before {
+
+    content: "已复制";
+
+    position: absolute;
+
+    bottom: calc(100% + 44px);
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    background: rgba(0, 0, 0, .78);
+
+    color: #fff;
+
+    font-size: 12px;
+
+    padding: 5px 12px;
+
+    border-radius: 8px;
+
+    white-space: nowrap;
+
+    z-index: 30;
 
 }

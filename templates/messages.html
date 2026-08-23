@@ -17,94 +17,100 @@
 <div class="container messages-page">
 
 
-
-    <!-- 页面标题 -->
-
-    <header class="page-header">
-
-        <div class="page-header-main">
-
-            <h1 class="page-header-title">
-                {{ page_title }}
-            </h1>
-
-            <p class="page-header-desc">
-                {{ page_description }}
-            </p>
-
-        </div>
-
-    </header>
-
-
-
-
     <!-- ==================================================
-         左侧浮动留言框
+         左侧固定区：页面标题 + 说明 + 留言发布框
          ================================================== -->
 
-    <aside class="message-float-form-wrap" id="messageFloatForm">
+    <aside class="messages-left">
 
-        <div class="message-float-card">
 
-            <div class="message-float-title">
+        <!-- 页面标题 -->
 
-                💬 留言板
+        <header class="page-header">
+
+            <div class="page-header-main">
+
+                <h1 class="page-header-title">
+                    {{ page_title }}
+                </h1>
+
+                <p class="page-header-desc">
+                    {{ page_description }}
+                </p>
 
             </div>
 
-            <p class="message-float-desc">
-
-                访客可以留言，发布者或管理员可以回复
-
-            </p>
+        </header>
 
 
-            <form
-                method="post"
-                action="/messages"
-                class="message-create-form"
-            >
-
-                <textarea
-                    name="content"
-                    rows="4"
-                    maxlength="2000"
-                    placeholder="写下你的留言..."
-                    class="message-create-input"
-                    required
-                ></textarea>
 
 
-                <label class="message-private-toggle">
+        <!-- 留言发布框 -->
 
-                    <input
-                        type="checkbox"
-                        name="is_private"
-                        value="true"
-                    >
+        <div class="message-float-form-wrap" id="messageFloatForm">
 
-                    <span>
-                        🔒 私密留言（仅管理员可见）
-                    </span>
+            <div class="message-float-card">
 
-                </label>
+                <div class="message-float-title">
 
-
-                <div class="message-create-actions">
-
-                    <button
-                        type="submit"
-                        class="message-create-submit"
-                    >
-
-                        发布留言
-
-                    </button>
+                    💬 留言板
 
                 </div>
 
-            </form>
+                <p class="message-float-desc">
+
+                    访客可以留言，发布者或管理员可以回复
+
+                </p>
+
+
+                <form
+                    method="post"
+                    action="/messages"
+                    class="message-create-form"
+                >
+
+                    <textarea
+                        name="content"
+                        rows="4"
+                        maxlength="2000"
+                        placeholder="写下你的留言..."
+                        class="message-create-input"
+                        required
+                    ></textarea>
+
+
+                    <label class="message-private-toggle">
+
+                        <input
+                            type="checkbox"
+                            name="is_private"
+                            value="true"
+                        >
+
+                        <span>
+                            🔒 私密留言（仅管理员可见）
+                        </span>
+
+                    </label>
+
+
+                    <div class="message-create-actions">
+
+                        <button
+                            type="submit"
+                            class="message-create-submit"
+                        >
+
+                            发布留言
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
 
         </div>
 

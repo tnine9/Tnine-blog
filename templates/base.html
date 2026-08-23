@@ -22,12 +22,23 @@
 
     </title>
 
+    {% if site_avatar %}
+    <link rel="icon"
+          type="image/png"
+          href="/favicon.png">
+    {% endif %}
+
 
 
     <!-- 基础变量 -->
 
     <link rel="stylesheet"
           href="{{ url_for('static', path='css/variables.css') }}?v=3">
+
+    <!-- 功能图标字体 -->
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='fonts/iconfont.css') }}?v=1">
 
 
 
@@ -41,41 +52,41 @@
     <!-- 布局 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/layout.css') }}?v=21">
+          href="{{ url_for('static', path='css/layout.css') }}?v=23">
 
 
 
     <!-- 组件 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/components.css') }}?v=9">
+          href="{{ url_for('static', path='css/components.css') }}?v=21">
 
 
 
     <!-- 页面 -->
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/article.css') }}?v=11">
+          href="{{ url_for('static', path='css/article.css') }}?v=16">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/moment-card.css') }}?v=8">
+          href="{{ url_for('static', path='css/moment-card.css') }}?v=12">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/moment-detail.css') }}?v=4">
+          href="{{ url_for('static', path='css/moment-detail.css') }}?v=9">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/moment-editor.css') }}?v=2">
+          href="{{ url_for('static', path='css/moment-editor.css') }}?v=3">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/admin.css') }}?v=5">
+          href="{{ url_for('static', path='css/admin.css') }}?v=8">
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/editor.css') }}?v=7">
+          href="{{ url_for('static', path='css/editor.css') }}?v=8">
 
 
     <link rel="stylesheet"
@@ -136,6 +147,8 @@
 
 <body>
 
+
+<script src="{{ url_for('static', path='js/moment.js') }}?v=10"></script>
 
 
 {% block site_header %}
@@ -435,7 +448,7 @@
 
             <p>
 
-                © 2026 {{ site_name }}
+                {% if site_icp %}{{ site_icp }}{% else %}© 2026{% endif %}
 
             </p>
 
@@ -485,13 +498,15 @@ onclick="showNextImage()"
 
 
 
-<script src="{{ url_for('static', path='js/moment.js') }}?v=7"></script>
-
-
-<script src="{{ url_for('static', path='js/main.js') }}?v=6"></script>
+<script src="{{ url_for('static', path='js/main.js') }}?v=7"></script>
 
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+
+{% block extra_scripts %}
+
+{% endblock %}
 
 
 </body>

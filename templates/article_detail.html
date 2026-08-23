@@ -101,7 +101,7 @@
                         class="detail-edit-button"
                     >
 
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                        <i class="iconfont icon-a-huaban1fuben3"></i>
 
                     </a>
 
@@ -118,7 +118,7 @@
                             class="detail-delete-button"
                         >
 
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            <i class="iconfont icon-shanchu"></i>
 
                         </button>
 
@@ -171,7 +171,7 @@
                     class="detail-edit-button"
                 >
 
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                    <i class="iconfont icon-a-huaban1fuben3"></i>
 
                 </a>
 
@@ -188,7 +188,7 @@
                         class="detail-delete-button"
                     >
 
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                        <i class="iconfont icon-shanchu"></i>
 
                     </button>
 
@@ -439,88 +439,69 @@
 
             {% for comment in article_comments %}
 
-            <div class="article-comment-item" id="article-comment-{{ comment.id }}">
+            <div class="comment-item" id="article-comment-{{ comment.id }}">
 
-                <div class="article-comment-header">
+                <div class="comment-item-head">
 
-                    <span class="article-comment-avatar">
-
-                        {{ (comment.nickname or "匿")[0] }}
-
-                    </span>
-
-                    <span class="article-comment-user">
+                    <span class="comment-item-user">
 
                         {{ comment.nickname }}
 
                     </span>
 
-                    <span class="article-comment-time">
+                    <span class="comment-item-time">
 
                         {{ comment.created_at.strftime("%Y-%m-%d %H:%M") }}
 
                     </span>
 
-
-                    <button
-                        type="button"
-                        class="inline-reply-button"
-                        data-reply-to="{{ comment.id }}"
-                        data-reply-nickname="{{ comment.nickname }}"
-                    >
-
-                        回复
-
-                    </button>
-
-
-                    {% if is_admin %}
-
-                    <form
-                        method="post"
-                        action="/admin/article/comment/{{ comment.id }}/delete"
-                        class="inline-delete-form"
-                        onsubmit="return confirm('确定删除这条评论吗？');"
-                    >
+                    <span class="comment-item-ops">
 
                         <button
-                            type="submit"
-                            class="inline-delete-button"
+                            type="button"
+                            class="inline-reply-button"
+                            data-reply-to="{{ comment.id }}"
+                            data-reply-nickname="{{ comment.nickname }}"
                         >
 
-                            删除
+                            回复
 
                         </button>
 
-                    </form>
 
-                    {% endif %}
+                        {% if is_admin %}
 
-                </div>
+                        <form
+                            method="post"
+                            action="/admin/article/comment/{{ comment.id }}/delete"
+                            class="inline-delete-form"
+                            onsubmit="return confirm('确定删除这条评论吗？');"
+                        >
 
-                <div class="article-comment-content">
+                            <button
+                                type="submit"
+                                class="inline-delete-button"
+                            >
 
-                    {% if comment.reply_to_id %}
+                                删除
 
-                    <div class="moment-comment-replyto">
+                            </button>
 
-                        {% if comment.reply_to %}
-
-                            回复 @{{ comment.reply_to.nickname }}：
-
-                        {% else %}
-
-                            回复 @该评论已删除：
+                        </form>
 
                         {% endif %}
 
-                    </div>
-
-                    {% endif %}
-
-                    {{ comment.content }}
+                    </span>
 
                 </div>
+
+                {% if comment.reply_to_id %}
+
+                <div class="comment-item-replyto">{% if comment.reply_to %}<span class="replyto-name">回复 @{{ comment.reply_to.nickname }}：</span>{{ comment.reply_to.content }}{% else %}<span class="replyto-name">回复 @该评论已删除：</span>{% endif %}</div>
+
+                {% endif %}
+
+                <div class="comment-item-content">{{ comment.content }}</div>
 
             </div>
 
@@ -698,7 +679,7 @@ document.addEventListener(
         ) {
 
             document.querySelectorAll(
-                ".article-comment-item .inline-reply-button"
+                ".comment-item .inline-reply-button"
             ).forEach(
                 function (btn) {
 
@@ -993,38 +974,26 @@ document.addEventListener(
                                     document.createElement("div");
 
                                 newItem.className =
-                                    "article-comment-item";
+                                    "comment-item";
 
                                 newItem.id =
                                     "article-comment-" +
                                     result.comment_id;
 
 
-                                /* 头部 */
+                                /* 首行：昵称 时间（左） + 回复 删除（右） */
                                 const head =
                                     document.createElement("div");
 
                                 head.className =
-                                    "article-comment-header";
-
-
-                                const avatar =
-                                    document.createElement("span");
-
-                                avatar.className =
-                                    "article-comment-avatar";
-
-                                avatar.textContent =
-                                    (result.nickname || "匿")[0];
-
-                                head.appendChild(avatar);
+                                    "comment-item-head";
 
 
                                 const user =
                                     document.createElement("span");
 
                                 user.className =
-                                    "article-comment-user";
+                                    "comment-item-user";
 
                                 user.textContent =
                                     result.nickname;
@@ -1036,12 +1005,19 @@ document.addEventListener(
                                     document.createElement("span");
 
                                 time.className =
-                                    "article-comment-time";
+                                    "comment-item-time";
 
                                 time.textContent =
                                     result.created_at || "";
 
                                 head.appendChild(time);
+
+
+                                const ops =
+                                    document.createElement("span");
+
+                                ops.className =
+                                    "comment-item-ops";
 
 
                                 const replyBtn =
@@ -1090,44 +1066,60 @@ document.addEventListener(
                                     }
                                 );
 
-                                head.appendChild(replyBtn);
+                                ops.appendChild(replyBtn);
+
+                                head.appendChild(ops);
 
 
                                 newItem.appendChild(head);
 
 
-                                /* 内容 */
-                                const content =
-                                    document.createElement("div");
-
-                                content.className =
-                                    "article-comment-content";
-
-
+                                /* 回复引用行：回复@昵称：原评论内容 */
                                 if (result.reply_to_nickname) {
 
                                     const replyLine =
                                         document.createElement("div");
 
                                     replyLine.className =
-                                        "moment-comment-replyto";
+                                        "comment-item-replyto";
 
-                                    replyLine.textContent =
+                                    const replyName =
+                                        document.createElement("span");
+
+                                    replyName.className =
+                                        "replyto-name";
+
+                                    replyName.textContent =
                                         "回复 @" +
                                         result.reply_to_nickname +
                                         "：";
 
-                                    content.appendChild(replyLine);
+                                    replyLine.appendChild(replyName);
+
+                                    replyLine.appendChild(
+                                        document.createTextNode(
+                                            result.reply_to_content ||
+                                            ""
+                                        )
+                                    );
+
+                                    newItem.appendChild(replyLine);
 
                                 }
 
+
+                                /* 评论内容 */
+                                const content =
+                                    document.createElement("div");
+
+                                content.className =
+                                    "comment-item-content";
 
                                 content.appendChild(
                                     document.createTextNode(
                                         result.content
                                     )
                                 );
-
 
                                 newItem.appendChild(content);
 

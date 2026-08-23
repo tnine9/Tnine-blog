@@ -26,30 +26,6 @@
 
 }
 
-.detail-back {
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    color: var(--color-text-muted);
-
-    font-size: 14px;
-
-    text-decoration: none;
-
-    transition: color .2s ease;
-
-}
-
-.detail-back:hover {
-
-    color: var(--color-primary);
-
-}
-
 /* ---------- 详情卡片 ---------- */
 
 .moment-detail-card {
@@ -118,25 +94,19 @@
 
 }
 
-/* 管理员操作（hover 显示，位于外壳右上角） */
+/* 发布时间（头部昵称下方） */
 
-.detail-card-actions {
+.detail-user-time {
 
-    position: absolute;
+    font-size: 12px;
 
-    top: 12px;
+    color: var(--color-text-muted);
 
-    right: 12px;
-
-    z-index: 5;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
+    margin-top: 2px;
 
 }
+
+/* 管理员操作（常驻显示，位于头部行右侧） */
 
 .detail-delete-form {
 
@@ -147,17 +117,17 @@
 .detail-edit-button,
 .detail-delete-button {
 
-    width: 34px;
+    width: 32px;
 
-    height: 34px;
+    height: 32px;
 
-    border: none;
+    border: 1px solid var(--color-border);
 
     border-radius: 50%;
 
-    background: var(--color-soft);
+    background: var(--color-surface-solid);
 
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
 
     cursor: pointer;
 
@@ -169,26 +139,15 @@
 
     text-decoration: none;
 
-    opacity: 0;
-
-    visibility: hidden;
-
-    transition: opacity .2s ease, visibility .2s ease, color .2s ease, background .2s ease;
-
-}
-
-.moment-card-shell.moment-detail-shell:hover .detail-edit-button,
-.moment-card-shell.moment-detail-shell:hover .detail-delete-button {
-
-    opacity: 1;
-
-    visibility: visible;
+    transition: color .2s ease, background .2s ease, border-color .2s ease;
 
 }
 
 .detail-edit-button:hover {
 
     color: var(--color-primary, #4a6cf7);
+
+    border-color: var(--color-primary, #4a6cf7);
 
     background: var(--color-primary-soft, #eef1fe);
 
@@ -200,6 +159,8 @@
 
     background: var(--color-danger, #e74c3c);
 
+    border-color: var(--color-danger, #e74c3c);
+
 }
 
 /* ---------- 正文 ---------- */
@@ -208,9 +169,9 @@
 
     font-size: 16px;
 
-    line-height: 1.8;
+    line-height: 1.7;
 
-    margin: 14px 0;
+    margin: 10px 0;
 
     white-space: pre-wrap;
 
@@ -226,21 +187,17 @@
 
 .detail-images {
 
-    margin: 16px 0 4px;
+    margin: 16px 0 8px;
 
     max-width: 100%;
 
 }
 
-/* ---------- 发布时间 ---------- */
+/* 单图在详情页保持大图但约束宽度，避免拉伸占满整行 */
 
-.detail-time {
+.detail-images.moment-images-count-1 {
 
-    font-size: 13px;
-
-    color: var(--color-text-muted);
-
-    margin: 14px 0 4px;
+    max-width: 480px;
 
 }
 
@@ -256,49 +213,25 @@
 
 }
 
-/* 统计行 */
+/* 动作行：点赞按钮+计数 / 评论按钮+计数 */
 
-.detail-stats {
+.detail-action-row {
 
     display: flex;
 
-    gap: 24px;
+    gap: 10px;
 
     margin-bottom: 14px;
 
 }
 
-.detail-stat {
+.detail-action-row .moment-like-form {
 
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    font-size: 14px;
-
-    color: var(--color-text-secondary);
+    margin: 0;
 
 }
 
-.detail-stat strong {
-
-    font-size: 15px;
-
-    color: var(--color-text);
-
-}
-
-/* 点赞按钮 */
-
-.detail-like-row {
-
-    margin-bottom: 14px;
-
-}
-
-.detail-like-row .moment-action-button {
+.detail-action-button {
 
     display: inline-flex;
 
@@ -322,9 +255,11 @@
 
     transition: all .2s ease;
 
+    font-family: var(--font-main);
+
 }
 
-.detail-like-row .moment-action-button:hover {
+.detail-action-button:hover {
 
     border-color: var(--color-primary);
 
@@ -332,7 +267,7 @@
 
 }
 
-.detail-like-row .moment-action-button.is-liked {
+.detail-action-button.is-liked {
 
     border-color: var(--color-primary);
 
@@ -342,9 +277,24 @@
 
 }
 
-.moment-action-count {
+.detail-like-count,
+.detail-comment-count {
 
     font-weight: 700;
+
+}
+
+.detail-action-label {
+
+    font-size: 13px;
+
+    color: var(--color-text-secondary);
+
+}
+
+.detail-action-button.is-liked .detail-action-label {
+
+    color: var(--color-primary);
 
 }
 
@@ -364,7 +314,7 @@
 
 }
 
-/* ---------- 评论输入（默认展开） ---------- */
+/* ---------- 评论输入（默认隐藏，点击评论按钮切换） ---------- */
 
 .detail-comment-panel {
 
@@ -488,7 +438,7 @@
 
 }
 
-/* ---------- 评论列表（默认展开） ---------- */
+/* ---------- 评论列表（默认展开，统一 comment-item 格式） ---------- */
 
 .detail-comment-list {
 
@@ -496,97 +446,37 @@
 
     flex-direction: column;
 
-    gap: 10px;
+}
+
+.detail-comment-list .comment-item:last-child {
+
+    border-bottom: none;
 
 }
 
-.detail-comment {
-
-    display: flex;
-
-    align-items: baseline;
-
-    flex-wrap: wrap;
-
-    gap: 6px;
-
-    padding: 10px 14px;
-
-    background: var(--color-soft);
-
-    border-radius: 12px;
-
-    font-size: 14px;
-
-    line-height: 1.7;
-
-}
-
-.moment-comment-user {
-
-    font-weight: 700;
-
-    color: var(--color-text);
-
-}
-
-.moment-comment-replyto {
-
-    color: var(--color-primary);
-
-    font-size: 13px;
-
-}
-
-.moment-comment-content {
-
-    color: var(--color-text);
-
-    word-break: break-word;
-
-}
-
-/* 评论操作（回复 / 删除）：默认隐藏，Hover 显示 */
-
-.detail-comment-ops {
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    margin-left: auto;
-
-    opacity: 0;
-
-    visibility: hidden;
-
-    transition: opacity .2s ease, visibility .2s ease;
-
-}
-
-.detail-comment:hover .detail-comment-ops {
-
-    opacity: 1;
-
-    visibility: visible;
-
-}
+/* 评论操作按钮统一样式 */
 
 .inline-reply-button {
 
-    border: none;
+    display: inline-block;
 
-    background: none;
+    margin-left: 8px;
 
-    color: var(--color-text-muted);
+    padding: 1px 8px;
 
     font-size: 12px;
 
+    color: var(--color-text-secondary);
+
+    background: transparent;
+
+    border: 1px solid var(--color-border);
+
+    border-radius: 999px;
+
     cursor: pointer;
 
-    padding: 0;
+    transition: var(--transition);
 
 }
 
@@ -594,35 +484,7 @@
 
     color: var(--color-primary);
 
-}
-
-.inline-delete-form {
-
-    margin: 0;
-
-    display: inline;
-
-}
-
-.inline-delete-button {
-
-    border: none;
-
-    background: none;
-
-    color: var(--color-text-muted);
-
-    font-size: 12px;
-
-    cursor: pointer;
-
-    padding: 0;
-
-}
-
-.inline-delete-button:hover {
-
-    color: var(--color-danger, #e74c3c);
+    border-color: var(--color-primary);
 
 }
 

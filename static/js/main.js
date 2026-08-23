@@ -46,7 +46,7 @@ document.addEventListener(
         initUserMenu();
 
 
-        initAdminThemePanel();
+        initHomeThemeDropdown();
 
 
     }
@@ -149,183 +149,6 @@ function initCardNavigation(){
 
 }
 
-/*
-=========================================================
-后台：切换主题面板
-- 仅管理员可见/可操作（按钮在后台页面）
-- 点击"切换主题"按钮展开所有主题选项
-- 点击选项后提交到 /admin/theme，成功后全站生效
-=========================================================
-*/
-
-
-function initAdminThemePanel(){
-
-
-    const button =
-        document.getElementById(
-            "adminThemeButton"
-        );
-
-
-    const panel =
-        document.getElementById(
-            "adminThemePanel"
-        );
-
-
-    if(
-        !button
-        || !panel
-    ){
-
-        return;
-
-    }
-
-
-    /* 展开 / 收起 */
-
-    button.addEventListener(
-        "click",
-        function(e){
-
-            e.stopPropagation();
-
-            panel.classList.toggle(
-                "is-open"
-            );
-
-        }
-    );
-
-
-    /* 点击面板外收起 */
-
-    document.addEventListener(
-        "click",
-        function(e){
-
-            if (
-                !panel.contains(e.target)
-                && !button.contains(e.target)
-            ) {
-
-                panel.classList.remove(
-                    "is-open"
-                );
-
-            }
-
-        }
-    );
-
-
-    /* 点击主题选项：提交并全局切换 */
-
-    const options =
-        panel.querySelectorAll(
-            ".theme-option"
-        );
-
-
-    options.forEach(
-        function(option){
-
-            option.addEventListener(
-                "click",
-                function(){
-
-                    const theme =
-                        option.getAttribute(
-                            "data-theme"
-                        );
-
-
-                    if (!theme) {
-
-                        return;
-
-                    }
-
-
-                    const form =
-                        new FormData();
-
-                    form.append(
-                        "theme",
-                        theme
-                    );
-
-
-                    fetch(
-                        "/admin/theme",
-                        {
-                            method: "POST",
-                            body: form,
-                            headers: {
-                                "X-Requested-With": "XMLHttpRequest"
-                            }
-                        }
-                    )
-                    .then(
-                        function(res){
-
-                            return res.json();
-
-                        }
-                    )
-                    .then(
-                        function(data){
-
-                            if (
-                                data
-                                && data.ok
-                            ) {
-
-                                document.documentElement.setAttribute(
-                                    "data-theme",
-                                    data.theme
-                                );
-
-
-                                /* 更新选中态 */
-
-                                options.forEach(
-                                    function(opt){
-
-                                        opt.classList.toggle(
-                                            "is-selected",
-                                            opt.getAttribute(
-                                                "data-theme"
-                                            ) === data.theme
-                                        );
-
-                                    }
-                                );
-
-
-                                panel.classList.remove(
-                                    "is-open"
-                                );
-
-                            }
-
-                        }
-                    )
-                    .catch(
-                        function(){ }
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-}
-
 
 /* =========================================================
    用户头像菜单
@@ -410,6 +233,216 @@ function initUserMenu(){
         }
     );
 
+
+
+}
+
+
+/* =========================================================
+   控制台首页：网站设置卡片内切换主题下拉
+- 点击"切换主题"展开下拉（浅色 / 深色）
+- 点击选项提交到 /admin/theme，成功后全站生效
+========================================================= */
+
+
+function initHomeThemeDropdown(){
+
+
+    const wraps =
+        document.querySelectorAll(
+            ".home-theme-wrap"
+        );
+
+
+    if (
+        !wraps.length
+    ) {
+
+        return;
+
+    }
+
+
+    wraps.forEach(
+        function(wrap){
+
+            const trigger =
+                wrap.querySelector(
+                    ".home-theme-trigger"
+                );
+
+            const dropdown =
+                wrap.querySelector(
+                    ".home-theme-dropdown"
+                );
+
+            if (
+                !trigger
+                || !dropdown
+            ) {
+
+                return;
+
+            }
+
+
+            /* 展开 / 收起 */
+
+            trigger.addEventListener(
+                "click",
+                function(e){
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    dropdown.classList.toggle(
+                        "is-open"
+                    );
+
+                    trigger.setAttribute(
+                        "aria-expanded",
+                        dropdown.classList.contains(
+                            "is-open"
+                        )
+                    );
+
+                }
+            );
+
+
+            /* 点击面板外收起 */
+
+            document.addEventListener(
+                "click",
+                function(e){
+
+                    if (
+                        !dropdown.contains(e.target)
+                        && !trigger.contains(e.target)
+                    ) {
+
+                        dropdown.classList.remove(
+                            "is-open"
+                        );
+
+                        trigger.setAttribute(
+                            "aria-expanded",
+                            "false"
+                        );
+
+                    }
+
+                }
+            );
+
+
+            /* 点击选项：提交并全局切换 */
+
+            const options =
+                dropdown.querySelectorAll(
+                    ".home-theme-option"
+                );
+
+
+            options.forEach(
+                function(option){
+
+                    option.addEventListener(
+                        "click",
+                        function(e){
+
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const theme =
+                                option.getAttribute(
+                                    "data-theme"
+                                );
+
+                            if (!theme) {
+
+                                return;
+
+                            }
+
+                            const form =
+                                new FormData();
+
+                            form.append(
+                                "theme",
+                                theme
+                            );
+
+                            fetch(
+                                "/admin/theme",
+                                {
+                                    method: "POST",
+                                    body: form,
+                                    headers: {
+                                        "X-Requested-With": "XMLHttpRequest"
+                                    }
+                                }
+                            )
+                            .then(
+                                function(res){
+
+                                    return res.json();
+
+                                }
+                            )
+                            .then(
+                                function(data){
+
+                                    if (
+                                        data
+                                        && data.ok
+                                    ) {
+
+                                        document.documentElement.setAttribute(
+                                            "data-theme",
+                                            data.theme
+                                        );
+
+                                        /* 更新选中态 */
+
+                                        options.forEach(
+                                            function(opt){
+
+                                                opt.classList.toggle(
+                                                    "is-selected",
+                                                    opt.getAttribute(
+                                                        "data-theme"
+                                                    ) === data.theme
+                                                );
+
+                                            }
+                                        );
+
+                                        dropdown.classList.remove(
+                                            "is-open"
+                                        );
+
+                                        trigger.setAttribute(
+                                            "aria-expanded",
+                                            "false"
+                                        );
+
+                                    }
+
+                                }
+                            )
+                            .catch(
+                                function(){ }
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+    );
 
 
 }

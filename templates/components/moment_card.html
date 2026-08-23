@@ -3,25 +3,68 @@
     data-url="/moment/{{ item.data.id }}"
 >
 
-    {% if is_admin %}
-    <div class="moment-admin-actions">
-        <a
-            class="moment-admin-btn"
-            href="/admin/moment/{{ item.data.id }}/edit"
-        >✎</a>
-        <form
-            method="post"
-            action="/admin/moment/{{ item.data.id }}/delete"
-            class="moment-admin-form"
-            onsubmit="return confirm('确定要删除这条朋友圈吗？');"
-        >
-            <button
-                type="submit"
-                class="moment-admin-btn is-danger"
-            >🗑</button>
-        </form>
+    <!-- 外层头部行：左 头像+昵称/时间，右 编辑/删除 -->
+    <div class="moment-card-head">
+
+        <div class="moment-header">
+
+            <div class="moment-avatar">
+
+                {% if site_avatar %}
+
+                <img
+                    class="moment-avatar-img"
+                    src="{{ site_avatar }}"
+                    alt="头像"
+                >
+
+                {% else %}
+
+                {{ (item.data.nickname or "匿")[0] }}
+
+                {% endif %}
+
+            </div>
+
+            <div class="moment-user-info">
+
+                <div class="moment-user">
+
+                    {{ item.data.nickname }}
+
+                </div>
+
+                <div class="moment-time">
+
+                    {{ item.data.created_at.strftime("%Y-%m-%d %H:%M") }}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% if is_admin %}
+        <div class="moment-head-actions">
+            <a
+                class="moment-admin-btn"
+                href="/admin/moment/{{ item.data.id }}/edit"
+            ><i class="iconfont icon-a-huaban1fuben3"></i></a>
+            <form
+                method="post"
+                action="/admin/moment/{{ item.data.id }}/delete"
+                class="moment-admin-form"
+                onsubmit="return confirm('确定要删除这条朋友圈吗？');"
+            >
+                <button
+                    type="submit"
+                    class="moment-admin-btn is-danger"
+                ><i class="iconfont icon-shanchu"></i></button>
+            </form>
+        </div>
+        {% endif %}
+
     </div>
-    {% endif %}
 
 <article
     class="moment-card{% if is_admin %} has-admin{% endif %}"
@@ -29,70 +72,13 @@
 >
 
 
-    <!-- 用户信息（卡片内容统一居中容器，720px 对齐） -->
+    <!-- 卡片内容（统一居中容器，720px 对齐） -->
 
     <div class="moment-card-body">
 
-    <div class="moment-header">
-
-
-        <div class="moment-avatar">
-
-            {% if site_avatar %}
-
-            <img
-                class="moment-avatar-img"
-                src="{{ site_avatar }}"
-                alt="头像"
-            >
-
-            {% else %}
-
-            {{ (item.data.nickname or "匿")[0] }}
-
-            {% endif %}
-
-        </div>
-
-
-
-        <div class="moment-user-info">
-
-
-            <div class="moment-user">
-
-                {{ item.data.nickname }}
-
-            </div>
-
-
-
-            <div class="moment-time">
-
-                {{ item.data.created_at.strftime("%Y-%m-%d %H:%M") }}
-
-            </div>
-
-
-        </div>
-
-
-    </div>
-
-
-
-
-    <!-- 内容（完整显示，不折叠） -->
-
     {% if item.data.content %}
 
-    <div
-        class="moment-content moment-content-flex"
-    >
-
-        {{ item.data.content }}
-
-    </div>
+    <div class="moment-content moment-content-flex">{{ item.data.content }}</div>
 
     {% endif %}
 

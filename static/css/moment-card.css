@@ -70,6 +70,73 @@
    头部
    ========================================================= */
 
+/* 外层头部行：左 头像+昵称/时间，右 编辑/删除按钮 */
+.moment-card-head {
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    width:100%;
+
+    margin:0 auto;
+
+    padding:22px 24px 0;
+
+}
+
+.moment-card-head .moment-header {
+
+    flex:1;
+
+    min-width:0;
+
+    padding:0;
+
+}
+
+.moment-head-actions {
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    flex-shrink:0;
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transition: opacity .15s ease, visibility .15s ease;
+
+}
+
+/* 朋友圈卡片 hover 时显示头部编辑/删除按钮 */
+.moment-card-shell:hover .moment-head-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 详情页头部操作按钮常显，不随 hover 隐藏 */
+.moment-head-actions.detail-head-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 触屏设备无 hover，直接显示 */
+@media (hover: none) {
+    .moment-head-actions {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
 
 .moment-header {
 
@@ -199,7 +266,7 @@
     font-size:16px;
 
 
-    line-height:1.45;
+    line-height:1.7;
 
 
     white-space:pre-wrap;
@@ -882,7 +949,7 @@
 @media(max-width:700px){
 
 
-    .moment-header{
+    .moment-card-head{
 
         padding:
             18px 18px 0;
@@ -1226,17 +1293,23 @@
 
     border-color: var(--color-primary);
 
+    background: var(--color-focus-ring);
+
     transform: translateY(-1px);
+
+    box-shadow: var(--shadow-md);
 
 }
 
 .moment-admin-btn.is-danger:hover {
 
-    color: #ef4444;
+    color: var(--color-danger);
 
-    border-color: #ef4444;
+    border-color: var(--color-danger);
 
-    background: rgba(239, 68, 68, .08);
+    background: var(--color-danger-soft);
+
+    box-shadow: var(--shadow-md);
 
 }
 

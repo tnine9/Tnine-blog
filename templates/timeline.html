@@ -102,81 +102,15 @@
 
                     {% elif item.type == "article" %}
 
+                        {% set hide_article_status = true %}
+
                         {% include "components/article_card.html" %}
 
                     {% elif item.type == "message" %}
 
-                    <article
-                        class="content-card message-card"
-                        data-url="/message/{{ item.data.id }}"
-                    >
+                        {% set thread = item.data %}
 
-
-
-                        <div class="message-header">
-
-
-                            <strong>
-
-                                {% if item.data.messages %}
-
-                                {{ item.data.messages[0].nickname or "匿名访客" }}
-
-                                {% else %}
-
-                                匿名访客
-
-                                {% endif %}
-
-                            </strong>
-
-
-                            {% if item.data.is_private %}
-
-                            <span class="message-private-badge">
-
-                                🔒 私密
-
-                            </span>
-
-                            {% endif %}
-
-
-                            <span class="message-time">
-
-                                {{ item.data.updated_at.strftime("%Y-%m-%d %H:%M") }}
-
-                            </span>
-
-                        </div>
-
-
-
-
-                        <div class="message-content">
-
-                            {% if item.data.messages %}
-
-                            {{ item.data.messages[0].content }}
-
-                            {% endif %}
-
-                        </div>
-
-
-
-
-                        <div class="message-meta">
-
-                            <span>
-                                💬 {{ item.data.messages|length }} 条消息
-                            </span>
-
-                        </div>
-
-
-
-                    </article>
+                        {% include "components/message_card.html" %}
 
                     {% endif %}
 
