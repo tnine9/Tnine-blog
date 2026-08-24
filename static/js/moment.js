@@ -1347,47 +1347,42 @@ function showPrevImage(){
 
 
 
+/* 事件委托：页面顶部加载 moment.js 时 .moment-image-item 尚未解析，
+   改用 document 级委托，兼容列表/详情页任意时机渲染的图片 */
+
 document
-.querySelectorAll(
-".moment-image-item"
-)
-.forEach(
-function(item){
+.addEventListener(
+    "click",
+    function(event){
 
+        const item =
+        event.target.closest(
+            ".moment-image-item"
+        );
 
-const img =
-item.querySelector(
-"img"
+        if(
+            !item ||
+            !item.querySelector(
+                "img"
+            )
+        ){
+            return;
+        }
+
+        const images =
+        JSON.parse(
+            item.dataset.images
+        );
+
+        const index =
+        Number(
+            item.dataset.imageIndex
+        );
+
+        openImageViewer(
+            images,
+            index
+        );
+
+    }
 );
-
-
-
-img.addEventListener(
-"click",
-function(){
-
-
-const images =
-JSON.parse(
-item.dataset.images
-);
-
-
-
-const index =
-Number(
-item.dataset.imageIndex
-);
-
-
-
-openImageViewer(
-images,
-index
-);
-
-
-});
-
-
-});

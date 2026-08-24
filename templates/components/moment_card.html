@@ -85,8 +85,26 @@
 
 
 
-<!-- 图片 -->
-{# {% include "components/moment_images.html" %} #}
+<!-- 图片九宫格：单图大图 / 两张并排 / 三张以上九宫格 -->
+{% if item.data.images %}
+<div class="moment-images moment-images-count-{{ item.data.images|length }}">
+    {% set sorted_images = item.data.images|sort(attribute="sort_order") %}
+    {% for img in sorted_images %}
+    <div
+        class="moment-image-item"
+        data-images='{{ sorted_images|map(attribute="image_path")|list|tojson }}'
+        data-image-index="{{ loop.index0 }}"
+    >
+        <img
+            src="{{ img.image_path }}"
+            alt="朋友圈图片"
+            loading="lazy"
+            decoding="async"
+        >
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 
 
@@ -207,7 +225,7 @@
 
 
 
-    <!-- 点赞数（只显示次数，不显示点赞人员） -->
+    <!-- 点赞数（显示次数 + 点赞人员昵称） -->
 
 
     {% if item.data.likes %}
@@ -221,6 +239,28 @@
             ❤️ {{ item.data.likes|length }} 人赞过
 
         </span>
+
+        <ul class="moment-like-users">
+
+            {% for like in item.data.likes %}
+
+            <li class="moment-like-user">
+
+                {% if like.nickname and like.nickname|trim %}
+
+                {{ like.nickname }}
+
+                {% else %}
+
+                匿名访客
+
+                {% endif %}
+
+            </li>
+
+            {% endfor %}
+
+        </ul>
 
 
     </div>

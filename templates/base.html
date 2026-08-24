@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN" data-theme="{{ theme }}">
 
 <head>
@@ -74,7 +74,7 @@
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/moment-detail.css') }}?v=9">
+          href="{{ url_for('static', path='css/moment-detail.css') }}?v=11">
 
 
     <link rel="stylesheet"
@@ -82,7 +82,7 @@
 
 
     <link rel="stylesheet"
-          href="{{ url_for('static', path='css/admin.css') }}?v=9">
+          href="{{ url_for('static', path='css/admin.css') }}?v=10">
 
 
     <link rel="stylesheet"
@@ -91,6 +91,9 @@
 
     <link rel="stylesheet"
           href="{{ url_for('static', path='css/modal.css') }}?v=3">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/theme-terminal.css') }}?v=9">
 
 
 
@@ -103,7 +106,8 @@
         {% if site_primary_color %}
 
         :root,
-        html[data-theme="dark"] {
+        html[data-theme="dark"],
+        html[data-theme="terminal"] {
 
             --color-primary: {{ site_primary_color }};
 
@@ -148,7 +152,7 @@
 <body>
 
 
-<script src="{{ url_for('static', path='js/moment.js') }}?v=10"></script>
+<script src="{{ url_for('static', path='js/moment.js') }}?v=11"></script>
 
 
 {% block site_header %}

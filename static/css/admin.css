@@ -1172,9 +1172,9 @@
 
 .admin-inline-form {
 
-    margin-top: 24px;
+   /* margin-top: 24px;
 
-    padding-top: 22px;
+    padding-top: 22px;*/
 
     border-top: 1px dashed var(--color-border);
 
@@ -1695,6 +1695,17 @@
 .home-theme-swatch-dark {
 
     background:#16181d;
+
+}
+
+.home-theme-swatch-terminal {
+
+    background:
+        linear-gradient(
+            135deg,
+            #67e8a5,
+            #5bd8ff
+        );
 
 }
 

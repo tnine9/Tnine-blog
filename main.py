@@ -774,7 +774,7 @@ def send_admin_login_code(db):
 
 SITE_THEME_KEY = "site_theme"
 
-VALID_THEMES = ("light", "dark")
+VALID_THEMES = ("light", "dark", "terminal")
 
 
 def get_site_theme():

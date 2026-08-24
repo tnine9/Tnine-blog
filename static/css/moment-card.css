@@ -618,6 +618,57 @@
 }
 
 
+.moment-like-users {
+
+
+    list-style:none;
+
+
+    margin:0;
+
+
+    padding:0;
+
+
+    display:inline-flex;
+
+
+    flex-wrap:wrap;
+
+
+    gap:0 6px;
+
+}
+
+
+.moment-like-user {
+
+
+    color:
+        var(--color-primary);
+
+
+    font-weight:600;
+
+
+}
+
+
+.moment-like-user::before {
+
+
+    content:"· ";
+
+
+    color:
+        var(--color-text-muted);
+
+
+    font-weight:400;
+
+}
+
+
 
 
 

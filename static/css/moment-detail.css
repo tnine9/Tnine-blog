@@ -304,6 +304,14 @@
 
     margin-bottom: 14px;
 
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: baseline;
+
+    gap: 0 6px;
+
 }
 
 .like-section-title {
@@ -311,6 +319,42 @@
     font-size: 13px;
 
     color: var(--color-text-muted);
+
+}
+
+.moment-like-users {
+
+    list-style: none;
+
+    margin: 0;
+
+    padding: 0;
+
+    display: inline-flex;
+
+    flex-wrap: wrap;
+
+    gap: 0 8px;
+
+}
+
+.moment-like-user {
+
+    font-size: 13px;
+
+    color: var(--color-primary);
+
+    font-weight: 600;
+
+}
+
+.moment-like-user::before {
+
+    content: "· ";
+
+    color: var(--color-text-muted);
+
+    font-weight: 400;
 
 }
 
@@ -410,7 +454,7 @@
 
 .moment-comment-submit {
 
-    padding: 9px 20px;
+    /* padding: 9px 20px; */
 
     border: none;
 

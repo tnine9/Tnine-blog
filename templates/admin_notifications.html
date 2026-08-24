@@ -92,6 +92,7 @@
 
         <div
             class="admin-list-item notification-item{% if not notification.is_read %} is-unread{% endif %}"
+            data-href="{{ target_url }}"
         >
 
             <div class="admin-list-main">
@@ -135,13 +136,6 @@
             </div>
 
             <div class="admin-list-actions">
-
-                <a
-                    href="{{ target_url }}"
-                    class="admin-view-link"
-                >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
-                </a>
 
                 {% if not notification.is_read %}
 
@@ -257,9 +251,173 @@
 
     }
 
+    /* =========================
+       通知列表：卡片化样式
+    ========================= */
+
+    .notification-list {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 12px;
+
+    }
+
+    .notification-item {
+
+        position: relative;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 16px;
+
+        background: var(--color-card);
+
+        border: 1px solid var(--color-border);
+
+        border-radius: var(--radius-md);
+
+        padding: 16px 18px;
+
+        box-shadow: var(--shadow-sm);
+
+        cursor: pointer;
+
+        transition: var(--transition);
+
+    }
+
+    .notification-item:hover {
+
+        border-color: var(--color-primary-light);
+
+        box-shadow: var(--shadow-md);
+
+        transform: translateY(-1px);
+
+    }
+
     .notification-item.is-unread {
 
+        background: linear-gradient(
+
+            90deg,
+
+            rgba(124, 58, 237, .06),
+
+            transparent 45%
+
+        );
+
         border-left: 3px solid #7C3AED;
+
+    }
+
+    .notification-item .admin-list-main {
+
+        flex: 1;
+
+        min-width: 0;
+
+    }
+
+    .notification-item .admin-list-title-row {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        margin-bottom: 6px;
+
+    }
+
+    .notification-item .admin-list-summary {
+
+        margin: 0;
+
+        font-size: 14px;
+
+        line-height: 1.55;
+
+        color: var(--color-text);
+
+        overflow-wrap: break-word;
+
+    }
+
+    .notification-item .admin-list-meta {
+
+        margin-top: 6px;
+
+        font-size: 12px;
+
+        color: var(--color-text-muted);
+
+    }
+
+    .notification-item .admin-list-actions {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        width: 32px;
+
+        flex-shrink: 0;
+
+    }
+
+    .notification-item .admin-inline-form {
+
+        display: flex;
+
+        margin: 0;
+
+    }
+
+    .notification-item .admin-view-link {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        width: 32px;
+
+        height: 32px;
+
+        border-radius: 50%;
+
+        background: var(--color-soft);
+
+        color: var(--color-text-secondary);
+
+        border: none;
+
+        cursor: pointer;
+
+        transition: var(--transition);
+
+        text-decoration: none;
+
+    }
+
+    .notification-item .admin-view-link:hover {
+
+        background: rgba(124, 58, 237, .12);
+
+        color: #7C3AED;
+
+        text-decoration: none;
 
     }
 
@@ -294,5 +452,31 @@
     }
 
 </style>
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+
+<script>
+
+    // 整条通知可点击：点击条目任意区域跳转详情（内部按钮/链接除外）
+    document.querySelectorAll('.notification-item[data-href]').forEach(function (item) {
+
+        item.addEventListener('click', function (event) {
+
+            if (event.target.closest('a, button, form')) {
+
+                return;
+
+            }
+
+            window.location.href = item.getAttribute('data-href');
+
+        });
+
+    });
+
+</script>
 
 {% endblock %}

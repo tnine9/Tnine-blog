@@ -218,7 +218,7 @@
         </div>
 
 
-        <!-- 点赞列表（只显示次数，不显示点赞人员） -->
+        <!-- 点赞列表（列出点赞人昵称，匿名显示"匿名访客"） -->
 
         {% if moment.likes %}
 
@@ -229,6 +229,28 @@
                 ❤️ {{ moment.likes|length }} 人赞过
 
             </span>
+
+            <ul class="moment-like-users">
+
+                {% for like in moment.likes %}
+
+                <li class="moment-like-user">
+
+                    {% if like.nickname and like.nickname|trim %}
+
+                    {{ like.nickname }}
+
+                    {% else %}
+
+                    匿名访客
+
+                    {% endif %}
+
+                </li>
+
+                {% endfor %}
+
+            </ul>
 
         </div>
 
