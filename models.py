@@ -982,21 +982,45 @@ class HeroBackground(Base):
         DateTime,
         default=datetime.now
     )
-# ===========================# ֪ͨ# type: article_like / article_comment / moment_like / moment_comment / message / message_reply / visitor# target_id: 目标对象 ID（文章/朋友圈/留言会话/访客），用于跳转# ===========================class Notification(Base):    __tablename__ = "notifications"    id = Column(        Integer,        primary_key=True    )    type = Column(        String(30),        default="",        nullable=False,        index=True    )    target_id = Column(        Integer,        default=0,        nullable=False    )    content = Column(        String(500),        default="",        nullable=False    )    is_read = Column(        Boolean,        default=False,        nullable=False    )    created_at = Column(        DateTime,        default=datetime.now    )
-
-
+# ===========================
+# 通知
+# type: article_like / article_comment / moment_like / moment_comment /
+#       message / message_reply / visitor
+# target_id: 目标对象 ID（文章/朋友圈/留言会话/访客），用于跳转
+# ===========================
 class Notification(Base):
+
     __tablename__ = "notifications"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        primary_key=True
+    )
 
-    user_id = Column(Integer, nullable=True)
+    type = Column(
+        String(30),
+        default="",
+        nullable=False,
+        index=True
+    )
 
-    type = Column(String(50))
+    target_id = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
 
-    content = Column(Text)
+    content = Column(
+        String(500),
+        default="",
+        nullable=False
+    )
 
-    is_read = Column(Boolean, default=False)
+    is_read = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
 
     created_at = Column(
         DateTime,

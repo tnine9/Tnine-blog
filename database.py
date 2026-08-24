@@ -15,12 +15,12 @@ DATABASE_URL = os.environ.get(
 
 
 # 创建数据库引擎
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={
-        "check_same_thread": False
-    },
-)
+# 注意：check_same_thread 仅适用于 SQLite，PostgreSQL 等其它数据库不需要（且不识别该参数）
+_engine_kwargs = {}
+if DATABASE_URL.startswith("sqlite"):
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 
 # 创建数据库会话
