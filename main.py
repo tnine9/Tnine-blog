@@ -2474,7 +2474,8 @@ def admin_home(
         context["visitor_today"] = (
             db.query(Visitor)
             .filter(
-                Visitor.created_at >= today_start
+                Visitor.is_deleted == False,
+                Visitor.created_at >= today_start,
             )
             .count()
         )
