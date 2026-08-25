@@ -3236,6 +3236,9 @@ def admin_visitors(
 
         visitors = (
             db.query(Visitor)
+            .filter(
+                Visitor.is_deleted == False
+            )
             .order_by(
                 Visitor.updated_at.desc()
             )
