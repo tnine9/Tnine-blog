@@ -489,6 +489,36 @@ document.addEventListener(
 
 
 
+                        /* 防重复提交：请求期间禁用按钮 */
+                        const submitBtn =
+                            form.querySelector(
+                                "button[type='submit']"
+                            );
+
+                        if(submitBtn && submitBtn.disabled){
+
+                            return;
+
+                        }
+
+                        const originalText =
+                            submitBtn ?
+                            submitBtn.textContent :
+                            "";
+
+                        if(submitBtn){
+
+                            submitBtn.disabled = true;
+
+                            submitBtn.textContent =
+                                "发送中...";
+
+                        }
+
+                        let success = false;
+
+
+
                         async function action(
                             nickname=null
                         ){
@@ -525,49 +555,79 @@ document.addEventListener(
 
 
 
-                        const response =
-                            await executeWithNickname(
-                                action
+                        try{
+
+                            const response =
+                                await executeWithNickname(
+                                    action
+                                );
+
+
+
+                            if(!response){
+
+                                return;
+
+                            }
+
+
+
+                            const result =
+                                await response.json();
+
+
+
+
+                            if(!result.success){
+
+
+
+                                showToast(
+                                    result.error ||
+                                    "点赞失败",
+                                    "error"
+                                );
+
+
+                                return;
+
+                            }
+
+
+
+                            success = true;
+
+
+
+                            /* 就地更新点赞状态，不刷新页面 */
+
+                            updateMomentLikeUI(
+                                form,
+                                result
                             );
-
-
-
-                        if(!response){
-
-                            return;
-
-                        }
-
-
-
-                        const result =
-                            await response.json();
-
-
-
-
-                        if(!result.success){
 
 
                             showToast(
-                                result.error ||
-                                "点赞失败",
-                                "error"
+                                "点赞成功",
+                                "success"
                             );
 
+                        }finally{
 
-                            return;
+                            if(submitBtn){
+
+                                submitBtn.disabled = false;
+
+                                if(!success){
+
+                                    submitBtn.textContent =
+                                        originalText;
+
+                                }
+
+                            }
 
                         }
-
-
-
-                        /* 就地更新点赞状态，不刷新页面 */
-
-                        updateMomentLikeUI(
-                            form,
-                            result
-                        );
 
 
 
@@ -903,6 +963,37 @@ document
 
 
 
+                        /* 防重复提交：请求期间禁用按钮 */
+                        const submitBtn =
+                            form.querySelector(
+                                "button[type='submit']"
+                            );
+
+                        if(submitBtn && submitBtn.disabled){
+
+                            return;
+
+                        }
+
+                        const originalText =
+                            submitBtn ?
+                            submitBtn.textContent :
+                            "";
+
+                        if(submitBtn){
+
+                            submitBtn.disabled = true;
+
+                            submitBtn.textContent =
+                                "发送中...";
+
+                        }
+
+                        let success = false;
+
+
+
+
                         async function action(
                             nickname=null
                         ){
@@ -939,42 +1030,80 @@ document
 
 
 
-                        const response =
-                            await executeWithNickname(
-                                action
+                        try{
+
+                            const response =
+                                await executeWithNickname(
+                                    action
+                                );
+
+
+
+                            if(!response){
+
+                                return;
+
+                            }
+
+
+
+                            const result =
+                                await response.json();
+
+
+
+
+                            if(!result.success){
+
+
+
+                                showToast(
+                                    result.error ||
+                                    "评论失败",
+                                    "error"
+                                );
+
+
+                                return;
+
+                            }
+
+
+
+                            success = true;
+
+
+
+                            /* 就地插入评论，不刷新页面 */
+
+                            appendMomentComment(
+                                form,
+                                result,
+                                input
                             );
-
-
-
-                        const result =
-                            await response.json();
-
-
-
-
-                        if(!result.success){
 
 
                             showToast(
-                                result.error ||
-                                "评论失败",
-                                "error"
+                                "评论成功",
+                                "success"
                             );
 
+                        }finally{
 
-                            return;
+                            if(submitBtn){
+
+                                submitBtn.disabled = false;
+
+                                if(!success){
+
+                                    submitBtn.textContent =
+                                        originalText;
+
+                                }
+
+                            }
 
                         }
-
-
-
-                        /* 就地插入评论，不刷新页面 */
-
-                        appendMomentComment(
-                            form,
-                            result,
-                            input
-                        );
 
 
 

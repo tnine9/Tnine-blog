@@ -81,6 +81,15 @@ class Visitor(Base):
     )
 
 
+    # 软删标记：管理员删除访客时置 True（保留历史互动），
+    # 该访客的 Cookie 在下次互动时被驱逐并强制重新登记
+    is_deleted = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+
 
 # ===========================
 # 博客文章

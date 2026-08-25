@@ -47,6 +47,7 @@ from datetime import datetime
 from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import formataddr
+from urllib.parse import quote, unquote
 
 
 # ============================================================
@@ -54,6 +55,30 @@ from email.utils import formataddr
 # ============================================================
 
 Base.metadata.create_all(bind=engine)
+
+
+# SQLite 轻量迁移：create_all 不会为已存在的表新增列，
+# 手动为 visitors 表补充 is_deleted 列（幂等，重复启动安全）。
+# 若使用 PostgreSQL/MySQL 等其他数据库，需自行执行等价 ALTER。
+def _migrate_visitor_is_deleted():
+    if engine.dialect.name != "sqlite":
+        return
+    from sqlalchemy import inspect, text
+    insp = inspect(engine)
+    if "visitors" not in insp.get_table_names():
+        return
+    columns = [c["name"] for c in insp.get_columns("visitors")]
+    if "is_deleted" not in columns:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE visitors "
+                    "ADD COLUMN is_deleted BOOLEAN DEFAULT 0 NOT NULL"
+                )
+            )
+
+
+_migrate_visitor_is_deleted()
 
 
 # ============================================================
@@ -1247,9 +1272,16 @@ def get_visitor_nickname(request: Request):
     - 没有：None
     """
 
-    return request.cookies.get(
+    value = request.cookies.get(
         VISITOR_NICKNAME_COOKIE
     )
+
+    if not value:
+        return None
+
+    # 昵称写入时经 urllib.parse.quote 百分号编码，
+    # 读取时对应 unquote 解码（支持中文昵称）
+    return unquote(value)
 
 
 def get_visitor_id(request: Request):
@@ -1288,6 +1320,27 @@ def set_visitor_id_cookie(
     )
 
 
+def clear_visitor_cookies(
+    response,
+):
+    """
+    清除访客身份 Cookie（tnine_visitor_id + tnine_nickname）。
+
+    用于删除访客后的驱逐流程：让旧身份彻底失效，
+    前端收到 nickname_required 后重新登记新身份。
+    """
+
+    response.delete_cookie(
+        key=VISITOR_ID_COOKIE,
+        path="/",
+    )
+
+    response.delete_cookie(
+        key=VISITOR_NICKNAME_COOKIE,
+        path="/",
+    )
+
+
 def ensure_visitor(
     db,
     visitor_id: str,
@@ -1318,7 +1371,7 @@ def ensure_visitor(
         visitor = Visitor(
             visitor_id=visitor_id,
             nickname=(
-                (nickname or "").strip()[:50]
+                (nickname or "").strip()[:15]
                 or ANONYMOUS_GUEST_NAME
             ),
         )
@@ -1342,6 +1395,12 @@ def ensure_visitor(
 
     else:
 
+        # 已删除（驱逐）的访客不复活：
+        # 返回 None，由上层（save_visitor_nickname）生成新身份重新登记
+        if visitor.is_deleted:
+
+            return None
+
         # 管理员身份互动时昵称快照用管理员昵称，
         # 但不覆盖访客自己设置的昵称
         visitor.updated_at = datetime.now()
@@ -1352,6 +1411,7 @@ def ensure_visitor(
 def get_actor_identity(
     request: Request,
     fallback_nickname: str | None = None,
+    db=None,
 ):
     """
     获取当前互动用户身份。
@@ -1361,6 +1421,8 @@ def get_actor_identity(
     - visitor_id：浏览器访客 ID（管理员也拥有，用于互动数据归属）
 
     访客没有昵称时 display_name 为 None（需要先设置昵称）。
+    被管理员删除（is_deleted）的访客同样返回 None，
+    并标记 request.state.visitor_deleted，由调用方清除身份 Cookie。
     """
 
     visitor_id = get_visitor_id(request)
@@ -1375,6 +1437,26 @@ def get_actor_identity(
 
         return nickname or None, visitor_id
 
+    # 被删除（驱逐）的访客：清空身份，返回 None 触发重新登记
+    if db is not None:
+
+        visitor_row = (
+            db.query(Visitor)
+            .filter(
+                Visitor.visitor_id == visitor_id
+            )
+            .first()
+        )
+
+        if (
+            visitor_row is not None
+            and visitor_row.is_deleted
+        ):
+
+            request.state.visitor_deleted = True
+
+            return None, visitor_id
+
     # 本次操作明确指定昵称
     if fallback_nickname is not None:
 
@@ -1382,7 +1464,7 @@ def get_actor_identity(
 
         if nickname:
 
-            return nickname[:50], visitor_id
+            return nickname[:15], visitor_id
 
         return None, visitor_id
 
@@ -1391,7 +1473,7 @@ def get_actor_identity(
 
     if nickname:
 
-        return nickname.strip()[:50], visitor_id
+        return nickname.strip()[:15], visitor_id
 
     return None, visitor_id
 
@@ -3233,8 +3315,10 @@ def admin_visitors(
 
 
 # ============================================================
-# AUTHENTICATED：删除访客档案
-# 需求：只删 Visitor 档案，不删历史互动（评论/点赞/留言保留）
+# AUTHENTICATED：删除访客档案（软删）
+# 需求：Visitor 打 is_deleted 标记，不物理删行，
+#       历史互动（评论/点赞/留言）全部保留；
+#       该访客 Cookie 在下次互动时被驱逐并强制重新登记
 # ============================================================
 
 @app.post("/admin/visitors/{visitor_id}/delete")
@@ -3265,7 +3349,8 @@ def admin_delete_visitor(
 
         if visitor is not None:
 
-            db.delete(visitor)
+            # 软删：打标，不物理删除
+            visitor.is_deleted = True
 
             db.commit()
 
@@ -4127,7 +4212,18 @@ def save_visitor_nickname(
         删除昵称 Cookie
     """
 
-    nickname = nickname.strip()[:50]
+    nickname = nickname.strip()
+
+    # 昵称限 15 字：超长直接返回错误，不静默截断
+    if len(nickname) > 15:
+
+        return JSONResponse(
+            {
+                "success": False,
+                "error": "昵称不能超过 15 个字符",
+            },
+            status_code=400,
+        )
 
 
     response = JSONResponse(
@@ -4143,7 +4239,9 @@ def save_visitor_nickname(
 
         response.set_cookie(
             key=VISITOR_NICKNAME_COOKIE,
-            value=nickname,
+            # 中文昵称先百分号编码，避免 Starlette 对
+            # Cookie value 做 latin-1 编码时抛 UnicodeEncodeError
+            value=quote(nickname),
             max_age=60 * 60 * 24 * 365,
             httponly=True,
             samesite="lax",
@@ -4167,6 +4265,23 @@ def save_visitor_nickname(
         db = SessionLocal()
 
         try:
+
+            # 被删除（驱逐）的旧身份：换新 ID 重新登记，
+            # 避免复用已驱逐的 visitor_id
+            old_visitor = (
+                db.query(Visitor)
+                .filter(
+                    Visitor.visitor_id == visitor_id
+                )
+                .first()
+            )
+
+            if (
+                old_visitor is not None
+                and old_visitor.is_deleted
+            ):
+
+                visitor_id = uuid.uuid4().hex
 
             ensure_visitor(db, visitor_id, nickname)
 
@@ -4224,19 +4339,27 @@ def like_moment(
         actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
+            db=db,
         )
 
 
         # 没有昵称
         if not actor_name:
 
-            return JSONResponse(
+            response = JSONResponse(
                 {
                     "success": False,
                     "nickname_required": True,
                 },
                 status_code=401,
             )
+
+            # 被删除（驱逐）的访客：清除身份 Cookie，强制重新登记
+            if getattr(request.state, "visitor_deleted", False):
+
+                clear_visitor_cookies(response)
+
+            return response
 
 
         # ====================================================
@@ -4413,18 +4536,26 @@ def comment_moment(
         actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
+            db=db,
         )
 
 
         if not actor_name:
 
-            return JSONResponse(
+            response = JSONResponse(
                 {
                     "success": False,
                     "nickname_required": True,
                 },
                 status_code=401,
             )
+
+            # 被删除（驱逐）的访客：清除身份 Cookie，强制重新登记
+            if getattr(request.state, "visitor_deleted", False):
+
+                clear_visitor_cookies(response)
+
+            return response
 
 
         # ====================================================
@@ -4587,18 +4718,26 @@ def like_article(
         actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
+            db=db,
         )
 
 
         if not actor_name:
 
-            return JSONResponse(
+            response = JSONResponse(
                 {
                     "success": False,
                     "nickname_required": True,
                 },
                 status_code=401,
             )
+
+            # 被删除（驱逐）的访客：清除身份 Cookie，强制重新登记
+            if getattr(request.state, "visitor_deleted", False):
+
+                clear_visitor_cookies(response)
+
+            return response
 
 
         # ====================================================
@@ -4736,18 +4875,26 @@ def comment_article(
         actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
+            db=db,
         )
 
 
         if not actor_name:
 
-            return JSONResponse(
+            response = JSONResponse(
                 {
                     "success": False,
                     "nickname_required": True,
                 },
                 status_code=401,
             )
+
+            # 被删除（驱逐）的访客：清除身份 Cookie，强制重新登记
+            if getattr(request.state, "visitor_deleted", False):
+
+                clear_visitor_cookies(response)
+
+            return response
 
 
         # ====================================================
@@ -5226,18 +5373,26 @@ def create_message(
         actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
+            db=db,
         )
 
 
         if not actor_name:
 
-            return JSONResponse(
+            response = JSONResponse(
                 {
                     "success": False,
                     "nickname_required": True,
                 },
                 status_code=401,
             )
+
+            # 被删除（驱逐）的访客：清除身份 Cookie，强制重新登记
+            if getattr(request.state, "visitor_deleted", False):
+
+                clear_visitor_cookies(response)
+
+            return response
 
 
         # 访客档案建档
@@ -5372,18 +5527,26 @@ def reply_message(
         actor_name, visitor_id = get_actor_identity(
             request,
             nickname,
+            db=db,
         )
 
 
         if not actor_name:
 
-            return JSONResponse(
+            response = JSONResponse(
                 {
                     "success": False,
                     "nickname_required": True,
                 },
                 status_code=401,
             )
+
+            # 被删除（驱逐）的访客：清除身份 Cookie，强制重新登记
+            if getattr(request.state, "visitor_deleted", False):
+
+                clear_visitor_cookies(response)
+
+            return response
 
 
         # ====================================================

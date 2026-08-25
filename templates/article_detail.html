@@ -762,6 +762,35 @@ document.addEventListener(
                         event.preventDefault();
 
 
+                        /* 防重复提交：请求期间禁用按钮 */
+                        const submitBtn =
+                            likeForm.querySelector(
+                                "button[type='submit']"
+                            );
+
+                        if (submitBtn && submitBtn.disabled) {
+
+                            return;
+
+                        }
+
+                        const originalText =
+                            submitBtn ?
+                            submitBtn.textContent :
+                            "";
+
+                        if (submitBtn) {
+
+                            submitBtn.disabled = true;
+
+                            submitBtn.textContent =
+                                "发送中...";
+
+                        }
+
+                        let success = false;
+
+
                         async function doLike(
                             nickname = null
                         ) {
@@ -791,82 +820,109 @@ document.addEventListener(
                         }
 
 
-                        const response =
-                            await executeWithNickname(
-                                doLike
-                            );
+                        try {
 
-
-                        if (!response) {
-
-                            return;
-
-                        }
-
-
-                        const result =
-                            await response.json();
-
-
-                        if (!result.success) {
-
-                            alert(
-                                result.error ||
-                                "操作失败"
-                            );
-
-                            return;
-
-                        }
-
-
-                        /* 就地更新点赞状态，不刷新页面 */
-
-                        const likeButton =
-                            likeForm.querySelector(
-                                "button[type='submit']"
-                            );
-
-                        if (likeButton) {
-
-                            likeButton.classList.add(
-                                "is-liked"
-                            );
-
-                            const likeLabel =
-                                likeButton.querySelector(
-                                    ".article-like-label, .moment-action-label"
+                            const response =
+                                await executeWithNickname(
+                                    doLike
                                 );
 
-                            if (likeLabel) {
 
-                                likeLabel.textContent =
-                                    "已赞";
+                            if (!response) {
+
+                                return;
+
+                            }
+
+
+                            const result =
+                                await response.json();
+
+
+                            if (!result.success) {
+
+                                alert(
+                                    result.error ||
+                                    "操作失败"
+                                );
+
+                                return;
+
+                            }
+
+
+                            /* 就地更新点赞状态，不刷新页面 */
+
+                            const likeButton =
+                                likeForm.querySelector(
+                                    "button[type='submit']"
+                                );
+
+                            if (likeButton) {
+
+                                likeButton.classList.add(
+                                    "is-liked"
+                                );
+
+                                const likeLabel =
+                                    likeButton.querySelector(
+                                        ".article-like-label, .moment-action-label"
+                                    );
+
+                                if (likeLabel) {
+
+                                    likeLabel.textContent =
+                                        "已赞";
+
+                                }
+
+                            }
+
+
+                            document
+                                .querySelectorAll(
+                                    "[data-like-count]"
+                                )
+                                .forEach(
+                                    function (el) {
+
+                                        const prefix =
+                                            el.textContent.includes("❤️")
+                                                ? "❤️ "
+                                                : "";
+
+                                        el.textContent =
+                                            prefix +
+                                            result.like_count;
+
+                                    }
+                                );
+
+
+                            success = true;
+
+
+                            showToast(
+                                "点赞成功",
+                                "success"
+                            );
+
+                        } finally {
+
+                            if (submitBtn) {
+
+                                submitBtn.disabled = false;
+
+                                if (!success) {
+
+                                    submitBtn.textContent =
+                                        originalText;
+
+                                }
 
                             }
 
                         }
-
-
-                        document
-                            .querySelectorAll(
-                                "[data-like-count]"
-                            )
-                            .forEach(
-                                function (el) {
-
-                                    const prefix =
-                                        el.textContent.includes("❤️")
-                                            ? "❤️ "
-                                            : "";
-
-                                    el.textContent =
-                                        prefix +
-                                        result.like_count;
-
-                                }
-                            );
-
                     }
                 );
 
@@ -903,6 +959,35 @@ document.addEventListener(
                             }
 
 
+                            /* 防重复提交：请求期间禁用按钮 */
+                            const submitBtn =
+                                form.querySelector(
+                                    "button[type='submit']"
+                                );
+
+                            if (submitBtn && submitBtn.disabled) {
+
+                                return;
+
+                            }
+
+                            const originalText =
+                                submitBtn ?
+                                submitBtn.textContent :
+                                "";
+
+                            if (submitBtn) {
+
+                                submitBtn.disabled = true;
+
+                                submitBtn.textContent =
+                                    "发送中...";
+
+                            }
+
+                            let success = false;
+
+
                             async function doComment(
                                 nickname = null
                             ) {
@@ -931,6 +1016,8 @@ document.addEventListener(
 
                             }
 
+
+                            try {
 
                             const response =
                                 await executeWithNickname(
@@ -1165,8 +1252,33 @@ document.addEventListener(
 
                             }
 
+
+                            success = true;
+
+
+                            showToast(
+                                "评论成功",
+                                "success"
+                            );
+
+                        } finally {
+
+                            if (submitBtn) {
+
+                                submitBtn.disabled = false;
+
+                                if (!success) {
+
+                                    submitBtn.textContent =
+                                        originalText;
+
+                                }
+
+                            }
+
                         }
-                    );
+                    }
+                );
 
                 }
             );
