@@ -1,0 +1,41 @@
+name: Deploy
+
+# 自动部署：push 到 main 分支后，SSH 连接服务器拉取代码并重启服务
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 支持手动触发
+
+jobs:
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            set -e
+            cd /var/www/Tnine-blog
+
+            # 1. 备份真实数据库（systemd 环境变量覆盖，库在 tnine-data 目录）
+            cp /var/www/tnine-data/blog.db /var/www/tnine-data/blog.db.bak-$(date +%Y%m%d-%H%M%S)
+            # 只保留最近 7 天备份
+            find /var/www/tnine-data -maxdepth 1 -name "blog.db.bak-*" -mtime +7 -delete
+
+            # 2. 拉取最新代码
+            git pull origin main
+
+            # 3. 安装依赖（有变更时生效）
+            .venv/bin/pip install -r requirements.txt --quiet
+
+            # 4. 重启服务
+            systemctl restart tnine.service
+
+            # 5. 健康检查
+            sleep 2
+            curl -s -o /dev/null -w "health: HTTP %{http_code}\n" http://127.0.0.1:8000/
