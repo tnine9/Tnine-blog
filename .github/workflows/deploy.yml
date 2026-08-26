@@ -27,8 +27,13 @@ jobs:
             # 只保留最近 7 天备份
             find /var/www/tnine-data -maxdepth 1 -name "blog.db.bak-*" -mtime +7 -delete
 
-            # 2. 拉取最新代码
-            git pull origin main
+            # 2. 拉取最新代码（直连 GitHub 失败时自动切换国内镜像兜底）
+            if ! git pull origin main; then
+              echo "直连 GitHub 失败，切换 ghfast.top 镜像重试..."
+              git remote set-url origin https://ghfast.top/https://github.com/tnine9/Tnine-blog.git
+              git pull origin main
+              git remote set-url origin https://github.com/tnine9/Tnine-blog.git
+            fi
 
             # 3. 安装依赖（有变更时生效）
             .venv/bin/pip install -r requirements.txt --quiet
