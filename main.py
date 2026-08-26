@@ -2461,6 +2461,9 @@ def admin_home(
         # ---------- 访客卡片 ----------
         context["visitor_count"] = (
             db.query(Visitor)
+            .filter(
+                Visitor.is_deleted == False,
+            )
             .count()
         )
 
