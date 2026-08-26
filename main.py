@@ -1262,6 +1262,10 @@ ANONYMOUS_GUEST_NAME = "匿名访客"
 # 访客 ID Cookie 有效期：365 天
 VISITOR_ID_MAX_AGE = 60 * 60 * 24 * 365
 
+# 管理员固定访客 ID：管理员登录后所有设备共用同一访客档案，
+# 访客统计卡片只算 1 个、点赞/评论等互动不因多设备重复
+ADMIN_VISITOR_ID = "admin"
+
 
 def get_visitor_nickname(request: Request):
     """
@@ -1286,10 +1290,18 @@ def get_visitor_nickname(request: Request):
 
 def get_visitor_id(request: Request):
     """
-    获取访客唯一标识 Cookie。
+    获取当前请求的身份标识。
+
+    - 已登录管理员：固定返回 ADMIN_VISITOR_ID，保证多设备登录
+      共享同一访客档案（统计卡片只算 1 个、互动不重复）。
+    - 普通访客：读取/生成浏览器 Cookie 中的 visitor_id。
 
     没有则生成一个新的并返回（由调用方决定是否写回 Cookie）。
     """
+
+    # 管理员身份：固定 ID，多设备合并为一个访客
+    if is_admin(request):
+        return ADMIN_VISITOR_ID
 
     visitor_id = request.cookies.get(
         VISITOR_ID_COOKIE
